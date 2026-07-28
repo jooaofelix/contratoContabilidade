@@ -1,66 +1,79 @@
 const FIELD_IDS = [
-  "c_razaoSocial", "c_cnpj", "c_endereco", "c_bairro", "c_cidade", "c_estado", "c_cep",
-  "c_repNome", "c_repCpf", "c_repCargo",
-  "e_razaoSocial", "e_cnpj", "e_endereco", "e_responsavel", "e_crc",
-  "s_contabil", "s_fiscal", "s_dp", "s_obrigacoes", "s_consultoria",
-  "h_valor", "h_vencimento", "h_formaPagamento", "h_indice",
-  "v_inicio", "v_prazo", "v_meses", "v_aviso",
-  "f_foro", "f_local", "f_data", "f_test1Nome", "f_test1Cpf", "f_test2Nome", "f_test2Cpf",
+  "c_razaoSocial", "c_cnpj", "c_endereco", "c_repNome", "c_repCpf",
+  "e_razaoSocial", "e_cnpj", "e_endereco", "e_contato", "e_responsavel", "e_crc",
+  "o_objeto", "o_fiscal", "o_contabil", "o_rh", "o_consultiva", "o_obrigacoes", "o_atendimento", "o_naoIncluidos",
+  "h_valorCheio", "h_temDesconto", "h_valorDesconto", "h_descontoInicio", "h_descontoFim", "h_vencimentoDia", "h_sistemasTerceiros",
+  "v_inicio", "v_fim", "v_avisoPrevio", "f_temFidelidade", "f_multaPercent",
+  "foro_cidade", "a_local", "a_data", "a_test1Nome", "a_test1Cpf", "a_test2Nome", "a_test2Cpf",
 ];
 
 const CONTRATADA_STORAGE_KEY = "contratoContabilidade.contratada";
+const ESCOPO_STORAGE_KEY = "contratoContabilidade.escopoPadrao";
+
+const ESCOPO_DEFAULTS = {
+  o_fiscal: "Apuração ordinária de tributos do Simples Nacional, emissão e controle de guias e envio de obrigações acessórias fiscais aplicáveis.",
+  o_contabil: "Classificação e escrituração contábil, conciliações, balancetes e demonstrações contábeis quando aplicáveis, conforme documentos recebidos.",
+  o_rh: "Gestão de rotinas de RH conforme documentos e informações recebidos em tempo hábil.",
+  o_consultiva: "Acompanhamento estratégico e personalizado com o contador responsável, voltado a orientações ordinárias de gestão, dentro do escopo contratado.",
+  o_obrigacoes: "Entrega das declarações e obrigações acessórias mensais e anuais inerentes ao escopo contábil contratado, conforme legislação vigente.",
+  o_atendimento: "Orientações ordinárias sobre rotinas contábeis, fiscais, trabalhistas e envio de documentos dentro do escopo contratado.",
+  o_naoIncluidos: "Serviços societários, alterações contratuais, abertura ou encerramento de empresas, regularizações, parcelamentos, certidões, certificado digital, consultorias específicas e demais serviços extraordinários.",
+};
+
+function get(id) { return document.getElementById(id).value; }
+function checked(id) { return document.getElementById(id).checked; }
 
 function collectFormData() {
-  const get = (id) => document.getElementById(id).value;
-  const checked = (id) => document.getElementById(id).checked;
-
   return {
     contratante: {
       razaoSocial: get("c_razaoSocial"),
       cnpj: get("c_cnpj"),
       endereco: get("c_endereco"),
-      bairro: get("c_bairro"),
-      cidade: get("c_cidade"),
-      estado: get("c_estado"),
-      cep: get("c_cep"),
       repNome: get("c_repNome"),
       repCpf: get("c_repCpf"),
-      repCargo: get("c_repCargo"),
     },
     contratada: {
       razaoSocial: get("e_razaoSocial"),
       cnpj: get("e_cnpj"),
       endereco: get("e_endereco"),
+      contato: get("e_contato"),
       responsavel: get("e_responsavel"),
       crc: get("e_crc"),
     },
-    servicos: {
-      contabil: checked("s_contabil"),
-      fiscal: checked("s_fiscal"),
-      dp: checked("s_dp"),
-      obrigacoes: checked("s_obrigacoes"),
-      consultoria: checked("s_consultoria"),
+    objeto: {
+      objeto: get("o_objeto"),
+      fiscal: get("o_fiscal"),
+      contabil: get("o_contabil"),
+      rh: get("o_rh"),
+      consultiva: get("o_consultiva"),
+      obrigacoes: get("o_obrigacoes"),
+      atendimento: get("o_atendimento"),
+      naoIncluidos: get("o_naoIncluidos"),
     },
     honorarios: {
-      valor: get("h_valor"),
-      vencimento: get("h_vencimento"),
-      formaPagamento: get("h_formaPagamento"),
-      indice: get("h_indice"),
+      valorCheio: get("h_valorCheio"),
+      temDesconto: checked("h_temDesconto"),
+      valorDesconto: get("h_valorDesconto"),
+      descontoInicio: get("h_descontoInicio"),
+      descontoFim: get("h_descontoFim"),
+      vencimentoDia: get("h_vencimentoDia"),
+      sistemasTerceiros: get("h_sistemasTerceiros"),
     },
     vigencia: {
       inicio: get("v_inicio"),
-      prazo: get("v_prazo"),
-      meses: get("v_meses"),
-      aviso: get("v_aviso"),
+      fim: get("v_fim"),
+      avisoPrevio: get("v_avisoPrevio"),
+      temFidelidade: checked("f_temFidelidade"),
+      multaPercent: get("f_multaPercent"),
     },
     foro: {
-      foro: get("f_foro"),
-      local: get("f_local"),
-      data: get("f_data"),
-      test1Nome: get("f_test1Nome"),
-      test1Cpf: get("f_test1Cpf"),
-      test2Nome: get("f_test2Nome"),
-      test2Cpf: get("f_test2Cpf"),
+      foro: get("foro_cidade"),
+      local: get("a_local"),
+      data: get("a_data"),
+      test1Nome: get("a_test1Nome"),
+      test1Cpf: get("a_test1Cpf"),
+      test2Nome: get("a_test2Nome"),
+      test2Cpf: get("a_test2Cpf"),
     },
   };
 }
@@ -87,14 +100,30 @@ function setupPanelToggles() {
   });
 }
 
-function setupPrazoToggle() {
-  const prazoSelect = document.getElementById("v_prazo");
-  const mesesWrap = document.getElementById("v_mesesWrap");
-  const sync = () => {
-    mesesWrap.classList.toggle("hidden", prazoSelect.value !== "determinado");
-  };
-  prazoSelect.addEventListener("change", sync);
-  sync();
+function setupConditionalFields() {
+  const descontoCheckbox = document.getElementById("h_temDesconto");
+  const descontoWrap = document.getElementById("h_descontoWrap");
+  const syncDesconto = () => descontoWrap.classList.toggle("hidden", !descontoCheckbox.checked);
+  descontoCheckbox.addEventListener("change", () => { syncDesconto(); updatePreview(); });
+  syncDesconto();
+
+  const fidelidadeCheckbox = document.getElementById("f_temFidelidade");
+  const multaWrap = document.getElementById("f_multaWrap");
+  const syncFidelidade = () => multaWrap.classList.toggle("hidden", !fidelidadeCheckbox.checked);
+  fidelidadeCheckbox.addEventListener("change", () => { syncFidelidade(); updatePreview(); });
+  syncFidelidade();
+}
+
+function setupEscopoDefaults() {
+  const saved = localStorage.getItem(ESCOPO_STORAGE_KEY);
+  let defaults = ESCOPO_DEFAULTS;
+  if (saved) {
+    try { defaults = JSON.parse(saved); } catch (e) { /* ignora dados corrompidos */ }
+  }
+  Object.keys(defaults).forEach((id) => {
+    const el = document.getElementById(id);
+    if (el && !el.value) el.value = defaults[id];
+  });
 }
 
 function setupContratadaPersistence() {
@@ -105,6 +134,7 @@ function setupContratadaPersistence() {
       document.getElementById("e_razaoSocial").value = data.razaoSocial || "";
       document.getElementById("e_cnpj").value = data.cnpj || "";
       document.getElementById("e_endereco").value = data.endereco || "";
+      document.getElementById("e_contato").value = data.contato || "";
       document.getElementById("e_responsavel").value = data.responsavel || "";
       document.getElementById("e_crc").value = data.crc || "";
     } catch (e) {
@@ -117,12 +147,18 @@ function setupContratadaPersistence() {
       razaoSocial: document.getElementById("e_razaoSocial").value,
       cnpj: document.getElementById("e_cnpj").value,
       endereco: document.getElementById("e_endereco").value,
+      contato: document.getElementById("e_contato").value,
       responsavel: document.getElementById("e_responsavel").value,
       crc: document.getElementById("e_crc").value,
     };
     localStorage.setItem(CONTRATADA_STORAGE_KEY, JSON.stringify(data));
+
+    const escopo = {};
+    Object.keys(ESCOPO_DEFAULTS).forEach((id) => { escopo[id] = document.getElementById(id).value; });
+    localStorage.setItem(ESCOPO_STORAGE_KEY, JSON.stringify(escopo));
+
     const status = document.getElementById("pdf-status");
-    status.textContent = "Dados da contratada salvos neste navegador.";
+    status.textContent = "Dados da contratada e escopo padrão salvos neste navegador.";
     status.className = "pdf-status ok";
   });
 }
@@ -152,11 +188,14 @@ function setupPdfImport() {
 
       setIfFound("c_razaoSocial", parsed.razaoSocial);
       setIfFound("c_cnpj", parsed.cnpj);
-      setIfFound("c_endereco", parsed.endereco);
-      setIfFound("c_bairro", parsed.bairro);
-      setIfFound("c_cidade", parsed.cidade);
-      setIfFound("c_estado", parsed.estado);
-      setIfFound("c_cep", parsed.cep);
+
+      const enderecoPartes = [parsed.endereco, parsed.bairro, [parsed.cidade, parsed.estado].filter(Boolean).join("/"), parsed.cep ? "CEP " + parsed.cep : ""]
+        .filter(Boolean)
+        .join(", ");
+      if (enderecoPartes) {
+        document.getElementById("c_endereco").value = enderecoPartes;
+        foundCount++;
+      }
 
       if (foundCount > 0) {
         status.textContent = `${foundCount} campo(s) preenchido(s) automaticamente. Confira os dados.`;
@@ -181,31 +220,33 @@ function setupActions() {
   });
 
   document.getElementById("btn-clear").addEventListener("click", () => {
-    if (!confirm("Limpar todos os campos do formulário?")) return;
+    if (!confirm("Limpar todos os campos do contratante e das condições do contrato? Os dados da contratada salvos serão mantidos.")) return;
+    const keepContratada = new Set(["e_razaoSocial", "e_cnpj", "e_endereco", "e_contato", "e_responsavel", "e_crc"]);
     FIELD_IDS.forEach((id) => {
+      if (keepContratada.has(id)) return;
       const el = document.getElementById(id);
       if (el.type === "checkbox") return;
       el.value = "";
     });
-    document.getElementById("s_contabil").checked = true;
-    document.getElementById("s_fiscal").checked = true;
-    document.getElementById("s_dp").checked = true;
-    document.getElementById("s_obrigacoes").checked = true;
-    document.getElementById("s_consultoria").checked = false;
-    document.getElementById("v_prazo").value = "indeterminado";
+    document.getElementById("h_temDesconto").checked = false;
+    document.getElementById("f_temFidelidade").checked = true;
+    document.getElementById("f_multaPercent").value = "30";
+    document.getElementById("v_avisoPrevio").value = "30";
     document.getElementById("pdf-input").value = "";
     document.getElementById("pdf-status").textContent = "";
-    setupPrazoToggle();
+    setupEscopoDefaults();
+    setupConditionalFields();
     updatePreview();
   });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   setupPanelToggles();
-  setupPrazoToggle();
+  setupConditionalFields();
+  setupContratadaPersistence();
+  setupEscopoDefaults();
   setupLiveUpdate();
   setupPdfImport();
-  setupContratadaPersistence();
   setupActions();
   updatePreview();
 });

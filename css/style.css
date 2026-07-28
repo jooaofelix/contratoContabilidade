@@ -113,7 +113,9 @@ label.checkbox input { width: auto; }
 input[type="text"],
 input[type="number"],
 input[type="date"],
+input[type="month"],
 input[type="file"],
+textarea,
 select {
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -122,6 +124,11 @@ select {
   font-weight: 400;
   color: #111827;
   width: 100%;
+}
+
+textarea {
+  resize: vertical;
+  font-family: inherit;
 }
 
 .row {
@@ -168,47 +175,129 @@ button {
   min-width: 0;
 }
 
+:root {
+  --navy: #1b3a5c;
+  --navy-dark: #16304c;
+  --navy-tint: #eef3f8;
+}
+
 .contract-doc {
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 32px 40px 48px;
+  padding: 24px 40px 48px;
   max-width: 900px;
   margin: 0 auto;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   line-height: 1.55;
-  color: #111827;
+  color: #1f2937;
 }
 
-.doc-title-box {
-  border: 1px solid #111827;
-  border-radius: 4px;
+.doc-topline,
+.doc-footline {
   text-align: center;
+  font-size: 0.68rem;
   font-weight: 700;
-  font-size: 1.05rem;
-  letter-spacing: 0.03em;
-  padding: 14px 12px;
-  margin-bottom: 18px;
+  color: var(--navy);
+  padding-bottom: 6px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--navy);
 }
 
-.doc-table {
-  border: 1px solid #111827;
-  border-radius: 4px;
-  overflow: hidden;
+.doc-footline {
+  border-bottom: none;
+  border-top: 1px solid var(--border);
+  margin-top: 30px;
+  padding-top: 10px;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+.doc-banner {
+  background: var(--navy);
+  color: #fff;
+  border-radius: 6px;
+  padding: 20px 24px;
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+.doc-banner-name {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.doc-banner-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+.doc-banner-subtitle {
+  font-size: 0.78rem;
+  font-style: italic;
+  opacity: 0.85;
+  margin-top: 6px;
+}
+
+.doc-banner-honorarios {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .doc-section-bar {
-  background: var(--darker);
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.8rem;
-  letter-spacing: 0.04em;
-  padding: 8px 14px;
+  color: var(--navy);
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
+  margin: 26px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 2px solid var(--navy);
 }
 
-.doc-section-bar:not(:first-child) {
-  border-top: 1px solid #111827;
+.doc-h3 {
+  color: var(--navy);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin: 30px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--navy);
+}
+
+.doc-h3-anexo {
+  margin-top: 40px;
+}
+
+.doc-h4-sub {
+  color: var(--navy);
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin: 0 0 10px;
+}
+
+.clause-title {
+  color: var(--navy);
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin: 18px 0 6px;
+}
+
+.doc-p {
+  text-align: justify;
+  margin: 0 0 10px;
+}
+
+.doc-table {
+  border: 1px solid var(--navy);
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .doc-row {
@@ -216,57 +305,49 @@ button {
   border-top: 1px solid var(--border);
 }
 
-.doc-row-name .doc-cell-name {
-  flex: 1;
-  background: #374151;
+.doc-row:nth-of-type(odd) {
+  background: var(--navy-tint);
+}
+
+.doc-row-head {
+  background: var(--navy) !important;
   color: #fff;
-  font-weight: 700;
-  text-align: center;
-  padding: 10px 12px;
+  border-top: none;
 }
 
 .doc-cell {
   padding: 8px 14px;
 }
 
-.doc-cell-label {
-  flex: 0 0 200px;
-  background: #e5e7eb;
+.doc-cell-head {
+  flex: 1;
   font-weight: 700;
-  font-size: 0.82rem;
-  border-right: 1px solid var(--border);
-  display: flex;
-  align-items: center;
+  font-size: 0.8rem;
 }
 
-.doc-cell-label-top {
+.doc-cell-head:first-child {
+  flex: 0 0 220px;
+}
+
+.doc-cell-label {
+  flex: 0 0 220px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  display: flex;
   align-items: flex-start;
+  border-right: 1px solid var(--border);
 }
 
 .doc-cell-value {
   flex: 1;
   display: flex;
   align-items: center;
-}
-
-.doc-cell-long {
-  display: block;
   text-align: justify;
-  line-height: 1.6;
-}
-
-.doc-row-split .doc-cell-label:last-of-type {
-  border-left: 1px solid var(--border);
 }
 
 .contract-doc .placeholder {
   color: #9ca3af;
   font-weight: 400;
-}
-
-.doc-closing {
-  text-align: justify;
-  margin: 18px 0 0;
 }
 
 .signatures {
