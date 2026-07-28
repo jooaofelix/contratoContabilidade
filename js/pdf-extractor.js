@@ -4,8 +4,7 @@
 // não extrair nada.
 
 if (window.pdfjsLib) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "js/vendor/pdf.worker.min.js";
 }
 
 async function extractTextFromPdf(file) {
@@ -47,32 +46,53 @@ function parseCnpjCardText(text) {
     ["TÍTULO DO ESTABELECIMENTO", "CÓDIGO E DESCRIÇÃO DA ATIVIDADE"]
   );
 
+  // Restringe a busca de NÚMERO/COMPLEMENTO ao bloco de endereço,
+  // pois "NÚMERO" também aparece em "NÚMERO DE INSCRIÇÃO" no topo do documento.
+  const logradouroIdx = clean.indexOf("LOGRADOURO");
+  const enderecoBlock = logradouroIdx !== -1 ? clean.slice(logradouroIdx, logradouroIdx + 500) : "";
+
   const logradouro = matchAfterLabel(
-    clean,
+    enderecoBlock,
     ["LOGRADOURO"],
     ["NÚMERO", "COMPLEMENTO"]
   );
 
+  const numero = matchAfterLabel(
+    enderecoBlock,
+    ["NÚMERO"],
+    ["COMPLEMENTO", "CEP"]
+  );
+
+  const complemento = matchAfterLabel(
+    enderecoBlock,
+    ["COMPLEMENTO"],
+    ["CEP"]
+  );
+
   const bairro = matchAfterLabel(
-    clean,
+    enderecoBlock,
     ["BAIRRO/DISTRITO"],
     ["MUNICÍPIO", "CEP"]
   );
 
   const municipio = matchAfterLabel(
-    clean,
+    enderecoBlock,
     ["MUNICÍPIO"],
     ["UF", "CEP"]
   );
 
-  const ufMatch = clean.match(/\bUF\b\s*([A-Z]{2})\b/);
+  const ufMatch = enderecoBlock.match(/\bUF\b\s*([A-Z]{2})\b/);
 
-  const cepMatch = clean.match(/\bCEP\b\s*([\d.\-]{8,10})/);
+  const cepMatch = enderecoBlock.match(/\bCEP\b\s*([\d.\-]{8,10})/);
+
+  const logradouroCompleto = [logradouro, numero ? `nº ${numero}` : "", complemento]
+    .filter(Boolean)
+    .join(", ");
 
   return {
     razaoSocial,
     cnpj: cnpjMatch ? cnpjMatch[0] : "",
-    endereco: logradouro,
+    endereco: logradouroCompleto,
     bairro,
     cidade: municipio,
     estado: ufMatch ? ufMatch[1] : "",

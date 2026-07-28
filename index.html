@@ -50,29 +50,16 @@
     </section>
 
     <section class="panel">
-      <h2 class="panel-toggle" data-target="panel-contratada">🏢 Contratada (Escritório) ▾</h2>
-      <div id="panel-contratada" class="panel-body">
-        <label>Razão Social
-          <input type="text" id="e_razaoSocial" placeholder="Nome do escritório contábil">
-        </label>
-        <label>CNPJ
-          <input type="text" id="e_cnpj">
-        </label>
-        <label>Endereço completo
-          <input type="text" id="e_endereco">
-        </label>
-        <label>E-mail / Telefone
-          <input type="text" id="e_contato" placeholder="email@escritorio.com.br | (00) 0000-0000">
-        </label>
-        <div class="row">
-          <label>Responsável Técnico
-            <input type="text" id="e_responsavel" placeholder="Nome do contador">
-          </label>
-          <label class="small">CRC
-            <input type="text" id="e_crc" placeholder="CRC-SP 000000">
-          </label>
+      <h2>🏢 Contratada (fixa)</h2>
+      <div class="panel-body">
+        <div class="fixed-info">
+          <strong id="fixed-razaoSocial"></strong>
+          <span id="fixed-cnpj"></span>
+          <span id="fixed-endereco"></span>
+          <span id="fixed-contato"></span>
+          <span id="fixed-responsavel"></span>
         </div>
-        <button id="save-contratada" class="btn-secondary">Salvar dados da contratada</button>
+        <p class="fixed-note">A contratada é sempre a AEA Contabilidade Consultiva — não editável.</p>
       </div>
     </section>
 
@@ -103,6 +90,7 @@
         <label>Não incluídos
           <textarea id="o_naoIncluidos" rows="2"></textarea>
         </label>
+        <button id="save-escopo" class="btn-secondary">Salvar como escopo padrão</button>
       </div>
     </section>
 
@@ -201,7 +189,7 @@
 
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="js/vendor/pdf.min.js"></script>
 <script src="js/pdf-extractor.js"></script>
 <script src="js/contract-template.js"></script>
 <script src="js/app.js"></script>

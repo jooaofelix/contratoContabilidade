@@ -149,6 +149,21 @@ textarea {
 }
 
 .pdf-status.ok { color: #15803d; }
+
+.fixed-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.82rem;
+  color: #374151;
+}
+
+.fixed-note {
+  margin: 8px 0 0;
+  font-size: 0.72rem;
+  color: #9ca3af;
+  font-weight: 400;
+}
 .pdf-status.error { color: var(--danger); }
 
 button {

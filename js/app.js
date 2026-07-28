@@ -1,13 +1,21 @@
 const FIELD_IDS = [
   "c_razaoSocial", "c_cnpj", "c_endereco", "c_repNome", "c_repCpf",
-  "e_razaoSocial", "e_cnpj", "e_endereco", "e_contato", "e_responsavel", "e_crc",
   "o_objeto", "o_fiscal", "o_contabil", "o_rh", "o_consultiva", "o_obrigacoes", "o_atendimento", "o_naoIncluidos",
   "h_valorCheio", "h_temDesconto", "h_valorDesconto", "h_descontoInicio", "h_descontoFim", "h_vencimentoDia", "h_sistemasTerceiros",
   "v_inicio", "v_fim", "v_avisoPrevio", "f_temFidelidade", "f_multaPercent",
   "foro_cidade", "a_local", "a_data", "a_test1Nome", "a_test1Cpf", "a_test2Nome", "a_test2Cpf",
 ];
 
-const CONTRATADA_STORAGE_KEY = "contratoContabilidade.contratada";
+// A CONTRATADA é sempre a AEA Contabilidade Consultiva — fixo, não editável.
+const CONTRATADA_FIXA = {
+  razaoSocial: "AEA CONTABILIDADE CONSULTIVA LTDA",
+  cnpj: "65.132.309/0001-80",
+  endereco: "Rua Jurema Vieira Medrado, nº 88, Sala 305, Parque Residencial Aquarius, São José dos Campos/SP, CEP 12.246-180",
+  contato: "andreandrade@aeacontabil.com.br | (12) 3921-9902",
+  responsavel: "ANDRÉ ANDRADE",
+  crc: "1SP223916",
+};
+
 const ESCOPO_STORAGE_KEY = "contratoContabilidade.escopoPadrao";
 
 const ESCOPO_DEFAULTS = {
@@ -32,14 +40,7 @@ function collectFormData() {
       repNome: get("c_repNome"),
       repCpf: get("c_repCpf"),
     },
-    contratada: {
-      razaoSocial: get("e_razaoSocial"),
-      cnpj: get("e_cnpj"),
-      endereco: get("e_endereco"),
-      contato: get("e_contato"),
-      responsavel: get("e_responsavel"),
-      crc: get("e_crc"),
-    },
+    contratada: CONTRATADA_FIXA,
     objeto: {
       objeto: get("o_objeto"),
       fiscal: get("o_fiscal"),
@@ -126,39 +127,22 @@ function setupEscopoDefaults() {
   });
 }
 
-function setupContratadaPersistence() {
-  const saved = localStorage.getItem(CONTRATADA_STORAGE_KEY);
-  if (saved) {
-    try {
-      const data = JSON.parse(saved);
-      document.getElementById("e_razaoSocial").value = data.razaoSocial || "";
-      document.getElementById("e_cnpj").value = data.cnpj || "";
-      document.getElementById("e_endereco").value = data.endereco || "";
-      document.getElementById("e_contato").value = data.contato || "";
-      document.getElementById("e_responsavel").value = data.responsavel || "";
-      document.getElementById("e_crc").value = data.crc || "";
-    } catch (e) {
-      // ignora dados salvos corrompidos
-    }
-  }
+function renderContratadaFixa() {
+  document.getElementById("fixed-razaoSocial").textContent = CONTRATADA_FIXA.razaoSocial;
+  document.getElementById("fixed-cnpj").textContent = "CNPJ: " + CONTRATADA_FIXA.cnpj;
+  document.getElementById("fixed-endereco").textContent = CONTRATADA_FIXA.endereco;
+  document.getElementById("fixed-contato").textContent = CONTRATADA_FIXA.contato;
+  document.getElementById("fixed-responsavel").textContent = `${CONTRATADA_FIXA.responsavel} — CRC ${CONTRATADA_FIXA.crc}`;
+}
 
-  document.getElementById("save-contratada").addEventListener("click", () => {
-    const data = {
-      razaoSocial: document.getElementById("e_razaoSocial").value,
-      cnpj: document.getElementById("e_cnpj").value,
-      endereco: document.getElementById("e_endereco").value,
-      contato: document.getElementById("e_contato").value,
-      responsavel: document.getElementById("e_responsavel").value,
-      crc: document.getElementById("e_crc").value,
-    };
-    localStorage.setItem(CONTRATADA_STORAGE_KEY, JSON.stringify(data));
-
+function setupEscopoPersistence() {
+  document.getElementById("save-escopo").addEventListener("click", () => {
     const escopo = {};
     Object.keys(ESCOPO_DEFAULTS).forEach((id) => { escopo[id] = document.getElementById(id).value; });
     localStorage.setItem(ESCOPO_STORAGE_KEY, JSON.stringify(escopo));
 
     const status = document.getElementById("pdf-status");
-    status.textContent = "Dados da contratada e escopo padrão salvos neste navegador.";
+    status.textContent = "Escopo padrão salvo neste navegador.";
     status.className = "pdf-status ok";
   });
 }
@@ -220,10 +204,8 @@ function setupActions() {
   });
 
   document.getElementById("btn-clear").addEventListener("click", () => {
-    if (!confirm("Limpar todos os campos do contratante e das condições do contrato? Os dados da contratada salvos serão mantidos.")) return;
-    const keepContratada = new Set(["e_razaoSocial", "e_cnpj", "e_endereco", "e_contato", "e_responsavel", "e_crc"]);
+    if (!confirm("Limpar todos os campos do contratante e das condições do contrato?")) return;
     FIELD_IDS.forEach((id) => {
-      if (keepContratada.has(id)) return;
       const el = document.getElementById(id);
       if (el.type === "checkbox") return;
       el.value = "";
@@ -241,9 +223,10 @@ function setupActions() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  renderContratadaFixa();
   setupPanelToggles();
   setupConditionalFields();
-  setupContratadaPersistence();
+  setupEscopoPersistence();
   setupEscopoDefaults();
   setupLiveUpdate();
   setupPdfImport();
