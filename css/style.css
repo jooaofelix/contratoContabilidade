@@ -1,0 +1,307 @@
+:root {
+  --dark: #1f2937;
+  --darker: #111827;
+  --border: #d1d5db;
+  --bg: #f3f4f6;
+  --accent: #2563eb;
+  --danger: #dc2626;
+  --warn-bg: #fef3c7;
+  --warn-border: #f59e0b;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: #111827;
+}
+
+.app-header {
+  background: var(--darker);
+  color: #fff;
+  padding: 16px 24px;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.app-layout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  padding: 20px;
+}
+
+.sidebar {
+  width: 380px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.warning-banner {
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.8rem;
+  color: #92400e;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.panel h2 {
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  background: #e5e7eb;
+  cursor: default;
+}
+
+.panel-toggle {
+  cursor: pointer;
+  user-select: none;
+}
+
+.panel-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.panel-body.collapsed {
+  display: none;
+}
+
+.panel-body h3 {
+  margin: 6px 0 -2px;
+  font-size: 0.82rem;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.82rem;
+  color: #374151;
+  font-weight: 600;
+}
+
+label.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+label.checkbox input { width: auto; }
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="file"],
+select {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #111827;
+  width: 100%;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+}
+
+.row label, .row input { flex: 1; }
+
+.row .small { flex: 0 0 90px; }
+
+.hidden { display: none !important; }
+
+.pdf-status {
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: #4b5563;
+}
+
+.pdf-status.ok { color: #15803d; }
+.pdf-status.error { color: var(--danger); }
+
+button {
+  border: none;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-secondary { background: #e5e7eb; color: #111827; }
+.btn-danger { background: #fee2e2; color: var(--danger); }
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.preview-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.contract-doc {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 32px 40px 48px;
+  max-width: 900px;
+  margin: 0 auto;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #111827;
+}
+
+.doc-title-box {
+  border: 1px solid #111827;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.03em;
+  padding: 14px 12px;
+  margin-bottom: 18px;
+}
+
+.doc-table {
+  border: 1px solid #111827;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.doc-section-bar {
+  background: var(--darker);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  padding: 8px 14px;
+  text-transform: uppercase;
+}
+
+.doc-section-bar:not(:first-child) {
+  border-top: 1px solid #111827;
+}
+
+.doc-row {
+  display: flex;
+  border-top: 1px solid var(--border);
+}
+
+.doc-row-name .doc-cell-name {
+  flex: 1;
+  background: #374151;
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+  padding: 10px 12px;
+}
+
+.doc-cell {
+  padding: 8px 14px;
+}
+
+.doc-cell-label {
+  flex: 0 0 200px;
+  background: #e5e7eb;
+  font-weight: 700;
+  font-size: 0.82rem;
+  border-right: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+}
+
+.doc-cell-label-top {
+  align-items: flex-start;
+}
+
+.doc-cell-value {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.doc-cell-long {
+  display: block;
+  text-align: justify;
+  line-height: 1.6;
+}
+
+.doc-row-split .doc-cell-label:last-of-type {
+  border-left: 1px solid var(--border);
+}
+
+.contract-doc .placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.doc-closing {
+  text-align: justify;
+  margin: 18px 0 0;
+}
+
+.signatures {
+  margin-top: 50px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.sig-line {
+  text-align: center;
+}
+
+.sig-line .line {
+  border-top: 1px solid #111827;
+  width: 320px;
+  margin: 0 auto 4px;
+}
+
+.witnesses {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+}
+
+.witnesses .sig-line .line { width: 260px; }
+
+@media print {
+  .sidebar, .app-header { display: none; }
+  .app-layout { padding: 0; }
+  .preview-wrap { width: 100%; }
+  .contract-doc { border: none; box-shadow: none; max-width: 100%; padding: 0 24px; }
+}
+
+@media (max-width: 900px) {
+  .app-layout { flex-direction: column; }
+  .sidebar { width: 100%; }
+}
