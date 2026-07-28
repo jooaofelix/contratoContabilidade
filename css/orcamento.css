@@ -1,0 +1,439 @@
+:root {
+  --p-navy: #101a35;
+  --p-navy-2: #16294f;
+  --p-blue: #1673c7;
+  --p-blue-light: #57b8ff;
+  --p-bg: #eef2f7;
+}
+
+.app-nav {
+  display: flex;
+  gap: 16px;
+}
+
+.app-nav a {
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 4px 2px;
+  border-bottom: 2px solid transparent;
+}
+
+.app-nav a.active,
+.app-nav a:hover {
+  color: #fff;
+  border-bottom-color: var(--p-blue-light);
+}
+
+.proposal-doc {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.proposal-page {
+  position: relative;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  padding: 32px 44px 56px;
+  min-height: 560px;
+  overflow: hidden;
+}
+
+.proposal-page-dark {
+  background: linear-gradient(135deg, var(--p-navy) 0%, var(--p-navy-2) 100%);
+  color: #fff;
+}
+
+.proposal-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.logo-mark {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.proposal-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.proposal-brand-text strong {
+  font-size: 1.05rem;
+}
+
+.proposal-brand-text span {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--p-blue-light);
+}
+
+.proposal-page:not(.proposal-page-dark) .proposal-brand-text span {
+  color: var(--p-blue);
+}
+
+.proposal-brand-tag {
+  margin-left: 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--p-blue-light);
+}
+
+.proposal-page:not(.proposal-page-dark) .proposal-brand-tag {
+  color: var(--p-blue);
+}
+
+.proposal-capa {
+  display: flex;
+  gap: 50px;
+  margin-top: 30px;
+}
+
+.proposal-capa-left {
+  flex: 1;
+}
+
+.proposal-hello {
+  font-size: 1.3rem;
+  opacity: 0.9;
+  margin-bottom: 6px;
+}
+
+.proposal-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--p-blue-light);
+  margin-bottom: 16px;
+}
+
+.proposal-lead {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  max-width: 380px;
+  opacity: 0.92;
+}
+
+.proposal-capa-right {
+  flex: 1;
+}
+
+.proposal-capa-right h3 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+}
+
+.proposal-capa-right p {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  opacity: 0.9;
+  margin: 0 0 20px;
+}
+
+.proposal-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.proposal-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.proposal-card-n {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--p-blue-light);
+}
+
+.proposal-card-t {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.proposal-h2 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--p-navy);
+  margin: 0 0 4px;
+}
+
+.proposal-sub {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0 0 24px;
+}
+
+.proposal-columns {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.proposal-box {
+  flex: 1;
+  background: var(--p-bg);
+  border-radius: 10px;
+  padding: 22px 24px;
+}
+
+.proposal-box h4 {
+  margin: 0 0 16px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--p-navy);
+  letter-spacing: 0.02em;
+}
+
+.proposal-fieldgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 18px;
+}
+
+.fl {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 3px;
+}
+
+.fv {
+  display: block;
+  font-size: 0.85rem;
+  color: #111827;
+}
+
+.fv-lg {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.proposal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.proposal-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.li-n {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--p-blue);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.li-l {
+  flex: 1;
+  font-size: 0.78rem;
+  color: #4b5563;
+}
+
+.li-v {
+  font-size: 0.85rem;
+  color: #111827;
+  text-align: right;
+}
+
+.li-strong {
+  font-weight: 700;
+}
+
+.proposal-columns-services {
+  align-items: stretch;
+}
+
+.proposal-services {
+  flex: 1.3;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.proposal-service-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.service-n {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  background: var(--p-navy);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.service-code {
+  width: 30px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  background: #dbeafe;
+  color: var(--p-blue);
+  font-size: 0.68rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.service-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.service-text strong {
+  font-size: 0.85rem;
+  color: var(--p-navy);
+}
+
+.service-text span {
+  font-size: 0.76rem;
+  color: #6b7280;
+}
+
+.proposal-price-box {
+  flex: 1;
+  background: var(--p-navy);
+  color: #fff;
+  border-radius: 10px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.proposal-price-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  opacity: 0.8;
+}
+
+.proposal-discount-badge {
+  align-self: flex-start;
+  background: var(--p-blue-light);
+  color: var(--p-navy);
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.proposal-price-old {
+  font-size: 0.9rem;
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.proposal-price {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--p-blue-light);
+}
+
+.proposal-price-note {
+  font-size: 0.75rem;
+  opacity: 0.85;
+  margin: 0;
+}
+
+.proposal-price-divider {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  margin: 8px 0;
+}
+
+.proposal-price-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.proposal-price-meta .fl,
+.proposal-price-box > div > .fl {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.proposal-price-meta .fv,
+.proposal-price-box > div > .fv {
+  color: #fff;
+  font-weight: 700;
+}
+
+.proposal-price-fine {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  margin-top: 10px;
+}
+
+.proposal-footer {
+  position: absolute;
+  bottom: 20px;
+  left: 44px;
+  font-size: 0.68rem;
+  opacity: 0.55;
+}
+
+.proposal-doc .placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+@media print {
+  .proposal-page {
+    page-break-after: always;
+    box-shadow: none;
+    border-radius: 0;
+  }
+  .proposal-doc { max-width: 100%; }
+}
+
+@media (max-width: 900px) {
+  .proposal-capa,
+  .proposal-columns {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Proposta Comercial - AEA Contabilidade</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/orcamento.css">
+</head>
+<body>
+<header class="app-header">
+  <h1>Gerador de Proposta Comercial</h1>
+  <nav class="app-nav">
+    <a href="index.html">Contrato</a>
+    <a href="orcamento.html" class="active">Orçamento</a>
+  </nav>
+</header>
+
+<div class="app-layout">
+
+  <aside class="sidebar">
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-cliente">📋 Dados do Cliente ▾</h2>
+      <div id="panel-cliente" class="panel-body">
+        <label>Nome do responsável (saudação)
+          <input type="text" id="q_nomeResponsavel" placeholder="ex: Nicoli">
+        </label>
+        <label>Empresa / Cliente
+          <input type="text" id="q_empresa" placeholder="Razão social">
+        </label>
+        <label>CPF/CNPJ
+          <input type="text" id="q_cnpj">
+        </label>
+        <label>Responsável (nome completo)
+          <input type="text" id="q_responsavel">
+        </label>
+        <div class="row">
+          <label>Telefone
+            <input type="text" id="q_telefone">
+          </label>
+          <label>E-mail
+            <input type="text" id="q_email">
+          </label>
+        </div>
+        <div class="row">
+          <label>Data da proposta
+            <input type="date" id="q_dataProposta">
+          </label>
+          <label>Validade da proposta
+            <input type="text" id="q_validade" placeholder="ex: 10 dias">
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-diagnostico">🔍 Diagnóstico (O que foi enviado) ▾</h2>
+      <div id="panel-diagnostico" class="panel-body">
+        <div class="row">
+          <label>Notas por mês
+            <input type="number" id="d_notasMes" min="0">
+          </label>
+          <label>Funcionários
+            <input type="number" id="d_funcionarios" min="0">
+          </label>
+        </div>
+        <label>Faturamento mensal (R$)
+          <input type="text" id="d_faturamento" placeholder="ex: 10.000,00">
+        </label>
+        <label>Regime tributário
+          <select id="d_regime">
+            <option value="Simples Nacional">Simples Nacional</option>
+            <option value="Lucro Presumido">Lucro Presumido</option>
+            <option value="Lucro Real">Lucro Real</option>
+            <option value="MEI">MEI</option>
+          </select>
+        </label>
+        <label>Segmento da empresa
+          <input type="text" id="d_segmento" placeholder="ex: Serviços">
+        </label>
+        <label>Observações adicionais
+          <input type="text" id="d_observacoes" placeholder="ex: Cargo: Diretora">
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-investimento">💰 Investimento ▾</h2>
+      <div id="panel-investimento" class="panel-body">
+        <label>Valor cheio (R$)
+          <input type="text" id="i_valorCheio" placeholder="ex: 700,00">
+        </label>
+        <label class="checkbox"><input type="checkbox" id="i_temDesconto"> Aplicar desconto comercial</label>
+        <label id="i_valorFinalWrap" class="hidden">Valor final com desconto (R$)
+          <input type="text" id="i_valorFinal" placeholder="ex: 500,00">
+        </label>
+        <label>Forma de pagamento
+          <input type="text" id="i_formaPagamento" value="A combinar">
+        </label>
+        <label>Prazo para início
+          <input type="text" id="i_prazoInicio" value="Após aceite">
+        </label>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button id="btn-print" class="btn-primary">Imprimir / Exportar PDF</button>
+      <button id="btn-clear" class="btn-danger">Limpar formulário</button>
+    </div>
+
+  </aside>
+
+  <main class="preview-wrap">
+    <div id="proposal-preview" class="proposal-doc"></div>
+  </main>
+
+</div>
+
+<script src="js/proposal-template.js"></script>
+<script src="js/app-orcamento.js"></script>
+</body>
+</html>
