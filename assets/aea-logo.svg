@@ -1,16 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3508 1841">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="1002 209 1734 1630">
 <defs>
-<linearGradient id="ring" x1="10%" y1="0%" x2="85%" y2="95%">
-<stop offset="0%" stop-color="#8ecdf0"/>
-<stop offset="45%" stop-color="#3f86c9"/>
-<stop offset="100%" stop-color="#0a3064"/>
+<linearGradient id="ring" x1="8%" y1="0%" x2="88%" y2="98%">
+<stop offset="0%" stop-color="#a4dcfb"/>
+<stop offset="22%" stop-color="#78c6f7"/>
+<stop offset="48%" stop-color="#5da0d6"/>
+<stop offset="72%" stop-color="#2b639a"/>
+<stop offset="100%" stop-color="#0a2f5c"/>
 </linearGradient>
-<linearGradient id="twist" x1="10%" y1="0%" x2="90%" y2="100%">
-<stop offset="0%" stop-color="#071f42"/>
-<stop offset="100%" stop-color="#123a68"/>
+<linearGradient id="twist" x1="5%" y1="0%" x2="95%" y2="100%">
+<stop offset="0%" stop-color="#020f2c"/>
+<stop offset="55%" stop-color="#0a2f5c"/>
+<stop offset="100%" stop-color="#164a80"/>
 </linearGradient>
 </defs>
-<rect width="3508" height="1841" fill="#ffffff"/>
 <g transform="translate(0.000000,1841.000000) scale(0.100000,-0.100000)">
 <path d="M14055 15994 c-33 -7 -127 -18 -210 -24 -91 -6 -189 -20 -250 -34
 -96 -23 -246 -53 -385 -76 -167 -29 -454 -114 -633 -189 -51 -21 -139 -58

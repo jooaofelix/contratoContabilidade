@@ -35,11 +35,7 @@ const SERVICOS_PADRAO = [
 ];
 
 function logoMark() {
-  return `
-    <svg class="logo-mark" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <circle cx="20" cy="20" r="19" fill="#1673c7"/>
-      <path d="M20 3a17 17 0 1 0 12 5" fill="none" stroke="#7fd0ff" stroke-width="6" stroke-linecap="round"/>
-    </svg>`;
+  return `<img src="assets/aea-logo.svg" alt="" class="logo-mark">`;
 }
 
 function brandBar() {

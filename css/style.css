@@ -34,6 +34,18 @@ body {
   font-size: 1.25rem;
 }
 
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-logo {
+  height: 32px;
+  width: auto;
+  flex-shrink: 0;
+}
+
 .app-nav {
   display: flex;
   gap: 18px;
