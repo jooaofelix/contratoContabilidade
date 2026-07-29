@@ -34,6 +34,26 @@ body {
   font-size: 1.25rem;
 }
 
+.app-nav {
+  display: flex;
+  gap: 18px;
+}
+
+.app-nav a {
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 4px 2px;
+  border-bottom: 2px solid transparent;
+}
+
+.app-nav a.active,
+.app-nav a:hover {
+  color: #fff;
+  border-bottom-color: var(--accent);
+}
+
 .app-layout {
   display: flex;
   gap: 20px;

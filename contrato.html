@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Contrato de Prestação de Serviços Contábeis</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="app-header">
+  <h1>Gerador de Contrato de Prestação de Serviços Contábeis</h1>
+  <nav class="app-nav">
+    <a href="index.html">Início</a>
+    <a href="contrato.html" class="active">Contrato</a>
+    <a href="orcamento.html">Orçamento</a>
+    <a href="ficha.html">Ficha Cadastral</a>
+  </nav>
+</header>
+
+<div class="app-layout">
+
+  <aside class="sidebar">
+
+    <div class="warning-banner">
+      ⚠ A leitura é por busca de padrões no texto do PDF do cartão CNPJ da Receita Federal — layout diferente (digitalizado/escaneado, por exemplo) pode não extrair tudo. Confira sempre os campos preenchidos.
+    </div>
+
+    <section class="panel">
+      <h2>Importar cartão CNPJ (PDF)</h2>
+      <input type="file" id="pdf-input" accept="application/pdf">
+      <div id="pdf-status" class="pdf-status"></div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-contratante">📋 Contratante (Cliente) ▾</h2>
+      <div id="panel-contratante" class="panel-body">
+        <label>Razão Social
+          <input type="text" id="c_razaoSocial" placeholder="Nome da empresa cliente">
+        </label>
+        <label>CNPJ
+          <input type="text" id="c_cnpj" placeholder="00.000.000/0000-00">
+        </label>
+        <label>Endereço completo
+          <input type="text" id="c_endereco" placeholder="Rua, número, bairro, cidade/UF, CEP">
+        </label>
+        <h3>Representante Legal</h3>
+        <div class="row">
+          <label>Nome
+            <input type="text" id="c_repNome" placeholder="Nome do sócio/representante">
+          </label>
+          <label class="small">CPF
+            <input type="text" id="c_repCpf" placeholder="000.000.000-00">
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>🏢 Contratada (fixa)</h2>
+      <div class="panel-body">
+        <div class="fixed-info">
+          <strong id="fixed-razaoSocial"></strong>
+          <span id="fixed-cnpj"></span>
+          <span id="fixed-endereco"></span>
+          <span id="fixed-contato"></span>
+          <span id="fixed-responsavel"></span>
+        </div>
+        <p class="fixed-note">A contratada é sempre a AEA Contabilidade Consultiva — não editável.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-objeto">🧾 Objeto e Escopo (Anexo 1) ▾</h2>
+      <div id="panel-objeto" class="panel-body">
+        <label>Objeto (resumo)
+          <textarea id="o_objeto" rows="3"></textarea>
+        </label>
+        <label>Parte fiscal
+          <textarea id="o_fiscal" rows="3"></textarea>
+        </label>
+        <label>Parte contábil
+          <textarea id="o_contabil" rows="3"></textarea>
+        </label>
+        <label>Gestão de RH
+          <textarea id="o_rh" rows="2"></textarea>
+        </label>
+        <label>Consultiva
+          <textarea id="o_consultiva" rows="2"></textarea>
+        </label>
+        <label>Obrigações acessórias
+          <textarea id="o_obrigacoes" rows="2"></textarea>
+        </label>
+        <label>Atendimento
+          <textarea id="o_atendimento" rows="2"></textarea>
+        </label>
+        <label>Não incluídos
+          <textarea id="o_naoIncluidos" rows="2"></textarea>
+        </label>
+        <button id="save-escopo" class="btn-secondary">Salvar como escopo padrão</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-honorarios">💰 Honorários ▾</h2>
+      <div id="panel-honorarios" class="panel-body">
+        <label>Valor cheio mensal (R$)
+          <input type="text" id="h_valorCheio" placeholder="ex: 3.621,00">
+        </label>
+        <label class="checkbox"><input type="checkbox" id="h_temDesconto"> Aplicar desconto temporário</label>
+        <div id="h_descontoWrap" class="hidden">
+          <label>Valor com desconto (R$)
+            <input type="text" id="h_valorDesconto" placeholder="ex: 2.621,00">
+          </label>
+          <div class="row">
+            <label>Desconto de (mês/ano)
+              <input type="month" id="h_descontoInicio">
+            </label>
+            <label>até (mês/ano)
+              <input type="month" id="h_descontoFim">
+            </label>
+          </div>
+        </div>
+        <div class="row">
+          <label>Vencimento (dia)
+            <input type="number" id="h_vencimentoDia" min="1" max="31" placeholder="5">
+          </label>
+          <label>Sistemas de terceiros não inclusos
+            <input type="text" id="h_sistemasTerceiros" placeholder="ex: Bling e Nibo">
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-vigencia">📅 Vigência e Fidelidade ▾</h2>
+      <div id="panel-vigencia" class="panel-body">
+        <div class="row">
+          <label>Início
+            <input type="date" id="v_inicio">
+          </label>
+          <label>Término
+            <input type="date" id="v_fim">
+          </label>
+        </div>
+        <label>Aviso prévio para rescisão (dias)
+          <input type="number" id="v_avisoPrevio" min="0" value="30">
+        </label>
+        <label class="checkbox"><input type="checkbox" id="f_temFidelidade" checked> Incluir cláusula de fidelidade contratual</label>
+        <label id="f_multaWrap">Multa rescisória (%)
+          <input type="number" id="f_multaPercent" min="0" max="100" value="30">
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-foro">✍️ Foro e Assinaturas ▾</h2>
+      <div id="panel-foro" class="panel-body">
+        <label>Cidade/Comarca do foro
+          <input type="text" id="foro_cidade">
+        </label>
+        <div class="row">
+          <label>Local do contrato
+            <input type="text" id="a_local" placeholder="Cidade/UF">
+          </label>
+          <label>Data
+            <input type="date" id="a_data">
+          </label>
+        </div>
+        <h3>Testemunhas</h3>
+        <label>Testemunha 1 (nome / CPF)
+          <div class="row">
+            <input type="text" id="a_test1Nome" placeholder="Nome">
+            <input type="text" id="a_test1Cpf" placeholder="CPF">
+          </div>
+        </label>
+        <label>Testemunha 2 (nome / CPF)
+          <div class="row">
+            <input type="text" id="a_test2Nome" placeholder="Nome">
+            <input type="text" id="a_test2Cpf" placeholder="CPF">
+          </div>
+        </label>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button id="btn-print" class="btn-primary">Imprimir / Exportar PDF</button>
+      <button id="btn-clear" class="btn-danger">Limpar formulário</button>
+    </div>
+
+  </aside>
+
+  <main class="preview-wrap">
+    <div id="contract-preview" class="contract-doc"></div>
+  </main>
+
+</div>
+
+<script src="js/vendor/pdf.min.js"></script>
+<script src="js/pdf-extractor.js"></script>
+<script src="js/contract-template.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

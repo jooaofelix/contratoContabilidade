@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ficha de Cadastro de Empresa</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/ficha.css">
+</head>
+<body>
+<header class="app-header">
+  <h1>Ficha de Cadastro de Empresa</h1>
+  <nav class="app-nav">
+    <a href="index.html">Início</a>
+    <a href="contrato.html">Contrato</a>
+    <a href="orcamento.html">Orçamento</a>
+    <a href="ficha.html" class="active">Ficha Cadastral</a>
+  </nav>
+</header>
+
+<div class="app-layout">
+
+  <aside class="sidebar">
+
+    <div class="warning-banner">
+      ⚠ A leitura é por busca de padrões no texto do PDF oficial da Receita Federal — layout diferente (digitalizado/escaneado, por exemplo) pode não extrair tudo. Confira sempre os campos preenchidos.
+    </div>
+
+    <section class="panel">
+      <h2>Importar cartão CNPJ (PDF)</h2>
+      <input type="file" id="pdf-input" accept="application/pdf">
+      <div id="pdf-status" class="pdf-status"></div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-ficha">📋 Dados da Ficha ▾</h2>
+      <div id="panel-ficha" class="panel-body">
+        <div class="row">
+          <label>Contratante
+            <input type="text" id="f_contratante">
+          </label>
+          <label class="small">Nº
+            <input type="text" id="f_numero">
+          </label>
+        </div>
+        <label>CNPJ
+          <input type="text" id="f_cnpj">
+        </label>
+        <label>Endereço
+          <input type="text" id="f_endereco">
+        </label>
+        <label>Bairro
+          <input type="text" id="f_bairro">
+        </label>
+        <label>Cidade
+          <input type="text" id="f_cidade">
+        </label>
+        <div class="row">
+          <label>Estado
+            <input type="text" id="f_estado" maxlength="2">
+          </label>
+          <label>CEP
+            <input type="text" id="f_cep">
+          </label>
+        </div>
+        <label>E-mail (exibido na ficha)
+          <input type="text" id="f_email">
+        </label>
+        <label>Contato Principal
+          <input type="text" id="f_contatoPrincipal">
+        </label>
+        <label>Administração
+          <input type="text" id="f_administracao" placeholder="ex: Sócio 01">
+        </label>
+        <label>Sócio 01
+          <input type="text" id="f_socio1">
+        </label>
+        <label>Capital Sócio 01 (%)
+          <input type="text" id="f_capitalSocio1" placeholder="ex: 51">
+        </label>
+        <label>Sócio 02
+          <input type="text" id="f_socio2">
+        </label>
+        <label>Capital Sócio 02 (%)
+          <input type="text" id="f_capitalSocio2" placeholder="ex: 49">
+        </label>
+        <label>Vigência
+          <input type="text" id="f_vigencia" placeholder="ex: ago/25">
+        </label>
+        <label>Plano
+          <input type="text" id="f_plano">
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-cnae">🏭 CNAE e Tributação ▾</h2>
+      <div id="panel-cnae" class="panel-body">
+        <label>CNAE Principal
+          <input type="text" id="f_cnaePrincipal">
+        </label>
+        <label>CNAE Secundário
+          <textarea id="f_cnaeSecundario" rows="4"></textarea>
+        </label>
+        <label>Tributação
+          <input type="text" id="f_tributacao" placeholder="ex: Simples Nacional">
+        </label>
+        <label>Valor Capital
+          <input type="text" id="f_valorCapital" placeholder="R$">
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-dp">👥 Departamento Pessoal (DP) ▾</h2>
+      <div id="panel-dp" class="panel-body">
+        <div class="row">
+          <label>Pró-labore
+            <select id="f_proLabore">
+              <option value=""></option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+          </label>
+          <label>Funcionários
+            <select id="f_funcionarios">
+              <option value=""></option>
+              <option value="Sim">Sim</option>
+              <option value="Não">Não</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-fiscal">🧾 Fiscal ▾</h2>
+      <div id="panel-fiscal" class="panel-body">
+        <label>Emissão de nota pelo escritório
+          <select id="f_emissaoNota">
+            <option value=""></option>
+            <option value="Sim">Sim</option>
+            <option value="Não">Não</option>
+          </select>
+        </label>
+        <label>Situação
+          <input type="text" id="f_situacao">
+        </label>
+        <label>Anexo Simples
+          <input type="text" id="f_anexoSimples" placeholder="ex: Anexo V">
+        </label>
+        <div class="row">
+          <label>Insc. Estadual
+            <input type="text" id="f_inscEstadual" placeholder="ex: Isento">
+          </label>
+          <label>Insc. Municipal
+            <input type="text" id="f_inscMunicipal" placeholder="ex: Isento">
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button id="btn-print" class="btn-primary">Imprimir / Exportar PDF</button>
+      <button id="btn-clear" class="btn-danger">Limpar formulário</button>
+    </div>
+
+  </aside>
+
+  <main class="preview-wrap">
+    <div id="ficha-preview" class="ficha-doc"></div>
+  </main>
+
+</div>
+
+<script src="js/vendor/pdf.min.js"></script>
+<script src="js/pdf-extractor.js"></script>
+<script src="js/ficha-template.js"></script>
+<script src="js/app-ficha.js"></script>
+</body>
+</html>

@@ -89,6 +89,24 @@ function parseCnpjCardText(text) {
     .filter(Boolean)
     .join(", ");
 
+  const cnaePrincipal = matchAfterLabel(
+    clean,
+    ["CÓDIGO E DESCRIÇÃO DA ATIVIDADE ECONÔMICA PRINCIPAL"],
+    ["CÓDIGO E DESCRIÇÃO DAS ATIVIDADES ECONÔMICAS SECUNDÁRIAS", "CÓDIGO E DESCRIÇÃO DA NATUREZA JURÍDICA"]
+  );
+
+  const cnaeSecundario = matchAfterLabel(
+    clean,
+    ["CÓDIGO E DESCRIÇÃO DAS ATIVIDADES ECONÔMICAS SECUNDÁRIAS"],
+    ["CÓDIGO E DESCRIÇÃO DA NATUREZA JURÍDICA"]
+  );
+
+  const naturezaJuridica = matchAfterLabel(
+    clean,
+    ["CÓDIGO E DESCRIÇÃO DA NATUREZA JURÍDICA"],
+    ["LOGRADOURO"]
+  );
+
   return {
     razaoSocial,
     cnpj: cnpjMatch ? cnpjMatch[0] : "",
@@ -97,5 +115,8 @@ function parseCnpjCardText(text) {
     cidade: municipio,
     estado: ufMatch ? ufMatch[1] : "",
     cep: cepMatch ? cepMatch[1] : "",
+    cnaePrincipal,
+    cnaeSecundario,
+    naturezaJuridica,
   };
 }
