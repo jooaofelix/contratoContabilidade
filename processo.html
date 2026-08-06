@@ -3,19 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ficha de Cadastro de Empresa</title>
+<title>Ficha de Processo - Alteração</title>
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/ficha.css">
+<link rel="stylesheet" href="css/processo.css">
 </head>
 <body>
 <header class="app-header">
-  <h1>Ficha de Cadastro de Empresa</h1>
+  <div class="app-brand">
+    <img src="assets/aea-logo.svg" alt="AEA Contabilidade Consultiva" class="app-logo">
+    <h1>Ficha de Processo</h1>
+  </div>
   <nav class="app-nav">
     <a href="index.html">Início</a>
     <a href="contrato.html">Contrato</a>
     <a href="orcamento.html">Orçamento</a>
-    <a href="ficha.html" class="active">Ficha Cadastral</a>
-    <a href="processo.html">Ficha de Processo</a>
+    <a href="ficha.html">Ficha Cadastral</a>
+    <a href="processo.html" class="active">Ficha de Processo</a>
   </nav>
 </header>
 
@@ -34,8 +38,8 @@
     </section>
 
     <section class="panel">
-      <h2 class="panel-toggle" data-target="panel-ficha">📋 Dados da Ficha ▾</h2>
-      <div id="panel-ficha" class="panel-body">
+      <h2 class="panel-toggle" data-target="panel-empresa">🏢 Dados da Empresa (atual) ▾</h2>
+      <div id="panel-empresa" class="panel-body">
         <div class="row">
           <label>Contratante
             <input type="text" id="f_contratante">
@@ -64,7 +68,7 @@
             <input type="text" id="f_cep">
           </label>
         </div>
-        <label>E-mail (exibido na ficha)
+        <label>E-mail
           <input type="text" id="f_email">
         </label>
         <label>Contato Principal
@@ -77,13 +81,13 @@
           <input type="text" id="f_socio1">
         </label>
         <label>Capital Sócio 01 (%)
-          <input type="text" id="f_capitalSocio1" placeholder="ex: 51">
+          <input type="text" id="f_capitalSocio1">
         </label>
         <label>Sócio 02
           <input type="text" id="f_socio2">
         </label>
         <label>Capital Sócio 02 (%)
-          <input type="text" id="f_capitalSocio2" placeholder="ex: 49">
+          <input type="text" id="f_capitalSocio2">
         </label>
         <label>Vigência
           <input type="text" id="f_vigencia" placeholder="ex: ago/25">
@@ -101,7 +105,7 @@
           <input type="text" id="f_cnaePrincipal">
         </label>
         <label>CNAE Secundário
-          <textarea id="f_cnaeSecundario" rows="4"></textarea>
+          <textarea id="f_cnaeSecundario" rows="3"></textarea>
         </label>
         <label>Tributação
           <input type="text" id="f_tributacao" placeholder="ex: Simples Nacional">
@@ -161,6 +165,47 @@
       </div>
     </section>
 
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-processo">🗂️ Do Processo ▾</h2>
+      <div id="panel-processo" class="panel-body">
+        <label>Tipo de Alteração
+          <select id="p_tipo">
+            <option value="Alteração Contratual">Alteração Contratual</option>
+            <option value="Alteração Cadastral">Alteração Cadastral</option>
+            <option value="Abertura de Filial">Abertura de Filial</option>
+            <option value="Baixa de Empresa">Baixa de Empresa</option>
+            <option value="Outro">Outro</option>
+          </select>
+        </label>
+        <div class="row">
+          <label>Data da Solicitação
+            <input type="date" id="p_data">
+          </label>
+          <label>Protocolo/Nº
+            <input type="text" id="p_protocolo">
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-alteracoes">✏️ Alterações Solicitadas ▾</h2>
+      <div id="panel-alteracoes" class="panel-body">
+        <div id="alteracoes-list"></div>
+        <button id="add-alteracao" class="btn-secondary">+ Adicionar alteração</button>
+        <label class="checkbox"><input type="checkbox" id="p_gerarFicha" checked> Gerar ficha cadastral atualizada</label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-observacoes">📝 Observações ▾</h2>
+      <div id="panel-observacoes" class="panel-body">
+        <label>Observações gerais
+          <textarea id="p_observacoes" rows="3"></textarea>
+        </label>
+      </div>
+    </section>
+
     <div class="actions">
       <button id="btn-print" class="btn-primary">Imprimir / Exportar PDF</button>
       <button id="btn-clear" class="btn-danger">Limpar formulário</button>
@@ -169,7 +214,11 @@
   </aside>
 
   <main class="preview-wrap">
-    <div id="ficha-preview" class="ficha-doc"></div>
+    <div id="processo-preview" class="ficha-doc"></div>
+    <div id="ficha-atualizada-wrap">
+      <h3 class="processo-divider">FICHA CADASTRAL ATUALIZADA (PÓS-ALTERAÇÃO)</h3>
+      <div id="ficha-atualizada-preview" class="ficha-doc"></div>
+    </div>
   </main>
 
 </div>
@@ -177,6 +226,7 @@
 <script src="js/vendor/pdf.min.js"></script>
 <script src="js/pdf-extractor.js"></script>
 <script src="js/ficha-template.js"></script>
-<script src="js/app-ficha.js"></script>
+<script src="js/processo-template.js"></script>
+<script src="js/app-processo.js"></script>
 </body>
 </html>
