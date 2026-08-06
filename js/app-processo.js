@@ -249,10 +249,78 @@ function setupActionsProcesso() {
     document.getElementById("alteracoes-list").innerHTML = "";
     document.getElementById("pdf-input").value = "";
     document.getElementById("pdf-status").textContent = "";
+    document.getElementById("empresa-select").value = "";
     addAlteracaoRow();
     addAlteracaoRow();
     addAlteracaoRow();
     updateProcessoPreview();
+  });
+
+  document.getElementById("salvar-ficha-atualizada").addEventListener("click", () => {
+    const data = collectProcessoData();
+    if (!data.f.contratante) {
+      alert("Informe ao menos o nome do Contratante antes de salvar.");
+      return;
+    }
+    const updatedF = buildFichaAtualizada(data.f, data.alteracoes);
+    const record = upsertEmpresa(updatedF);
+    populateEmpresaSelect(document.getElementById("empresa-select"), "— Nova empresa —");
+    document.getElementById("empresa-select").value = record.id;
+    const status = document.getElementById("empresa-status");
+    status.textContent = "Ficha atualizada salva na empresa.";
+    status.className = "pdf-status ok";
+  });
+}
+
+function setupEmpresasProcesso() {
+  const select = document.getElementById("empresa-select");
+  const status = document.getElementById("empresa-status");
+
+  populateEmpresaSelect(select, "— Nova empresa —");
+
+  select.addEventListener("change", () => {
+    if (!select.value) return;
+    const empresa = getEmpresa(select.value);
+    if (empresa) {
+      applyEmpresaToForm(empresa, "f_");
+      updateProcessoPreview();
+      status.textContent = "Dados carregados.";
+      status.className = "pdf-status ok";
+    }
+  });
+
+  document.getElementById("empresa-save").addEventListener("click", () => {
+    const data = collectEmpresaFromForm("f_");
+    if (!data.contratante) {
+      status.textContent = "Informe ao menos o nome do Contratante antes de salvar.";
+      status.className = "pdf-status error";
+      return;
+    }
+    const record = upsertEmpresa(data);
+    populateEmpresaSelect(select, "— Nova empresa —");
+    select.value = record.id;
+    status.textContent = "Empresa salva.";
+    status.className = "pdf-status ok";
+  });
+
+  document.getElementById("empresa-new").addEventListener("click", () => {
+    select.value = "";
+    FICHA_FIELD_MAP.forEach(({ key }) => { document.getElementById("f_" + key).value = ""; });
+    status.textContent = "";
+    updateProcessoPreview();
+  });
+
+  document.getElementById("empresa-delete").addEventListener("click", () => {
+    if (!select.value) {
+      status.textContent = "Selecione uma empresa salva para excluir.";
+      status.className = "pdf-status error";
+      return;
+    }
+    if (!confirm("Excluir esta empresa da lista salva?")) return;
+    deleteEmpresa(select.value);
+    populateEmpresaSelect(select, "— Nova empresa —");
+    status.textContent = "Empresa excluída.";
+    status.className = "pdf-status ok";
   });
 }
 
@@ -261,6 +329,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupLiveUpdateProcesso();
   setupPdfImportProcesso();
   setupActionsProcesso();
+  setupEmpresasProcesso();
   addAlteracaoRow();
   addAlteracaoRow();
   addAlteracaoRow();

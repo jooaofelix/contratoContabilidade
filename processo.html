@@ -32,6 +32,21 @@
     </div>
 
     <section class="panel">
+      <h2>🏢 Empresas Salvas</h2>
+      <div class="panel-body">
+        <label>Selecionar empresa para alterar
+          <select id="empresa-select"></select>
+        </label>
+        <div class="row">
+          <button id="empresa-save" class="btn-secondary">Salvar/Atualizar</button>
+          <button id="empresa-new" class="btn-secondary">Nova</button>
+        </div>
+        <button id="empresa-delete" class="btn-danger">Excluir esta empresa</button>
+        <div id="empresa-status" class="pdf-status"></div>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2>Importar cartão CNPJ (PDF)</h2>
       <input type="file" id="pdf-input" accept="application/pdf">
       <div id="pdf-status" class="pdf-status"></div>
@@ -194,6 +209,7 @@
         <div id="alteracoes-list"></div>
         <button id="add-alteracao" class="btn-secondary">+ Adicionar alteração</button>
         <label class="checkbox"><input type="checkbox" id="p_gerarFicha" checked> Gerar ficha cadastral atualizada</label>
+        <button id="salvar-ficha-atualizada" class="btn-secondary">💾 Salvar ficha atualizada nesta empresa</button>
       </div>
     </section>
 
@@ -225,6 +241,7 @@
 
 <script src="js/vendor/pdf.min.js"></script>
 <script src="js/pdf-extractor.js"></script>
+<script src="js/empresas-store.js"></script>
 <script src="js/ficha-template.js"></script>
 <script src="js/processo-template.js"></script>
 <script src="js/app-processo.js"></script>

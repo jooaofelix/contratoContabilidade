@@ -104,7 +104,60 @@ function setupActionsFicha() {
     });
     document.getElementById("pdf-input").value = "";
     document.getElementById("pdf-status").textContent = "";
+    document.getElementById("empresa-select").value = "";
     updateFichaPreview();
+  });
+}
+
+function setupEmpresasFicha() {
+  const select = document.getElementById("empresa-select");
+  const status = document.getElementById("empresa-status");
+
+  populateEmpresaSelect(select, "— Nova empresa —");
+
+  select.addEventListener("change", () => {
+    if (!select.value) return;
+    const empresa = getEmpresa(select.value);
+    if (empresa) {
+      applyEmpresaToForm(empresa, "f_");
+      updateFichaPreview();
+      status.textContent = "Dados carregados.";
+      status.className = "pdf-status ok";
+    }
+  });
+
+  document.getElementById("empresa-save").addEventListener("click", () => {
+    const data = collectEmpresaFromForm("f_");
+    if (!data.contratante) {
+      status.textContent = "Informe ao menos o nome do Contratante antes de salvar.";
+      status.className = "pdf-status error";
+      return;
+    }
+    const record = upsertEmpresa(data);
+    populateEmpresaSelect(select, "— Nova empresa —");
+    select.value = record.id;
+    status.textContent = "Empresa salva.";
+    status.className = "pdf-status ok";
+  });
+
+  document.getElementById("empresa-new").addEventListener("click", () => {
+    select.value = "";
+    FIELD_IDS_FICHA.forEach((id) => { document.getElementById(id).value = ""; });
+    status.textContent = "";
+    updateFichaPreview();
+  });
+
+  document.getElementById("empresa-delete").addEventListener("click", () => {
+    if (!select.value) {
+      status.textContent = "Selecione uma empresa salva para excluir.";
+      status.className = "pdf-status error";
+      return;
+    }
+    if (!confirm("Excluir esta empresa da lista salva? Isso não afeta os campos preenchidos agora.")) return;
+    deleteEmpresa(select.value);
+    populateEmpresaSelect(select, "— Nova empresa —");
+    status.textContent = "Empresa excluída.";
+    status.className = "pdf-status ok";
   });
 }
 
@@ -113,5 +166,6 @@ document.addEventListener("DOMContentLoaded", () => {
   setupLiveUpdateFicha();
   setupPdfImportFicha();
   setupActionsFicha();
+  setupEmpresasFicha();
   updateFichaPreview();
 });
