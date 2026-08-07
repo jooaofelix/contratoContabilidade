@@ -37,10 +37,20 @@ async function getEmpresa(id) {
 async function upsertEmpresa(data, existingId) {
   const cnpjId = sanitizeCnpjForId(data.cnpj);
   const id = existingId || cnpjId || db.collection(EMPRESAS_COLLECTION).doc().id;
+  const docRef = db.collection(EMPRESAS_COLLECTION).doc(id);
+
+  // preserva o createdAt original em atualizações; só grava na primeira vez,
+  // para os relatórios saberem quais empresas são novas em cada período.
+  const existingSnap = await docRef.get();
+  const createdAt = existingSnap.exists && existingSnap.data().createdAt
+    ? existingSnap.data().createdAt
+    : firebase.firestore.FieldValue.serverTimestamp();
+
   const record = Object.assign({}, data, {
+    createdAt,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
   });
-  await db.collection(EMPRESAS_COLLECTION).doc(id).set(record, { merge: true });
+  await docRef.set(record, { merge: true });
   return Object.assign({ id }, data);
 }
 
@@ -57,6 +67,14 @@ async function addHistoricoAlteracao(empresaId, evento) {
     .doc(empresaId)
     .collection(ALTERACOES_SUBCOLLECTION)
     .add(record);
+}
+
+// Busca as alterações de TODAS as empresas de uma vez (usado no relatório mensal).
+async function getAllAlteracoes() {
+  const snap = await db.collectionGroup(ALTERACOES_SUBCOLLECTION).get();
+  return snap.docs.map((doc) =>
+    Object.assign({ id: doc.id, empresaId: doc.ref.parent.parent.id }, doc.data())
+  );
 }
 
 async function getHistoricoAlteracoes(empresaId) {
