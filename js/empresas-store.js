@@ -1,4 +1,9 @@
-const EMPRESAS_STORAGE_KEY = "contratoContabilidade.empresas";
+// Camada de dados no Firestore. Coleção "empresas" (uma empresa = um documento)
+// e subcoleção "empresas/{id}/alteracoes" com o histórico de cada Ficha de Processo
+// salva para aquela empresa.
+
+const EMPRESAS_COLLECTION = "empresas";
+const ALTERACOES_SUBCOLLECTION = "alteracoes";
 
 const EMPRESA_FIELDS = [
   "contratante", "cnpj", "endereco", "bairro", "cidade", "estado", "cep",
@@ -9,44 +14,59 @@ const EMPRESA_FIELDS = [
   "emissaoNota", "situacao", "anexoSimples", "inscEstadual", "inscMunicipal",
 ];
 
-function getEmpresas() {
-  try {
-    return JSON.parse(localStorage.getItem(EMPRESAS_STORAGE_KEY)) || [];
-  } catch (e) {
-    return [];
-  }
+function sanitizeCnpjForId(cnpj) {
+  const digits = (cnpj || "").replace(/\D/g, "");
+  return digits || null;
 }
 
-function saveEmpresasList(list) {
-  localStorage.setItem(EMPRESAS_STORAGE_KEY, JSON.stringify(list));
+async function getEmpresas() {
+  const snap = await db.collection(EMPRESAS_COLLECTION).get();
+  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
 }
 
-function getEmpresa(id) {
-  return getEmpresas().find((e) => e.id === id);
+async function getEmpresa(id) {
+  if (!id) return null;
+  const doc = await db.collection(EMPRESAS_COLLECTION).doc(id).get();
+  return doc.exists ? Object.assign({ id: doc.id }, doc.data()) : null;
 }
 
-// Cria uma nova empresa ou atualiza uma existente com o mesmo CNPJ.
-function upsertEmpresa(data) {
-  const list = getEmpresas();
-  const cnpj = (data.cnpj || "").trim();
-  let idx = cnpj ? list.findIndex((e) => (e.cnpj || "").trim() === cnpj) : -1;
-
+// Cria ou atualiza uma empresa. Se existingId for informado, sempre atualiza
+// aquele documento (mesmo que o CNPJ tenha mudado). Caso contrário, usa o CNPJ
+// como ID do documento para evitar duplicar a mesma empresa cadastrada em
+// telas/dispositivos diferentes; sem CNPJ, gera um ID novo.
+async function upsertEmpresa(data, existingId) {
+  const cnpjId = sanitizeCnpjForId(data.cnpj);
+  const id = existingId || cnpjId || db.collection(EMPRESAS_COLLECTION).doc().id;
   const record = Object.assign({}, data, {
-    id: idx >= 0 ? list[idx].id : "emp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
-    savedAt: new Date().toISOString(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
   });
-
-  if (idx >= 0) {
-    list[idx] = record;
-  } else {
-    list.push(record);
-  }
-  saveEmpresasList(list);
-  return record;
+  await db.collection(EMPRESAS_COLLECTION).doc(id).set(record, { merge: true });
+  return Object.assign({ id }, data);
 }
 
-function deleteEmpresa(id) {
-  saveEmpresasList(getEmpresas().filter((e) => e.id !== id));
+async function deleteEmpresa(id) {
+  await db.collection(EMPRESAS_COLLECTION).doc(id).delete();
+}
+
+async function addHistoricoAlteracao(empresaId, evento) {
+  const record = Object.assign({}, evento, {
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+  });
+  await db
+    .collection(EMPRESAS_COLLECTION)
+    .doc(empresaId)
+    .collection(ALTERACOES_SUBCOLLECTION)
+    .add(record);
+}
+
+async function getHistoricoAlteracoes(empresaId) {
+  const snap = await db
+    .collection(EMPRESAS_COLLECTION)
+    .doc(empresaId)
+    .collection(ALTERACOES_SUBCOLLECTION)
+    .orderBy("createdAt", "desc")
+    .get();
+  return snap.docs.map((doc) => Object.assign({ id: doc.id }, doc.data()));
 }
 
 function collectEmpresaFromForm(prefix) {
@@ -72,8 +92,10 @@ function empresaLabel(empresa) {
   return empresa.cnpj ? `${nome} — ${empresa.cnpj}` : nome;
 }
 
-function populateEmpresaSelect(selectEl, placeholderText) {
-  const empresas = getEmpresas().sort((a, b) => (a.contratante || "").localeCompare(b.contratante || ""));
+async function populateEmpresaSelect(selectEl, placeholderText) {
+  const empresas = (await getEmpresas()).sort((a, b) =>
+    (a.contratante || "").localeCompare(b.contratante || "")
+  );
   const current = selectEl.value;
   selectEl.innerHTML = `<option value="">${placeholderText || "— Selecione uma empresa —"}</option>`;
   empresas.forEach((e) => {

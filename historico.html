@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Histórico de Alterações</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/historico.css">
+</head>
+<body>
+<header class="app-header">
+  <div class="app-brand">
+    <img src="assets/aea-logo.svg" alt="AEA Contabilidade Consultiva" class="app-logo">
+    <h1>Histórico de Alterações</h1>
+  </div>
+  <nav class="app-nav">
+    <a href="index.html">Início</a>
+    <a href="contrato.html">Contrato</a>
+    <a href="orcamento.html">Orçamento</a>
+    <a href="ficha.html">Ficha Cadastral</a>
+    <a href="processo.html">Ficha de Processo</a>
+    <a href="historico.html" class="active">Histórico</a>
+  </nav>
+</header>
+
+<div class="app-layout">
+
+  <aside class="sidebar">
+    <section class="panel">
+      <h2>🏢 Empresa</h2>
+      <div class="panel-body">
+        <label>Selecionar empresa
+          <select id="empresa-select"></select>
+        </label>
+      </div>
+    </section>
+  </aside>
+
+  <main class="preview-wrap">
+    <div id="historico-empresa-nome" class="historico-title"></div>
+    <div id="historico-list"></div>
+  </main>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/empresas-store.js"></script>
+<script src="js/app-historico.js"></script>
+</body>
+</html>

@@ -256,51 +256,97 @@ function setupActionsProcesso() {
     updateProcessoPreview();
   });
 
-  document.getElementById("salvar-ficha-atualizada").addEventListener("click", () => {
+  document.getElementById("salvar-ficha-atualizada").addEventListener("click", async () => {
     const data = collectProcessoData();
     if (!data.f.contratante) {
       alert("Informe ao menos o nome do Contratante antes de salvar.");
       return;
     }
-    const updatedF = buildFichaAtualizada(data.f, data.alteracoes);
-    const record = upsertEmpresa(updatedF);
-    populateEmpresaSelect(document.getElementById("empresa-select"), "— Nova empresa —");
-    document.getElementById("empresa-select").value = record.id;
     const status = document.getElementById("empresa-status");
-    status.textContent = "Ficha atualizada salva na empresa.";
-    status.className = "pdf-status ok";
+    const select = document.getElementById("empresa-select");
+    status.textContent = "Salvando...";
+    status.className = "pdf-status";
+    try {
+      const updatedF = buildFichaAtualizada(data.f, data.alteracoes);
+      const record = await upsertEmpresa(updatedF, select.value || null);
+
+      const validAlteracoes = data.alteracoes.filter((a) => a.campo && (a.de || a.para));
+      if (validAlteracoes.length > 0) {
+        await addHistoricoAlteracao(record.id, {
+          tipo: data.p.tipo,
+          data: data.p.data,
+          protocolo: data.p.protocolo,
+          observacoes: data.p.observacoes,
+          alteracoes: validAlteracoes,
+        });
+      }
+
+      await populateEmpresaSelect(select, "— Nova empresa —");
+      select.value = record.id;
+      status.textContent = "Ficha atualizada e histórico salvos.";
+      status.className = "pdf-status ok";
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao salvar. Confira sua conexão com o banco.";
+      status.className = "pdf-status error";
+    }
   });
 }
 
-function setupEmpresasProcesso() {
+async function setupEmpresasProcesso() {
   const select = document.getElementById("empresa-select");
   const status = document.getElementById("empresa-status");
 
-  populateEmpresaSelect(select, "— Nova empresa —");
+  status.textContent = "Carregando empresas...";
+  status.className = "pdf-status";
+  try {
+    await populateEmpresaSelect(select, "— Nova empresa —");
+    status.textContent = "";
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Não foi possível conectar ao banco de empresas.";
+    status.className = "pdf-status error";
+  }
 
-  select.addEventListener("change", () => {
+  select.addEventListener("change", async () => {
     if (!select.value) return;
-    const empresa = getEmpresa(select.value);
-    if (empresa) {
-      applyEmpresaToForm(empresa, "f_");
-      updateProcessoPreview();
-      status.textContent = "Dados carregados.";
-      status.className = "pdf-status ok";
+    status.textContent = "Carregando...";
+    status.className = "pdf-status";
+    try {
+      const empresa = await getEmpresa(select.value);
+      if (empresa) {
+        applyEmpresaToForm(empresa, "f_");
+        updateProcessoPreview();
+        status.textContent = "Dados carregados.";
+        status.className = "pdf-status ok";
+      }
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao carregar a empresa.";
+      status.className = "pdf-status error";
     }
   });
 
-  document.getElementById("empresa-save").addEventListener("click", () => {
+  document.getElementById("empresa-save").addEventListener("click", async () => {
     const data = collectEmpresaFromForm("f_");
     if (!data.contratante) {
       status.textContent = "Informe ao menos o nome do Contratante antes de salvar.";
       status.className = "pdf-status error";
       return;
     }
-    const record = upsertEmpresa(data);
-    populateEmpresaSelect(select, "— Nova empresa —");
-    select.value = record.id;
-    status.textContent = "Empresa salva.";
-    status.className = "pdf-status ok";
+    status.textContent = "Salvando...";
+    status.className = "pdf-status";
+    try {
+      const record = await upsertEmpresa(data, select.value || null);
+      await populateEmpresaSelect(select, "— Nova empresa —");
+      select.value = record.id;
+      status.textContent = "Empresa salva.";
+      status.className = "pdf-status ok";
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao salvar a empresa.";
+      status.className = "pdf-status error";
+    }
   });
 
   document.getElementById("empresa-new").addEventListener("click", () => {
@@ -310,17 +356,25 @@ function setupEmpresasProcesso() {
     updateProcessoPreview();
   });
 
-  document.getElementById("empresa-delete").addEventListener("click", () => {
+  document.getElementById("empresa-delete").addEventListener("click", async () => {
     if (!select.value) {
       status.textContent = "Selecione uma empresa salva para excluir.";
       status.className = "pdf-status error";
       return;
     }
     if (!confirm("Excluir esta empresa da lista salva?")) return;
-    deleteEmpresa(select.value);
-    populateEmpresaSelect(select, "— Nova empresa —");
-    status.textContent = "Empresa excluída.";
-    status.className = "pdf-status ok";
+    status.textContent = "Excluindo...";
+    status.className = "pdf-status";
+    try {
+      await deleteEmpresa(select.value);
+      await populateEmpresaSelect(select, "— Nova empresa —");
+      status.textContent = "Empresa excluída.";
+      status.className = "pdf-status ok";
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao excluir a empresa.";
+      status.className = "pdf-status error";
+    }
   });
 }
 
