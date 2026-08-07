@@ -37,6 +37,83 @@ function setupPanelTogglesFicha() {
   });
 }
 
+async function autoCadastrarEmpresa(status, contratanteNome, origemLabel) {
+  status.textContent = `Cadastrando empresa ${origemLabel}...`;
+  status.className = "pdf-status";
+  try {
+    const data = collectEmpresaFromForm("f_");
+    const empresaSelect = document.getElementById("empresa-select");
+    const record = await upsertEmpresa(data, null);
+    await populateEmpresaSelect(empresaSelect, "— Nova empresa —");
+    empresaSelect.value = record.id;
+    status.textContent = `Empresa "${contratanteNome}" cadastrada ${origemLabel}. Confira e complete os demais dados.`;
+    status.className = "pdf-status ok";
+  } catch (err) {
+    console.error(err);
+    status.textContent = `Dados preenchidos, mas houve erro ao cadastrar. Clique em "Salvar/Atualizar".`;
+    status.className = "pdf-status error";
+  }
+}
+
+function setupCnpjLookupFicha() {
+  const input = document.getElementById("cnpj-lookup-input");
+  const btn = document.getElementById("cnpj-lookup-btn");
+  const status = document.getElementById("cnpj-lookup-status");
+
+  const buscar = async () => {
+    status.textContent = "Consultando a Receita Federal...";
+    status.className = "pdf-status";
+
+    try {
+      const parsed = await fetchCnpjFromApi(input.value);
+
+      const setIfFound = (id, value) => {
+        if (value) document.getElementById(id).value = value;
+      };
+
+      setIfFound("f_contratante", parsed.razaoSocial);
+      setIfFound("f_cnpj", parsed.cnpj);
+      setIfFound("f_endereco", parsed.endereco);
+      setIfFound("f_bairro", parsed.bairro);
+      setIfFound("f_cidade", parsed.cidade);
+      setIfFound("f_estado", parsed.estado);
+      setIfFound("f_cep", parsed.cep);
+      setIfFound("f_email", parsed.email);
+      setIfFound("f_cnaePrincipal", parsed.cnaePrincipal);
+      setIfFound("f_cnaeSecundario", parsed.cnaeSecundario);
+      setIfFound("f_tributacao", parsed.tributacao);
+      setIfFound("f_valorCapital", parsed.valorCapital);
+      setIfFound("f_situacao", parsed.situacao);
+      setIfFound("f_socio1", parsed.socio1);
+      setIfFound("f_capitalSocio1", parsed.capitalSocio1);
+      setIfFound("f_socio2", parsed.socio2);
+      setIfFound("f_capitalSocio2", parsed.capitalSocio2);
+
+      updateFichaPreview();
+
+      if (!parsed.razaoSocial) {
+        status.textContent = "CNPJ encontrado, mas sem razão social retornada. Confira os dados e salve manualmente.";
+        status.className = "pdf-status error";
+        return;
+      }
+
+      await autoCadastrarEmpresa(status, parsed.razaoSocial, "via consulta à Receita");
+    } catch (err) {
+      console.error(err);
+      status.textContent = err.message || "Erro ao consultar o CNPJ.";
+      status.className = "pdf-status error";
+    }
+  };
+
+  btn.addEventListener("click", buscar);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      buscar();
+    }
+  });
+}
+
 function setupPdfImportFicha() {
   const input = document.getElementById("pdf-input");
   const status = document.getElementById("pdf-status");
@@ -90,20 +167,7 @@ function setupPdfImportFicha() {
         return;
       }
 
-      status.textContent = "Cadastrando empresa a partir do PDF...";
-      try {
-        const data = collectEmpresaFromForm("f_");
-        const empresaSelect = document.getElementById("empresa-select");
-        const record = await upsertEmpresa(data, null);
-        await populateEmpresaSelect(empresaSelect, "— Nova empresa —");
-        empresaSelect.value = record.id;
-        status.textContent = `Empresa "${data.contratante}" cadastrada a partir do PDF. Confira e complete os demais dados.`;
-        status.className = "pdf-status ok";
-      } catch (err) {
-        console.error(err);
-        status.textContent = `${foundCount} campo(s) preenchido(s) automaticamente, mas houve erro ao cadastrar. Clique em "Salvar/Atualizar".`;
-        status.className = "pdf-status error";
-      }
+      await autoCadastrarEmpresa(status, parsed.razaoSocial, "a partir do PDF");
     } catch (err) {
       console.error(err);
       status.textContent = "Erro ao ler o PDF. Preencha manualmente.";
@@ -217,6 +281,7 @@ async function setupEmpresasFicha() {
 document.addEventListener("DOMContentLoaded", () => {
   setupPanelTogglesFicha();
   setupLiveUpdateFicha();
+  setupCnpjLookupFicha();
   setupPdfImportFicha();
   setupActionsFicha();
   setupEmpresasFicha();

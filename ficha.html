@@ -45,6 +45,17 @@
     </section>
 
     <section class="panel">
+      <h2>🔎 Buscar por CNPJ</h2>
+      <div class="panel-body">
+        <label>CNPJ
+          <input type="text" id="cnpj-lookup-input" placeholder="00.000.000/0000-00">
+        </label>
+        <button id="cnpj-lookup-btn" class="btn-secondary">Buscar dados na Receita</button>
+        <div id="cnpj-lookup-status" class="pdf-status"></div>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2>Importar cartão CNPJ (PDF)</h2>
       <input type="file" id="pdf-input" accept="application/pdf">
       <div id="pdf-status" class="pdf-status"></div>
@@ -193,6 +204,7 @@
 
 <script src="js/vendor/pdf.min.js"></script>
 <script src="js/pdf-extractor.js"></script>
+<script src="js/cnpj-api.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="js/firebase-config.js"></script>
