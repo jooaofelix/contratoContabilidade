@@ -75,15 +75,35 @@ function setupPdfImportFicha() {
         foundCount++;
       }
 
-      if (foundCount > 0) {
-        status.textContent = `${foundCount} campo(s) preenchido(s) automaticamente. Confira os dados.`;
-        status.className = "pdf-status ok";
-      } else {
+      if (foundCount === 0) {
         status.textContent = "Não foi possível reconhecer os dados neste PDF. Preencha manualmente.";
         status.className = "pdf-status error";
+        updateFichaPreview();
+        return;
       }
 
       updateFichaPreview();
+
+      if (!parsed.razaoSocial) {
+        status.textContent = `${foundCount} campo(s) preenchido(s) automaticamente, mas não achei a razão social. Confira e clique em "Salvar/Atualizar".`;
+        status.className = "pdf-status error";
+        return;
+      }
+
+      status.textContent = "Cadastrando empresa a partir do PDF...";
+      try {
+        const data = collectEmpresaFromForm("f_");
+        const empresaSelect = document.getElementById("empresa-select");
+        const record = await upsertEmpresa(data, null);
+        await populateEmpresaSelect(empresaSelect, "— Nova empresa —");
+        empresaSelect.value = record.id;
+        status.textContent = `Empresa "${data.contratante}" cadastrada a partir do PDF. Confira e complete os demais dados.`;
+        status.className = "pdf-status ok";
+      } catch (err) {
+        console.error(err);
+        status.textContent = `${foundCount} campo(s) preenchido(s) automaticamente, mas houve erro ao cadastrar. Clique em "Salvar/Atualizar".`;
+        status.className = "pdf-status error";
+      }
     } catch (err) {
       console.error(err);
       status.textContent = "Erro ao ler o PDF. Preencha manualmente.";
