@@ -33,7 +33,7 @@
       ⚠ A leitura é por busca de padrões no texto do PDF oficial da Receita Federal — layout diferente (digitalizado/escaneado, por exemplo) pode não extrair tudo. Confira sempre os campos preenchidos.
     </div>
 
-    <section class="panel">
+    <section class="panel" data-mode="alteracao">
       <h2>🏢 Empresas Salvas</h2>
       <div class="panel-body">
         <label>Selecionar empresa para alterar
@@ -48,13 +48,13 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" data-mode="alteracao">
       <h2>Importar cartão CNPJ (PDF)</h2>
       <input type="file" id="pdf-input" accept="application/pdf">
       <div id="pdf-status" class="pdf-status"></div>
     </section>
 
-    <section class="panel">
+    <section class="panel" data-mode="alteracao">
       <h2 class="panel-toggle" data-target="panel-empresa">🏢 Dados da Empresa (atual) ▾</h2>
       <div id="panel-empresa" class="panel-body">
         <div class="row">
@@ -115,7 +115,7 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" data-mode="alteracao">
       <h2 class="panel-toggle" data-target="panel-cnae">🏭 CNAE e Tributação ▾</h2>
       <div id="panel-cnae" class="panel-body">
         <label>CNAE Principal
@@ -133,7 +133,7 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" data-mode="alteracao">
       <h2 class="panel-toggle" data-target="panel-dp">👥 Departamento Pessoal (DP) ▾</h2>
       <div id="panel-dp" class="panel-body">
         <div class="row">
@@ -155,7 +155,7 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" data-mode="alteracao">
       <h2 class="panel-toggle" data-target="panel-fiscal">🧾 Fiscal ▾</h2>
       <div id="panel-fiscal" class="panel-body">
         <label>Emissão de nota pelo escritório
@@ -185,10 +185,11 @@
     <section class="panel">
       <h2 class="panel-toggle" data-target="panel-processo">🗂️ Do Processo ▾</h2>
       <div id="panel-processo" class="panel-body">
-        <label>Tipo de Alteração
+        <label>Tipo de Processo
           <select id="p_tipo">
             <option value="Alteração Contratual">Alteração Contratual</option>
             <option value="Alteração Cadastral">Alteração Cadastral</option>
+            <option value="Abertura de Empresa">Abertura de Empresa</option>
             <option value="Abertura de Filial">Abertura de Filial</option>
             <option value="Baixa de Empresa">Baixa de Empresa</option>
             <option value="Outro">Outro</option>
@@ -205,13 +206,51 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" data-mode="alteracao">
       <h2 class="panel-toggle" data-target="panel-alteracoes">✏️ Alterações Solicitadas ▾</h2>
       <div id="panel-alteracoes" class="panel-body">
         <div id="alteracoes-list"></div>
         <button id="add-alteracao" class="btn-secondary">+ Adicionar alteração</button>
         <label class="checkbox"><input type="checkbox" id="p_gerarFicha" checked> Gerar ficha cadastral atualizada</label>
         <button id="salvar-ficha-atualizada" class="btn-secondary">💾 Salvar ficha atualizada nesta empresa</button>
+      </div>
+    </section>
+
+    <section class="panel hidden" data-mode="abertura">
+      <h2 class="panel-toggle" data-target="panel-socios">👥 Sócios ▾</h2>
+      <div id="panel-socios" class="panel-body">
+        <div id="socios-list"></div>
+        <button id="add-socio" class="btn-secondary">+ Adicionar sócio</button>
+      </div>
+    </section>
+
+    <section class="panel hidden" data-mode="abertura">
+      <h2 class="panel-toggle" data-target="panel-empresa-pretendida">🏗️ Dados da Empresa Pretendida ▾</h2>
+      <div id="panel-empresa-pretendida" class="panel-body">
+        <label>Razão social
+          <input type="text" id="ab_razaoSocial">
+        </label>
+        <label>Nome fantasia
+          <input type="text" id="ab_nomeFantasia">
+        </label>
+        <label>Endereço completo
+          <input type="text" id="ab_endereco" placeholder="Rua, número, bairro, cidade/UF, CEP">
+        </label>
+        <div class="row">
+          <label>E-mail
+            <input type="text" id="ab_email">
+          </label>
+          <label>Telefone
+            <input type="text" id="ab_telefone">
+          </label>
+        </div>
+        <label>IPTU do imóvel / matrícula
+          <input type="text" id="ab_iptu">
+        </label>
+        <label>Capital social
+          <input type="text" id="ab_capitalSocial" placeholder="R$">
+        </label>
+        <button id="cadastrar-empresa-aberta" class="btn-secondary">💾 Cadastrar empresa aberta</button>
       </div>
     </section>
 

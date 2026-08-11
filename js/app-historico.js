@@ -11,9 +11,16 @@ function escapeHtmlH(str) {
 }
 
 function renderHistoricoEntry(evento) {
-  const changesHtml = (evento.alteracoes || [])
-    .map((a) => `<li><strong>${escapeHtmlH(a.campo)}:</strong> ${escapeHtmlH(a.de || "—")} <span class="hc-arrow">→</span> ${escapeHtmlH(a.para || "—")}</li>`)
-    .join("");
+  let itemsHtml;
+  if (evento.socios) {
+    itemsHtml = evento.socios
+      .map((s) => `<li><strong>${escapeHtmlH(s.nome || "(sem nome)")}</strong>${s.participacao ? " — " + escapeHtmlH(s.participacao) + "%" : ""}${s.cpf ? " · CPF " + escapeHtmlH(s.cpf) : ""}</li>`)
+      .join("");
+  } else {
+    itemsHtml = (evento.alteracoes || [])
+      .map((a) => `<li><strong>${escapeHtmlH(a.campo)}:</strong> ${escapeHtmlH(a.de || "—")} <span class="hc-arrow">→</span> ${escapeHtmlH(a.para || "—")}</li>`)
+      .join("");
+  }
 
   return `
     <div class="historico-entry">
@@ -21,7 +28,7 @@ function renderHistoricoEntry(evento) {
         <span class="historico-tipo">${escapeHtmlH(evento.tipo || "Alteração")}</span>
         <span class="historico-date">${formatDateBrH(evento.data)}${evento.protocolo ? " · Protocolo " + escapeHtmlH(evento.protocolo) : ""}</span>
       </div>
-      <ul class="historico-changes">${changesHtml || '<li class="placeholder">Nenhuma alteração registrada.</li>'}</ul>
+      <ul class="historico-changes">${itemsHtml || '<li class="placeholder">Nenhum registro.</li>'}</ul>
       ${evento.observacoes ? `<p class="historico-obs">${escapeHtmlH(evento.observacoes)}</p>` : ""}
     </div>`;
 }

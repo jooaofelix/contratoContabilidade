@@ -78,6 +78,52 @@ function buildDescricaoAlteracoes(alteracoes) {
     .join("\n");
 }
 
+function formatSocioDetalhe(s) {
+  const linhas = [];
+  linhas.push(`${s.nome || "(sem nome)"}${s.participacao ? " — " + s.participacao + "%" : ""}`);
+  if (s.cpf) linhas.push("CPF: " + s.cpf);
+  if (s.estadoCivil) linhas.push("Estado civil: " + s.estadoCivil);
+  if (s.profissao) linhas.push("Profissão: " + s.profissao);
+  if (s.email || s.telefone) linhas.push([s.email, s.telefone].filter(Boolean).join(" · "));
+  const docs = [];
+  if (s.rgCnh) docs.push("RG/CPF ou CNH recebido");
+  if (s.comprovanteEndereco) docs.push("Comprovante de endereço recebido");
+  if (docs.length) linhas.push(docs.join("; "));
+  return linhas.map(escapeHtmlP2).join("<br>");
+}
+
+function renderAberturaEmpresa(data) {
+  const { p, empresaPretendida: ab, socios } = data;
+
+  const sociosHtml = socios.length
+    ? socios.map((s, i) => pRowLong(`Sócio ${i + 1}:`, formatSocioDetalhe(s))).join("")
+    : `<div class="fc-row"><div class="fc-cell fc-cell-value"><span class="placeholder">Nenhum sócio adicionado.</span></div></div>`;
+
+  return `
+    <div class="fc-title-box">FICHA DE PROCESSO — ABERTURA DE EMPRESA</div>
+
+    <div class="fc-table">
+      ${pSectionBar("DO PROCESSO")}
+      ${pRowSplit("Tipo:", p.tipo, "Data:", formatDateBr2(p.data))}
+      ${pRow("Protocolo/Nº:", p.protocolo)}
+
+      ${pSectionBar("DADOS DA EMPRESA PRETENDIDA")}
+      ${pRow("Razão social:", ab.razaoSocial)}
+      ${pRow("Nome fantasia:", ab.nomeFantasia)}
+      ${pRow("Endereço completo:", ab.endereco)}
+      ${pRowSplit("E-mail:", ab.email, "Telefone:", ab.telefone)}
+      ${pRow("IPTU do imóvel:", ab.iptu)}
+      ${pRow("Capital social:", ab.capitalSocial)}
+
+      ${pSectionBar("SÓCIOS")}
+      ${sociosHtml}
+
+      ${pSectionBar("OBSERVAÇÕES")}
+      ${pRowLong("Observações:", p.observacoes ? escapeHtmlP2(p.observacoes).replace(/\n/g, "<br>") : '<span class="placeholder">—</span>')}
+    </div>
+  `;
+}
+
 function renderProcesso(data) {
   const { f, p, alteracoes } = data;
 

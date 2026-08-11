@@ -38,7 +38,12 @@ const FIELD_IDS_PROCESSO = [
   "p_tipo", "p_data", "p_protocolo", "p_observacoes", "p_gerarFicha",
 ];
 
+const FIELD_IDS_ABERTURA = [
+  "ab_razaoSocial", "ab_nomeFantasia", "ab_endereco", "ab_email", "ab_telefone", "ab_iptu", "ab_capitalSocial",
+];
+
 let alteracaoCount = 0;
+let socioCount = 0;
 
 function getP(id) { return document.getElementById(id).value; }
 
@@ -97,6 +102,79 @@ function addAlteracaoRow(key, campoCustom, de, para) {
   updateProcessoPreview();
 }
 
+function addSocioRow() {
+  const id = socioCount++;
+  const wrap = document.createElement("div");
+  wrap.className = "alteracao-row";
+  wrap.dataset.id = id;
+  wrap.innerHTML = `
+    <button type="button" class="alteracao-remove" data-remove-socio="${id}">Remover ✕</button>
+    <label>Nome
+      <input type="text" class="socio-nome">
+    </label>
+    <div class="row">
+      <label>CPF
+        <input type="text" class="socio-cpf">
+      </label>
+      <label>Participação (%)
+        <input type="text" class="socio-participacao">
+      </label>
+    </div>
+    <div class="row">
+      <label>Estado civil
+        <input type="text" class="socio-estadoCivil">
+      </label>
+      <label>Profissão
+        <input type="text" class="socio-profissao">
+      </label>
+    </div>
+    <div class="row">
+      <label>E-mail
+        <input type="text" class="socio-email">
+      </label>
+      <label>Telefone
+        <input type="text" class="socio-telefone">
+      </label>
+    </div>
+    <label class="checkbox"><input type="checkbox" class="socio-rgCnh"> RG e CPF ou CNH recebidos</label>
+    <label class="checkbox"><input type="checkbox" class="socio-comprovanteEndereco"> Comprovante de endereço recebido</label>
+  `;
+  document.getElementById("socios-list").appendChild(wrap);
+
+  wrap.querySelectorAll("input[type=text]").forEach((el) => {
+    el.addEventListener("input", updateProcessoPreview);
+  });
+  wrap.querySelectorAll("input[type=checkbox]").forEach((el) => {
+    el.addEventListener("change", updateProcessoPreview);
+  });
+  wrap.querySelector(".alteracao-remove").addEventListener("click", () => {
+    wrap.remove();
+    updateProcessoPreview();
+  });
+
+  updateProcessoPreview();
+}
+
+function collectSocios() {
+  return Array.from(document.querySelectorAll("#socios-list .alteracao-row")).map((row) => ({
+    nome: row.querySelector(".socio-nome").value,
+    cpf: row.querySelector(".socio-cpf").value,
+    participacao: row.querySelector(".socio-participacao").value,
+    estadoCivil: row.querySelector(".socio-estadoCivil").value,
+    profissao: row.querySelector(".socio-profissao").value,
+    email: row.querySelector(".socio-email").value,
+    telefone: row.querySelector(".socio-telefone").value,
+    rgCnh: row.querySelector(".socio-rgCnh").checked,
+    comprovanteEndereco: row.querySelector(".socio-comprovanteEndereco").checked,
+  })).filter((s) => s.nome || s.cpf);
+}
+
+function collectEmpresaPretendida() {
+  const ab = {};
+  FIELD_IDS_ABERTURA.forEach((id) => { ab[id.replace(/^ab_/, "")] = getP(id); });
+  return ab;
+}
+
 function fieldLabel(key) {
   const found = FICHA_FIELD_MAP.find((f) => f.key === key);
   return found ? found.label : "";
@@ -143,7 +221,25 @@ function buildFichaAtualizada(f, alteracoes) {
   return updated;
 }
 
+function isAberturaMode() {
+  return document.getElementById("p_tipo").value === "Abertura de Empresa";
+}
+
 function updateProcessoPreview() {
+  if (isAberturaMode()) {
+    const p = {
+      tipo: getP("p_tipo"),
+      data: getP("p_data"),
+      protocolo: getP("p_protocolo"),
+      observacoes: getP("p_observacoes"),
+    };
+    const empresaPretendida = collectEmpresaPretendida();
+    const socios = collectSocios();
+    document.getElementById("processo-preview").innerHTML = renderAberturaEmpresa({ p, empresaPretendida, socios });
+    document.getElementById("ficha-atualizada-wrap").classList.add("hidden");
+    return;
+  }
+
   const data = collectProcessoData();
   document.getElementById("processo-preview").innerHTML = renderProcesso(data);
 
@@ -156,8 +252,20 @@ function updateProcessoPreview() {
   }
 }
 
+function syncModeVisibility() {
+  const abertura = isAberturaMode();
+  document.querySelectorAll('[data-mode="alteracao"]').forEach((el) => el.classList.toggle("hidden", abertura));
+  document.querySelectorAll('[data-mode="abertura"]').forEach((el) => el.classList.toggle("hidden", !abertura));
+  updateProcessoPreview();
+}
+
+function setupModeToggle() {
+  document.getElementById("p_tipo").addEventListener("change", syncModeVisibility);
+  syncModeVisibility();
+}
+
 function setupLiveUpdateProcesso() {
-  FIELD_IDS_PROCESSO.forEach((id) => {
+  FIELD_IDS_PROCESSO.concat(FIELD_IDS_ABERTURA).forEach((id) => {
     const el = document.getElementById(id);
     const evt = el.type === "checkbox" ? "change" : "input";
     el.addEventListener(evt, updateProcessoPreview);
@@ -237,6 +345,10 @@ function setupActionsProcesso() {
     addAlteracaoRow();
   });
 
+  document.getElementById("add-socio").addEventListener("click", () => {
+    addSocioRow();
+  });
+
   document.getElementById("btn-clear").addEventListener("click", () => {
     if (!confirm("Limpar todos os campos da ficha de processo?")) return;
     FIELD_IDS_PROCESSO.forEach((id) => {
@@ -244,16 +356,78 @@ function setupActionsProcesso() {
       if (el.type === "checkbox") return;
       el.value = "";
     });
+    FIELD_IDS_ABERTURA.forEach((id) => { document.getElementById(id).value = ""; });
     document.getElementById("p_tipo").value = "Alteração Contratual";
     document.getElementById("p_gerarFicha").checked = true;
     document.getElementById("alteracoes-list").innerHTML = "";
+    document.getElementById("socios-list").innerHTML = "";
     document.getElementById("pdf-input").value = "";
     document.getElementById("pdf-status").textContent = "";
     document.getElementById("empresa-select").value = "";
     addAlteracaoRow();
     addAlteracaoRow();
     addAlteracaoRow();
-    updateProcessoPreview();
+    addSocioRow();
+    addSocioRow();
+    syncModeVisibility();
+  });
+
+  document.getElementById("cadastrar-empresa-aberta").addEventListener("click", async () => {
+    const ab = collectEmpresaPretendida();
+    if (!ab.razaoSocial) {
+      alert("Informe ao menos a razão social da empresa antes de cadastrar.");
+      return;
+    }
+    const socios = collectSocios();
+    const p = {
+      tipo: getP("p_tipo"),
+      data: getP("p_data"),
+      protocolo: getP("p_protocolo"),
+      observacoes: getP("p_observacoes"),
+    };
+
+    const status = document.getElementById("empresa-status");
+    status.textContent = "Cadastrando empresa...";
+    status.className = "pdf-status";
+    try {
+      const novaEmpresa = {
+        contratante: ab.razaoSocial,
+        endereco: ab.endereco,
+        email: ab.email,
+        valorCapital: ab.capitalSocial,
+        socio1: (socios[0] && socios[0].nome) || "",
+        capitalSocio1: (socios[0] && socios[0].participacao) || "",
+        socio2: (socios[1] && socios[1].nome) || "",
+        capitalSocio2: (socios[1] && socios[1].participacao) || "",
+      };
+      const record = await upsertEmpresa(novaEmpresa, null);
+
+      if (socios.length > 0) {
+        await addHistoricoAlteracao(record.id, {
+          tipo: p.tipo,
+          data: p.data,
+          protocolo: p.protocolo,
+          observacoes: p.observacoes,
+          socios,
+        });
+      }
+
+      const wrap = document.getElementById("ficha-atualizada-wrap");
+      wrap.querySelector(".processo-divider").textContent = "FICHA CADASTRAL DA NOVA EMPRESA";
+      document.getElementById("ficha-atualizada-preview").innerHTML = renderFicha({ f: novaEmpresa });
+      wrap.classList.remove("hidden");
+
+      const select = document.getElementById("empresa-select");
+      await populateEmpresaSelect(select, "— Nova empresa —");
+      select.value = record.id;
+
+      status.textContent = `Empresa "${ab.razaoSocial}" cadastrada com sucesso.`;
+      status.className = "pdf-status ok";
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao cadastrar a empresa. Confira sua conexão com o banco.";
+      status.className = "pdf-status error";
+    }
   });
 
   document.getElementById("salvar-ficha-atualizada").addEventListener("click", async () => {
@@ -387,5 +561,7 @@ document.addEventListener("DOMContentLoaded", () => {
   addAlteracaoRow();
   addAlteracaoRow();
   addAlteracaoRow();
-  updateProcessoPreview();
+  addSocioRow();
+  addSocioRow();
+  setupModeToggle();
 });
