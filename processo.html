@@ -25,6 +25,11 @@
   </nav>
 </header>
 
+<div class="mode-tabs">
+  <button type="button" class="mode-tab active" data-mode-tab="alteracao">📝 Alteração de Empresa Existente</button>
+  <button type="button" class="mode-tab" data-mode-tab="abertura">🏗️ Abertura de Nova Empresa</button>
+</div>
+
 <div class="app-layout">
 
   <aside class="sidebar">
@@ -185,11 +190,10 @@
     <section class="panel">
       <h2 class="panel-toggle" data-target="panel-processo">🗂️ Do Processo ▾</h2>
       <div id="panel-processo" class="panel-body">
-        <label>Tipo de Processo
+        <label data-mode="alteracao">Tipo de Alteração
           <select id="p_tipo">
             <option value="Alteração Contratual">Alteração Contratual</option>
             <option value="Alteração Cadastral">Alteração Cadastral</option>
-            <option value="Abertura de Empresa">Abertura de Empresa</option>
             <option value="Abertura de Filial">Abertura de Filial</option>
             <option value="Baixa de Empresa">Baixa de Empresa</option>
             <option value="Outro">Outro</option>

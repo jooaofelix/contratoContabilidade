@@ -221,14 +221,16 @@ function buildFichaAtualizada(f, alteracoes) {
   return updated;
 }
 
+let processoMode = "alteracao";
+
 function isAberturaMode() {
-  return document.getElementById("p_tipo").value === "Abertura de Empresa";
+  return processoMode === "abertura";
 }
 
 function updateProcessoPreview() {
   if (isAberturaMode()) {
     const p = {
-      tipo: getP("p_tipo"),
+      tipo: "Abertura de Empresa",
       data: getP("p_data"),
       protocolo: getP("p_protocolo"),
       observacoes: getP("p_observacoes"),
@@ -247,6 +249,7 @@ function updateProcessoPreview() {
   const wrap = document.getElementById("ficha-atualizada-wrap");
   wrap.classList.toggle("hidden", !gerarFicha);
   if (gerarFicha) {
+    wrap.querySelector(".processo-divider").textContent = "FICHA CADASTRAL ATUALIZADA (PÓS-ALTERAÇÃO)";
     const updatedF = buildFichaAtualizada(data.f, data.alteracoes);
     document.getElementById("ficha-atualizada-preview").innerHTML = renderFicha({ f: updatedF });
   }
@@ -260,7 +263,13 @@ function syncModeVisibility() {
 }
 
 function setupModeToggle() {
-  document.getElementById("p_tipo").addEventListener("change", syncModeVisibility);
+  document.querySelectorAll(".mode-tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      processoMode = tab.dataset.modeTab;
+      document.querySelectorAll(".mode-tab").forEach((t) => t.classList.toggle("active", t === tab));
+      syncModeVisibility();
+    });
+  });
   syncModeVisibility();
 }
 
@@ -364,6 +373,8 @@ function setupActionsProcesso() {
     document.getElementById("pdf-input").value = "";
     document.getElementById("pdf-status").textContent = "";
     document.getElementById("empresa-select").value = "";
+    processoMode = "alteracao";
+    document.querySelectorAll(".mode-tab").forEach((t) => t.classList.toggle("active", t.dataset.modeTab === "alteracao"));
     addAlteracaoRow();
     addAlteracaoRow();
     addAlteracaoRow();
