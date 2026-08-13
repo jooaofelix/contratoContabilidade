@@ -1,0 +1,119 @@
+.vendas-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.vendas-stat-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.vendas-stat-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.vendas-stat-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--darker);
+  margin-top: 4px;
+}
+
+.vendas-stat-sub {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+.vendas-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.vendas-toolbar input,
+.vendas-toolbar select {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+}
+
+.vendas-toolbar input {
+  flex: 1;
+}
+
+.vendas-table-container {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.vendas-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.vendas-table th {
+  background: var(--darker);
+  color: #fff;
+  text-align: left;
+  padding: 10px 12px;
+}
+
+.vendas-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.vendas-table tr:nth-child(even) td {
+  background: var(--bg);
+}
+
+.vendas-table tr:hover td {
+  background: #eef2ff;
+}
+
+.vendas-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.status-badge.status-aguardando { background: #fef3c7; color: #92400e; }
+.status-badge.status-negociacao { background: #dbeafe; color: #1e40af; }
+.status-badge.status-ganho { background: #dcfce7; color: #15803d; }
+.status-badge.status-perdido { background: #fee2e2; color: #b91c1c; }
+
+.vendas-row-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.vendas-row-actions button {
+  padding: 5px 8px;
+  font-size: 0.75rem;
+}
+
+@media (max-width: 900px) {
+  .vendas-table-container { overflow-x: auto; }
+}

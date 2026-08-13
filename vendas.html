@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vendas</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/vendas.css">
+</head>
+<body>
+<header class="app-header">
+  <div class="app-brand">
+    <img src="assets/aea-logo.svg" alt="AEA Contabilidade Consultiva" class="app-logo">
+    <h1>Vendas</h1>
+  </div>
+  <nav class="app-nav">
+    <a href="index.html">Início</a>
+    <a href="contrato.html">Contrato</a>
+    <a href="orcamento.html">Orçamento</a>
+    <a href="ficha.html">Ficha Cadastral</a>
+    <a href="processo.html">Ficha de Processo</a>
+    <a href="vendas.html" class="active">Vendas</a>
+    <a href="historico.html">Histórico</a>
+    <a href="relatorios.html">Relatórios</a>
+  </nav>
+</header>
+
+<div class="app-layout">
+
+  <aside class="sidebar">
+
+    <section class="panel">
+      <h2>🏢 Empresa já cadastrada (opcional)</h2>
+      <div class="panel-body">
+        <label>Buscar empresa
+          <input type="text" id="empresa-search" placeholder="Digite o nome ou CNPJ...">
+        </label>
+        <label>Empresa
+          <select id="empresa-select"></select>
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>💰 Dados da Venda</h2>
+      <div class="panel-body">
+        <label>Empresa / Lead
+          <input type="text" id="v_empresaNome" placeholder="Nome da empresa ou do lead">
+        </label>
+        <label>Contato (nome / telefone / e-mail)
+          <input type="text" id="v_contato" placeholder="ex: Maria - (12) 99999-0000">
+        </label>
+        <div class="row">
+          <label>Valor proposto (R$)
+            <input type="text" id="v_valor" placeholder="ex: 700,00">
+          </label>
+          <label>Data de envio
+            <input type="date" id="v_dataEnvio">
+          </label>
+        </div>
+        <label>Status
+          <select id="v_status">
+            <option value="Aguardando resposta">Aguardando resposta</option>
+            <option value="Em negociação">Em negociação</option>
+            <option value="Fechado/Ganho">Fechado/Ganho</option>
+            <option value="Recusado/Perdido">Recusado/Perdido</option>
+          </select>
+        </label>
+        <label>Observações
+          <textarea id="v_observacoes" rows="3" placeholder="ex: enviou por WhatsApp, aguardando retorno do sócio"></textarea>
+        </label>
+        <div class="row">
+          <button id="venda-save" class="btn-primary">Salvar</button>
+          <button id="venda-new" class="btn-secondary">Nova</button>
+        </div>
+        <div id="venda-status" class="pdf-status"></div>
+      </div>
+    </section>
+
+  </aside>
+
+  <main class="preview-wrap">
+
+    <div class="vendas-stats" id="vendas-stats"></div>
+
+    <div class="vendas-toolbar">
+      <input type="text" id="vendas-search" placeholder="Buscar por empresa ou contato...">
+      <select id="vendas-filtro-status">
+        <option value="">Todos os status</option>
+        <option value="Aguardando resposta">Aguardando resposta</option>
+        <option value="Em negociação">Em negociação</option>
+        <option value="Fechado/Ganho">Fechado/Ganho</option>
+        <option value="Recusado/Perdido">Recusado/Perdido</option>
+      </select>
+    </div>
+
+    <div id="vendas-table-wrap"></div>
+
+  </main>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/empresas-store.js"></script>
+<script src="js/vendas-store.js"></script>
+<script src="js/app-vendas.js"></script>
+</body>
+</html>
