@@ -437,6 +437,7 @@ function setupActionsProcesso() {
 
       status.textContent = `Empresa "${ab.razaoSocial}" cadastrada com sucesso.`;
       status.className = "pdf-status ok";
+      await saveProcessoPdfToDrive(false);
     } catch (err) {
       console.error(err);
       status.textContent = "Erro ao cadastrar a empresa. Confira sua conexão com o banco.";
@@ -473,12 +474,45 @@ function setupActionsProcesso() {
       select.value = record.id;
       status.textContent = "Ficha atualizada e histórico salvos.";
       status.className = "pdf-status ok";
+      await saveProcessoPdfToDrive(false);
     } catch (err) {
       console.error(err);
       status.textContent = "Erro ao salvar. Confira sua conexão com o banco.";
       status.className = "pdf-status error";
     }
   });
+}
+
+// Gera o PDF do documento certo pra cada modo (ficha atualizada/nova empresa
+// ou a ficha de processo pura, se "gerar ficha atualizada" estiver desmarcado)
+// e sobe pra subpasta da empresa no Drive.
+async function saveProcessoPdfToDrive(showBusy) {
+  if (!driveConfigured()) return;
+  const status = document.getElementById("empresa-status");
+  const empresaId = document.getElementById("empresa-select").value;
+
+  const abertura = isAberturaMode();
+  const nome = abertura ? getP("ab_razaoSocial") : getP("f_contratante");
+  const cnpj = abertura ? "" : getP("f_cnpj");
+  if (!empresaId || !nome) return;
+
+  const gerarFicha = abertura || document.getElementById("p_gerarFicha").checked;
+  const elementId = gerarFicha ? "ficha-atualizada-preview" : "processo-preview";
+  const tipoLabel = abertura ? "Abertura de Empresa" : "Ficha de Processo";
+
+  if (showBusy) {
+    status.textContent = "Enviando PDF para o Drive...";
+    status.className = "pdf-status";
+  }
+  try {
+    await saveDocumentToDrive({ elementId, empresaId, empresaNome: nome, cnpj, tipoLabel });
+    status.textContent = "Salvo e PDF enviado para o Drive.";
+    status.className = "pdf-status ok";
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Dados salvos, mas houve erro ao enviar o PDF para o Drive: " + err.message;
+    status.className = "pdf-status error";
+  }
 }
 
 async function enrichProcessoFromApi(empresaCnpj) {
@@ -570,11 +604,26 @@ async function setupEmpresasProcesso() {
       select.value = record.id;
       status.textContent = "Empresa salva.";
       status.className = "pdf-status ok";
+      await saveProcessoPdfToDrive(false);
     } catch (err) {
       console.error(err);
       status.textContent = "Erro ao salvar a empresa.";
       status.className = "pdf-status error";
     }
+  });
+
+  document.getElementById("empresa-drive").addEventListener("click", async () => {
+    if (!driveConfigured()) {
+      status.textContent = "A integração com o Google Drive ainda não foi configurada.";
+      status.className = "pdf-status error";
+      return;
+    }
+    if (!select.value) {
+      status.textContent = "Salve a empresa antes de enviar para o Drive.";
+      status.className = "pdf-status error";
+      return;
+    }
+    await saveProcessoPdfToDrive(true);
   });
 
   document.getElementById("empresa-new").addEventListener("click", () => {

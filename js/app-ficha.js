@@ -49,9 +49,40 @@ async function autoCadastrarEmpresa(status, contratanteNome, origemLabel) {
     empresaSelect.value = record.id;
     status.textContent = `Empresa "${contratanteNome}" cadastrada ${origemLabel}. Confira e complete os demais dados.`;
     status.className = "pdf-status ok";
+    await saveFichaPdfToDrive(false);
   } catch (err) {
     console.error(err);
     status.textContent = `Dados preenchidos, mas houve erro ao cadastrar. Clique em "Salvar/Atualizar".`;
+    status.className = "pdf-status error";
+  }
+}
+
+// Gera o PDF da ficha em tela e sobe para a subpasta da empresa no Drive.
+// Não faz nada se a integração ainda não foi configurada (rootFolderId vazio).
+async function saveFichaPdfToDrive(showBusy) {
+  if (!driveConfigured()) return;
+  const status = document.getElementById("empresa-status");
+  const empresaId = document.getElementById("empresa-select").value;
+  const nome = getF("f_contratante");
+  if (!empresaId || !nome) return;
+
+  if (showBusy) {
+    status.textContent = "Enviando PDF para o Drive...";
+    status.className = "pdf-status";
+  }
+  try {
+    await saveDocumentToDrive({
+      elementId: "ficha-preview",
+      empresaId,
+      empresaNome: nome,
+      cnpj: getF("f_cnpj"),
+      tipoLabel: "Ficha Cadastral",
+    });
+    status.textContent = "Ficha salva e PDF enviado para o Drive.";
+    status.className = "pdf-status ok";
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Dados salvos, mas houve erro ao enviar o PDF para o Drive: " + err.message;
     status.className = "pdf-status error";
   }
 }
@@ -287,11 +318,26 @@ async function setupEmpresasFicha() {
       select.value = record.id;
       status.textContent = "Empresa salva.";
       status.className = "pdf-status ok";
+      await saveFichaPdfToDrive(false);
     } catch (err) {
       console.error(err);
       status.textContent = "Erro ao salvar a empresa.";
       status.className = "pdf-status error";
     }
+  });
+
+  document.getElementById("empresa-drive").addEventListener("click", async () => {
+    if (!driveConfigured()) {
+      status.textContent = "A integração com o Google Drive ainda não foi configurada.";
+      status.className = "pdf-status error";
+      return;
+    }
+    if (!select.value) {
+      status.textContent = 'Salve a empresa (botão "Salvar/Atualizar") antes de enviar para o Drive.';
+      status.className = "pdf-status error";
+      return;
+    }
+    await saveFichaPdfToDrive(true);
   });
 
   document.getElementById("empresa-new").addEventListener("click", () => {

@@ -221,10 +221,11 @@ async function setupEmpresasContrato() {
   const search = document.getElementById("empresa-search");
   const status = document.getElementById("empresa-status");
 
+  let picker = { refresh: async () => {} };
   status.textContent = "Carregando empresas...";
   status.className = "pdf-status";
   try {
-    await initEmpresaPicker(search, select, "— Selecione uma empresa —");
+    picker = await initEmpresaPicker(search, select, "— Selecione uma empresa —");
     status.textContent = "";
   } catch (err) {
     console.error(err);
@@ -250,6 +251,36 @@ async function setupEmpresasContrato() {
     } catch (err) {
       console.error(err);
       status.textContent = "Erro ao carregar a empresa.";
+      status.className = "pdf-status error";
+    }
+  });
+
+  document.getElementById("empresa-drive").addEventListener("click", async () => {
+    if (!driveConfigured()) {
+      status.textContent = "A integração com o Google Drive ainda não foi configurada.";
+      status.className = "pdf-status error";
+      return;
+    }
+    const nome = get("c_razaoSocial");
+    const cnpj = get("c_cnpj");
+    if (!nome) {
+      status.textContent = "Preencha ao menos a Razão Social do contratante antes de salvar no Drive.";
+      status.className = "pdf-status error";
+      return;
+    }
+    status.textContent = "Salvando contrato no Drive...";
+    status.className = "pdf-status";
+    try {
+      const data = { contratante: nome, cnpj, endereco: get("c_endereco"), administracao: get("c_repNome") };
+      const record = await upsertEmpresa(data, select.value || null);
+      await picker.refresh();
+      select.value = record.id;
+      await saveDocumentToDrive({ elementId: "contract-preview", empresaId: record.id, empresaNome: nome, cnpj, tipoLabel: "Contrato" });
+      status.textContent = "Contrato salvo no Drive.";
+      status.className = "pdf-status ok";
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao salvar no Drive: " + err.message;
       status.className = "pdf-status error";
     }
   });

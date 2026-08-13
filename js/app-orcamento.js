@@ -73,10 +73,11 @@ async function setupEmpresasOrcamento() {
   const search = document.getElementById("empresa-search");
   const status = document.getElementById("empresa-status");
 
+  let picker = { refresh: async () => {} };
   status.textContent = "Carregando empresas...";
   status.className = "pdf-status";
   try {
-    await initEmpresaPicker(search, select, "— Selecione uma empresa —");
+    picker = await initEmpresaPicker(search, select, "— Selecione uma empresa —");
     status.textContent = "";
   } catch (err) {
     console.error(err);
@@ -103,6 +104,36 @@ async function setupEmpresasOrcamento() {
     } catch (err) {
       console.error(err);
       status.textContent = "Erro ao carregar a empresa.";
+      status.className = "pdf-status error";
+    }
+  });
+
+  document.getElementById("empresa-drive").addEventListener("click", async () => {
+    if (!driveConfigured()) {
+      status.textContent = "A integração com o Google Drive ainda não foi configurada.";
+      status.className = "pdf-status error";
+      return;
+    }
+    const nome = getOrc("q_empresa");
+    const cnpj = getOrc("q_cnpj");
+    if (!nome) {
+      status.textContent = "Preencha ao menos o nome da Empresa/Cliente antes de salvar no Drive.";
+      status.className = "pdf-status error";
+      return;
+    }
+    status.textContent = "Salvando proposta no Drive...";
+    status.className = "pdf-status";
+    try {
+      const data = { contratante: nome, cnpj, administracao: getOrc("q_responsavel"), email: getOrc("q_email") };
+      const record = await upsertEmpresa(data, select.value || null);
+      await picker.refresh();
+      select.value = record.id;
+      await saveDocumentToDrive({ elementId: "proposal-preview", empresaId: record.id, empresaNome: nome, cnpj, tipoLabel: "Orçamento" });
+      status.textContent = "Proposta salva no Drive.";
+      status.className = "pdf-status ok";
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao salvar no Drive: " + err.message;
       status.className = "pdf-status error";
     }
   });

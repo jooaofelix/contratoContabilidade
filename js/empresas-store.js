@@ -59,6 +59,12 @@ async function deleteEmpresa(id) {
   await db.collection(EMPRESAS_COLLECTION).doc(id).delete();
 }
 
+// Guarda o ID da subpasta do Drive já criada para esta empresa, para reusar
+// nas próximas fichas/contratos/orçamentos salvos para o mesmo cliente.
+async function setEmpresaDriveFolder(id, folderId) {
+  await db.collection(EMPRESAS_COLLECTION).doc(id).set({ driveFolderId: folderId }, { merge: true });
+}
+
 async function addHistoricoAlteracao(empresaId, evento) {
   const record = Object.assign({}, evento, {
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
