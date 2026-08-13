@@ -83,6 +83,9 @@ function renderFicha(data) {
       ${fcRow("Emissão de nota pelo escritório:", f.emissaoNota)}
       ${fcRowSplit("Situação:", f.situacao, "Anexo Simples:", f.anexoSimples)}
       ${fcRowSplit("Insc. Estadual:", f.inscEstadual, "Insc. Municipal:", f.inscMunicipal)}
+
+      ${fcSectionBar("OBSERVAÇÕES")}
+      ${fcRowLong("Observações:", f.observacoes)}
     </div>
   `;
 }

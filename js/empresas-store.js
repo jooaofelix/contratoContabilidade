@@ -12,6 +12,7 @@ const EMPRESA_FIELDS = [
   "cnaePrincipal", "cnaeSecundario", "tributacao", "valorCapital",
   "proLabore", "funcionarios",
   "emissaoNota", "situacao", "anexoSimples", "inscEstadual", "inscMunicipal",
+  "observacoes",
 ];
 
 function sanitizeCnpjForId(cnpj) {

@@ -5,6 +5,7 @@ const FIELD_IDS_FICHA = [
   "f_cnaePrincipal", "f_cnaeSecundario", "f_tributacao", "f_valorCapital",
   "f_proLabore", "f_funcionarios",
   "f_emissaoNota", "f_situacao", "f_anexoSimples", "f_inscEstadual", "f_inscMunicipal",
+  "f_observacoes",
 ];
 
 function getF(id) { return document.getElementById(id).value; }

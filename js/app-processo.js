@@ -26,6 +26,7 @@ const FICHA_FIELD_MAP = [
   { key: "anexoSimples", label: "Anexo Simples" },
   { key: "inscEstadual", label: "Insc. Estadual" },
   { key: "inscMunicipal", label: "Insc. Municipal" },
+  { key: "observacoes", label: "Observações" },
 ];
 
 const FIELD_IDS_PROCESSO = [
@@ -35,6 +36,7 @@ const FIELD_IDS_PROCESSO = [
   "f_cnaePrincipal", "f_cnaeSecundario", "f_tributacao", "f_valorCapital",
   "f_proLabore", "f_funcionarios",
   "f_emissaoNota", "f_situacao", "f_anexoSimples", "f_inscEstadual", "f_inscMunicipal",
+  "f_observacoes",
   "p_tipo", "p_data", "p_protocolo", "p_observacoes", "p_gerarFicha",
 ];
 
