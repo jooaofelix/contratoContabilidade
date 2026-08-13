@@ -194,14 +194,39 @@ function setupActionsFicha() {
   });
 }
 
+async function enrichFichaFromApi(empresaCnpj) {
+  const parsed = await fetchCnpjFromApi(empresaCnpj);
+  const fillIfEmpty = (id, value) => {
+    const el = document.getElementById(id);
+    if (value && !el.value) el.value = value;
+  };
+  fillIfEmpty("f_endereco", parsed.endereco);
+  fillIfEmpty("f_bairro", parsed.bairro);
+  fillIfEmpty("f_cidade", parsed.cidade);
+  fillIfEmpty("f_estado", parsed.estado);
+  fillIfEmpty("f_cep", parsed.cep);
+  fillIfEmpty("f_email", parsed.email);
+  fillIfEmpty("f_cnaePrincipal", parsed.cnaePrincipal);
+  fillIfEmpty("f_cnaeSecundario", parsed.cnaeSecundario);
+  fillIfEmpty("f_tributacao", parsed.tributacao);
+  fillIfEmpty("f_valorCapital", parsed.valorCapital);
+  fillIfEmpty("f_situacao", parsed.situacao);
+  fillIfEmpty("f_socio1", parsed.socio1);
+  fillIfEmpty("f_capitalSocio1", parsed.capitalSocio1);
+  fillIfEmpty("f_socio2", parsed.socio2);
+  fillIfEmpty("f_capitalSocio2", parsed.capitalSocio2);
+}
+
 async function setupEmpresasFicha() {
   const select = document.getElementById("empresa-select");
+  const search = document.getElementById("empresa-search");
   const status = document.getElementById("empresa-status");
 
+  let picker = { refresh: async () => {} };
   status.textContent = "Carregando empresas...";
   status.className = "pdf-status";
   try {
-    await populateEmpresaSelect(select, "— Nova empresa —");
+    picker = await initEmpresaPicker(search, select, "— Nova empresa —");
     status.textContent = "";
   } catch (err) {
     console.error(err);
@@ -215,10 +240,29 @@ async function setupEmpresasFicha() {
     status.className = "pdf-status";
     try {
       const empresa = await getEmpresa(select.value);
-      if (empresa) {
-        applyEmpresaToForm(empresa, "f_");
-        updateFichaPreview();
+      if (!empresa) return;
+
+      applyEmpresaToForm(empresa, "f_");
+      updateFichaPreview();
+
+      if (!empresa.cnpj) {
         status.textContent = "Dados carregados.";
+        status.className = "pdf-status ok";
+        return;
+      }
+
+      status.textContent = "Dados carregados. Buscando informações complementares na Receita...";
+      try {
+        await enrichFichaFromApi(empresa.cnpj);
+        updateFichaPreview();
+        const enriched = collectEmpresaFromForm("f_");
+        await upsertEmpresa(enriched, select.value);
+        await picker.refresh();
+        status.textContent = "Dados complementares preenchidos e salvos automaticamente.";
+        status.className = "pdf-status ok";
+      } catch (apiErr) {
+        console.error(apiErr);
+        status.textContent = "Dados carregados. Não consegui buscar informações complementares na Receita agora.";
         status.className = "pdf-status ok";
       }
     } catch (err) {
@@ -239,7 +283,7 @@ async function setupEmpresasFicha() {
     status.className = "pdf-status";
     try {
       const record = await upsertEmpresa(data, select.value || null);
-      await populateEmpresaSelect(select, "— Nova empresa —");
+      await picker.refresh();
       select.value = record.id;
       status.textContent = "Empresa salva.";
       status.className = "pdf-status ok";
@@ -268,7 +312,7 @@ async function setupEmpresasFicha() {
     status.className = "pdf-status";
     try {
       await deleteEmpresa(select.value);
-      await populateEmpresaSelect(select, "— Nova empresa —");
+      await picker.refresh();
       status.textContent = "Empresa excluída.";
       status.className = "pdf-status ok";
     } catch (err) {

@@ -198,6 +198,63 @@ function setupPdfImport() {
   });
 }
 
+function empresaToContratante(empresa) {
+  const enderecoPartes = [
+    empresa.endereco,
+    empresa.bairro,
+    [empresa.cidade, empresa.estado].filter(Boolean).join("/"),
+    empresa.cep ? "CEP " + empresa.cep : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  return {
+    razaoSocial: empresa.contratante || "",
+    cnpj: empresa.cnpj || "",
+    endereco: enderecoPartes,
+    repNome: empresa.administracao || empresa.socio1 || "",
+  };
+}
+
+async function setupEmpresasContrato() {
+  const select = document.getElementById("empresa-select");
+  const search = document.getElementById("empresa-search");
+  const status = document.getElementById("empresa-status");
+
+  status.textContent = "Carregando empresas...";
+  status.className = "pdf-status";
+  try {
+    await initEmpresaPicker(search, select, "— Selecione uma empresa —");
+    status.textContent = "";
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Não foi possível conectar ao banco de empresas.";
+    status.className = "pdf-status error";
+  }
+
+  select.addEventListener("change", async () => {
+    if (!select.value) return;
+    status.textContent = "Carregando...";
+    status.className = "pdf-status";
+    try {
+      const empresa = await getEmpresa(select.value);
+      if (!empresa) return;
+      const mapped = empresaToContratante(empresa);
+      document.getElementById("c_razaoSocial").value = mapped.razaoSocial;
+      document.getElementById("c_cnpj").value = mapped.cnpj;
+      document.getElementById("c_endereco").value = mapped.endereco;
+      document.getElementById("c_repNome").value = mapped.repNome;
+      updatePreview();
+      status.textContent = "Dados do cliente carregados. Confira o CPF do representante.";
+      status.className = "pdf-status ok";
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao carregar a empresa.";
+      status.className = "pdf-status error";
+    }
+  });
+}
+
 function setupActions() {
   document.getElementById("btn-print").addEventListener("click", () => {
     window.print();
@@ -230,6 +287,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupEscopoDefaults();
   setupLiveUpdate();
   setupPdfImport();
+  setupEmpresasContrato();
   setupActions();
   updatePreview();
 });

@@ -128,3 +128,44 @@ async function populateEmpresaSelect(selectEl, placeholderText) {
   }
   return empresas;
 }
+
+// Popula o select e liga um campo de busca que filtra as opções por
+// nome/CNPJ em memória (sem nova consulta ao banco a cada tecla). Retorna um
+// objeto com refresh() para recarregar do banco (ex: após salvar/excluir)
+// mantendo a busca em sincronia com a lista atual.
+async function initEmpresaPicker(searchInput, selectEl, placeholderText) {
+  let cache = [];
+
+  function applyFilter() {
+    const q = searchInput.value.trim().toLowerCase();
+    const filtered = q
+      ? cache.filter(
+          (e) =>
+            (e.contratante || "").toLowerCase().includes(q) ||
+            (e.cnpj || "").toLowerCase().includes(q)
+        )
+      : cache;
+
+    const current = selectEl.value;
+    selectEl.innerHTML = `<option value="">${placeholderText || "— Selecione uma empresa —"}</option>`;
+    filtered.forEach((e) => {
+      const opt = document.createElement("option");
+      opt.value = e.id;
+      opt.textContent = empresaLabel(e);
+      selectEl.appendChild(opt);
+    });
+    if (filtered.some((e) => e.id === current)) {
+      selectEl.value = current;
+    }
+  }
+
+  async function refresh() {
+    cache = await populateEmpresaSelect(selectEl, placeholderText);
+    return cache;
+  }
+
+  searchInput.addEventListener("input", applyFilter);
+
+  await refresh();
+  return { refresh };
+}

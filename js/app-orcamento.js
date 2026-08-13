@@ -68,6 +68,46 @@ function setupDescontoToggle() {
   sync();
 }
 
+async function setupEmpresasOrcamento() {
+  const select = document.getElementById("empresa-select");
+  const search = document.getElementById("empresa-search");
+  const status = document.getElementById("empresa-status");
+
+  status.textContent = "Carregando empresas...";
+  status.className = "pdf-status";
+  try {
+    await initEmpresaPicker(search, select, "— Selecione uma empresa —");
+    status.textContent = "";
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Não foi possível conectar ao banco de empresas.";
+    status.className = "pdf-status error";
+  }
+
+  select.addEventListener("change", async () => {
+    if (!select.value) return;
+    status.textContent = "Carregando...";
+    status.className = "pdf-status";
+    try {
+      const empresa = await getEmpresa(select.value);
+      if (!empresa) return;
+      const responsavel = empresa.administracao || empresa.socio1 || "";
+      document.getElementById("q_empresa").value = empresa.contratante || "";
+      document.getElementById("q_cnpj").value = empresa.cnpj || "";
+      document.getElementById("q_responsavel").value = responsavel;
+      document.getElementById("q_nomeResponsavel").value = responsavel.split(" ")[0] || "";
+      document.getElementById("q_email").value = empresa.email || "";
+      updateProposalPreview();
+      status.textContent = "Dados do cliente carregados. Confira telefone e nome de saudação.";
+      status.className = "pdf-status ok";
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao carregar a empresa.";
+      status.className = "pdf-status error";
+    }
+  });
+}
+
 function setupActionsOrc() {
   document.getElementById("btn-print").addEventListener("click", () => {
     window.print();
@@ -93,6 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupPanelTogglesOrc();
   setupDescontoToggle();
   setupLiveUpdateOrc();
+  setupEmpresasOrcamento();
   setupActionsOrc();
   updateProposalPreview();
 });
