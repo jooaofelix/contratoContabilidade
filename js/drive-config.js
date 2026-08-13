@@ -3,5 +3,5 @@ const DRIVE_CONFIG = {
   // ID da pasta-mãe no Google Drive (dentro dela, uma subpasta é criada
   // automaticamente para cada empresa na primeira vez que algo é salvo).
   // Pegue o ID no final da URL da pasta: drive.google.com/drive/folders/AQUI
-  rootFolderId: "",
+  rootFolderId: "1kUixGQRoKxjJYZz01f0otomz-ez6x0hv",
 };
