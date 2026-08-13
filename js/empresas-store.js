@@ -59,10 +59,15 @@ async function deleteEmpresa(id) {
   await db.collection(EMPRESAS_COLLECTION).doc(id).delete();
 }
 
-// Guarda o ID da subpasta do Drive já criada para esta empresa, para reusar
-// nas próximas fichas/contratos/orçamentos salvos para o mesmo cliente.
-async function setEmpresaDriveFolder(id, folderId) {
-  await db.collection(EMPRESAS_COLLECTION).doc(id).set({ driveFolderId: folderId }, { merge: true });
+// Guarda o ID da subpasta do Drive já criada para esta empresa dentro da
+// pasta-raiz de um tipo de documento (ex: "fichaCadastral", "contrato"), para
+// reusar nas próximas vezes que algo daquele tipo for salvo para o mesmo
+// cliente. Usa notação de ponto para não sobrescrever os outros tipos já
+// salvos no mesmo campo driveFolders.
+async function setEmpresaDriveFolder(id, tipoKey, folderId) {
+  const update = {};
+  update[`driveFolders.${tipoKey}`] = folderId;
+  await db.collection(EMPRESAS_COLLECTION).doc(id).set(update, { merge: true });
 }
 
 async function addHistoricoAlteracao(empresaId, evento) {

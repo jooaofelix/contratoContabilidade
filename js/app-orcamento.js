@@ -128,7 +128,7 @@ async function setupEmpresasOrcamento() {
       const record = await upsertEmpresa(data, select.value || null);
       await picker.refresh();
       select.value = record.id;
-      await saveDocumentToDrive({ elementId: "proposal-preview", empresaId: record.id, empresaNome: nome, cnpj, tipoLabel: "Orçamento" });
+      await saveDocumentToDrive({ elementId: "proposal-preview", empresaId: record.id, empresaNome: nome, cnpj, tipoLabel: "Orçamento", tipoKey: "orcamento" });
       status.textContent = "Proposta salva no Drive.";
       status.className = "pdf-status ok";
     } catch (err) {

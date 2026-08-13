@@ -499,13 +499,14 @@ async function saveProcessoPdfToDrive(showBusy) {
   const gerarFicha = abertura || document.getElementById("p_gerarFicha").checked;
   const elementId = gerarFicha ? "ficha-atualizada-preview" : "processo-preview";
   const tipoLabel = abertura ? "Abertura de Empresa" : "Ficha de Processo";
+  const tipoKey = abertura ? "aberturaEmpresa" : "fichaProcesso";
 
   if (showBusy) {
     status.textContent = "Enviando PDF para o Drive...";
     status.className = "pdf-status";
   }
   try {
-    await saveDocumentToDrive({ elementId, empresaId, empresaNome: nome, cnpj, tipoLabel });
+    await saveDocumentToDrive({ elementId, empresaId, empresaNome: nome, cnpj, tipoLabel, tipoKey });
     status.textContent = "Salvo e PDF enviado para o Drive.";
     status.className = "pdf-status ok";
   } catch (err) {

@@ -275,7 +275,7 @@ async function setupEmpresasContrato() {
       const record = await upsertEmpresa(data, select.value || null);
       await picker.refresh();
       select.value = record.id;
-      await saveDocumentToDrive({ elementId: "contract-preview", empresaId: record.id, empresaNome: nome, cnpj, tipoLabel: "Contrato" });
+      await saveDocumentToDrive({ elementId: "contract-preview", empresaId: record.id, empresaNome: nome, cnpj, tipoLabel: "Contrato", tipoKey: "contrato" });
       status.textContent = "Contrato salvo no Drive.";
       status.className = "pdf-status ok";
     } catch (err) {

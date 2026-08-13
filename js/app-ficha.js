@@ -77,6 +77,7 @@ async function saveFichaPdfToDrive(showBusy) {
       empresaNome: nome,
       cnpj: getF("f_cnpj"),
       tipoLabel: "Ficha Cadastral",
+      tipoKey: "fichaCadastral",
     });
     status.textContent = "Ficha salva e PDF enviado para o Drive.";
     status.className = "pdf-status ok";

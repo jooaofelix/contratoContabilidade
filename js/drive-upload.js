@@ -7,7 +7,12 @@ let driveTokenClient = null;
 let driveAccessToken = null;
 
 function driveConfigured() {
-  return !!(window.DRIVE_CONFIG && DRIVE_CONFIG.clientId && DRIVE_CONFIG.rootFolderId);
+  return !!(
+    typeof DRIVE_CONFIG !== "undefined" &&
+    DRIVE_CONFIG.clientId &&
+    DRIVE_CONFIG.folders &&
+    Object.values(DRIVE_CONFIG.folders).some(Boolean)
+  );
 }
 
 function ensureDriveTokenClient() {
@@ -61,14 +66,18 @@ async function createDriveFolder(name, parentId) {
   return data.id;
 }
 
-async function getOrCreateEmpresaFolder(empresaId, empresaNome) {
+async function getOrCreateEmpresaFolder(empresaId, empresaNome, tipoKey) {
+  const rootFolderId = DRIVE_CONFIG.folders[tipoKey];
+  if (!rootFolderId) throw new Error(`Pasta do Drive não configurada para "${tipoKey}".`);
+
   const empresa = await getEmpresa(empresaId);
-  if (empresa && empresa.driveFolderId) return empresa.driveFolderId;
+  const existing = empresa && empresa.driveFolders && empresa.driveFolders[tipoKey];
+  if (existing) return existing;
 
-  let folderId = await findDriveFolderByName(empresaNome, DRIVE_CONFIG.rootFolderId);
-  if (!folderId) folderId = await createDriveFolder(empresaNome, DRIVE_CONFIG.rootFolderId);
+  let folderId = await findDriveFolderByName(empresaNome, rootFolderId);
+  if (!folderId) folderId = await createDriveFolder(empresaNome, rootFolderId);
 
-  await setEmpresaDriveFolder(empresaId, folderId);
+  await setEmpresaDriveFolder(empresaId, tipoKey, folderId);
   return folderId;
 }
 
@@ -102,12 +111,12 @@ function sanitizeDriveFilename(name) {
 
 // Orquestra: pede acesso, garante a subpasta do cliente, gera o PDF a partir
 // do preview já renderizado na tela e sobe pro Drive.
-async function saveDocumentToDrive({ elementId, empresaId, empresaNome, cnpj, tipoLabel }) {
+async function saveDocumentToDrive({ elementId, empresaId, empresaNome, cnpj, tipoLabel, tipoKey }) {
   if (!driveConfigured()) throw new Error("Integração com o Drive ainda não foi configurada.");
   if (!empresaId || !empresaNome) throw new Error("Salve a empresa antes de enviar para o Drive.");
 
   await requestDriveAccessToken();
-  const folderId = await getOrCreateEmpresaFolder(empresaId, empresaNome);
+  const folderId = await getOrCreateEmpresaFolder(empresaId, empresaNome, tipoKey);
   const blob = await generatePdfBlob(elementId);
   const filename = sanitizeDriveFilename(`${tipoLabel} - ${empresaNome}${cnpj ? " - " + cnpj : ""}.pdf`);
   return uploadPdfToDrive(blob, filename, folderId);
