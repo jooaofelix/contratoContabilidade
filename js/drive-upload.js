@@ -109,6 +109,14 @@ async function findDriveFolderByName(name, parentId) {
   return data.files && data.files[0] ? data.files[0].id : null;
 }
 
+async function findDriveFileByName(name, parentId) {
+  const safeName = name.replace(/'/g, "\\'");
+  const q = encodeURIComponent(`name = '${safeName}' and '${parentId}' in parents and trashed = false`);
+  const res = await driveFetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`);
+  const data = await res.json();
+  return data.files && data.files[0] ? data.files[0].id : null;
+}
+
 async function createDriveFolder(name, parentId) {
   const res = await driveFetch("https://www.googleapis.com/drive/v3/files", {
     method: "POST",
@@ -144,16 +152,25 @@ async function generatePdfBlob(elementId) {
   }).outputPdf("blob");
 }
 
+// Se já existe um arquivo com esse nome nessa pasta, atualiza o conteúdo dele
+// (PATCH) em vez de criar outro — assim cada empresa fica sempre com um único
+// PDF por tipo de documento, atualizado por cima do anterior.
 async function uploadPdfToDrive(blob, filename, folderId) {
-  const metadata = { name: filename, parents: [folderId], mimeType: "application/pdf" };
+  const existingFileId = await findDriveFileByName(filename, folderId);
+
+  const metadata = { name: filename, mimeType: "application/pdf" };
+  if (!existingFileId) metadata.parents = [folderId];
+
   const form = new FormData();
   form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
   form.append("file", blob);
 
-  const res = await fetch(
-    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink",
-    { method: "POST", headers: { Authorization: `Bearer ${driveAccessToken}` }, body: form }
-  );
+  const url = existingFileId
+    ? `https://www.googleapis.com/upload/drive/v3/files/${existingFileId}?uploadType=multipart&fields=id,webViewLink`
+    : "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink";
+  const method = existingFileId ? "PATCH" : "POST";
+
+  const res = await fetch(url, { method, headers: { Authorization: `Bearer ${driveAccessToken}` }, body: form });
   if (res.status === 401) {
     handleDriveAuthExpired();
     throw new Error("Sessão do Drive expirou. Clique em salvar/gerar de novo para autorizar novamente.");
