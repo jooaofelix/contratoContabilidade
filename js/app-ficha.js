@@ -209,6 +209,59 @@ function setupPdfImportFicha() {
   });
 }
 
+// Percorre todas as empresas já cadastradas no banco, gera o PDF da ficha de
+// cada uma com os dados que já tem e sobe pra pasta de Ficha Cadastral no
+// Drive (uma subpasta por cliente, criada/reaproveitada automaticamente).
+async function gerarTodasFichas() {
+  const status = document.getElementById("bulk-status");
+
+  if (!driveConfigured()) {
+    status.textContent = "A integração com o Google Drive ainda não foi configurada.";
+    status.className = "pdf-status error";
+    return;
+  }
+
+  const empresas = await getEmpresas();
+  if (!confirm(`Gerar e salvar no Drive a ficha de ${empresas.length} empresas cadastradas? Isso pode levar alguns minutos.`)) return;
+
+  const formSnapshot = collectFichaData();
+  let ok = 0;
+  const falhas = [];
+
+  for (let i = 0; i < empresas.length; i++) {
+    const empresa = empresas[i];
+    const nome = empresa.contratante || "";
+    status.textContent = `Gerando ${i + 1}/${empresas.length}: ${nome || "(sem nome)"}...`;
+    status.className = "pdf-status";
+
+    if (!nome) {
+      falhas.push(`Empresa sem nome (id ${empresa.id})`);
+      continue;
+    }
+
+    try {
+      document.getElementById("ficha-preview").innerHTML = renderFicha({ f: empresa });
+      await saveDocumentToDrive({
+        elementId: "ficha-preview",
+        empresaId: empresa.id,
+        empresaNome: nome,
+        cnpj: empresa.cnpj,
+        tipoLabel: "Ficha Cadastral",
+        tipoKey: "fichaCadastral",
+      });
+      ok++;
+    } catch (err) {
+      console.error(err);
+      falhas.push(`${nome} (${err.message})`);
+    }
+  }
+
+  document.getElementById("ficha-preview").innerHTML = renderFicha(formSnapshot);
+
+  status.textContent = `Concluído: ${ok} ficha(s) salvas no Drive.` + (falhas.length ? ` ${falhas.length} falha(s): ${falhas.join("; ")}` : "");
+  status.className = falhas.length > 0 ? "pdf-status error" : "pdf-status ok";
+}
+
 function setupActionsFicha() {
   document.getElementById("btn-print").addEventListener("click", () => {
     window.print();
@@ -377,5 +430,6 @@ document.addEventListener("DOMContentLoaded", () => {
   setupPdfImportFicha();
   setupActionsFicha();
   setupEmpresasFicha();
+  document.getElementById("gerar-todas-fichas").addEventListener("click", gerarTodasFichas);
   updateFichaPreview();
 });
