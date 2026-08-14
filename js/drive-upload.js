@@ -65,14 +65,36 @@ function requestDriveAccessToken() {
       ));
     };
 
-    client.requestAccessToken({ prompt: driveAccessToken ? "" : "consent" });
+    client.requestAccessToken({ prompt: "consent" });
   });
+}
+
+// Só pede autorização de verdade quando ainda não temos um token válido.
+// Chamar requestAccessToken() de novo a cada arquivo (mesmo com prompt: "")
+// ainda tenta abrir uma janela por baixo dos panos, e o Safari bloqueia isso
+// quando não é uma resposta direta e imediata a um clique — foi o que travou
+// a geração em lote depois do primeiro arquivo. Um token só, reaproveitado
+// pra tudo, resolve.
+async function ensureDriveAccessToken() {
+  if (driveAccessToken) return driveAccessToken;
+  return requestDriveAccessToken();
+}
+
+// Se o Drive responder 401, o token expirou/foi revogado: limpa o cache pra
+// forçar um novo pedido de autorização na próxima tentativa (o usuário vai
+// precisar clicar de novo, já que isso exige um clique fresco).
+function handleDriveAuthExpired() {
+  driveAccessToken = null;
 }
 
 async function driveFetch(url, options) {
   options = options || {};
   options.headers = Object.assign({}, options.headers, { Authorization: `Bearer ${driveAccessToken}` });
   const res = await fetch(url, options);
+  if (res.status === 401) {
+    handleDriveAuthExpired();
+    throw new Error("Sessão do Drive expirou. Clique em salvar/gerar de novo para autorizar novamente.");
+  }
   if (!res.ok) throw new Error(`Drive API ${res.status}: ${await res.text()}`);
   return res;
 }
@@ -132,6 +154,10 @@ async function uploadPdfToDrive(blob, filename, folderId) {
     "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink",
     { method: "POST", headers: { Authorization: `Bearer ${driveAccessToken}` }, body: form }
   );
+  if (res.status === 401) {
+    handleDriveAuthExpired();
+    throw new Error("Sessão do Drive expirou. Clique em salvar/gerar de novo para autorizar novamente.");
+  }
   if (!res.ok) throw new Error(`Falha no upload (${res.status}): ${await res.text()}`);
   return res.json();
 }
@@ -146,7 +172,7 @@ async function saveDocumentToDrive({ elementId, empresaId, empresaNome, cnpj, ti
   if (!driveConfigured()) throw new Error("Integração com o Drive ainda não foi configurada.");
   if (!empresaId || !empresaNome) throw new Error("Salve a empresa antes de enviar para o Drive.");
 
-  await requestDriveAccessToken();
+  await ensureDriveAccessToken();
   const folderId = await getOrCreateEmpresaFolder(empresaId, empresaNome, tipoKey);
   const blob = await generatePdfBlob(elementId);
   const filename = sanitizeDriveFilename(`${tipoLabel} - ${empresaNome}${cnpj ? " - " + cnpj : ""}.pdf`);

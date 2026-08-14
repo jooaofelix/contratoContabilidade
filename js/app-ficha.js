@@ -228,7 +228,7 @@ async function gerarTodasFichas() {
   status.textContent = "Aguardando autorização do Google (confira se abriu um pop-up)...";
   status.className = "pdf-status";
   try {
-    await requestDriveAccessToken();
+    await ensureDriveAccessToken();
   } catch (err) {
     console.error(err);
     status.textContent = err.message;
