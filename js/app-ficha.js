@@ -221,6 +221,21 @@ async function gerarTodasFichas() {
     return;
   }
 
+  // Pede a autorização do Drive já na hora do clique, antes de qualquer outra
+  // espera (busca no banco, confirm()) — deixar essa chamada acontecer só lá
+  // na frente é o que faz o navegador (principalmente Safari) bloquear o
+  // pop-up por não reconhecer mais como resposta direta ao clique do usuário.
+  status.textContent = "Aguardando autorização do Google (confira se abriu um pop-up)...";
+  status.className = "pdf-status";
+  try {
+    await requestDriveAccessToken();
+  } catch (err) {
+    console.error(err);
+    status.textContent = err.message;
+    status.className = "pdf-status error";
+    return;
+  }
+
   const empresas = await getEmpresas();
   if (!confirm(`Gerar e salvar no Drive a ficha de ${empresas.length} empresas cadastradas? Isso pode levar alguns minutos.`)) return;
 

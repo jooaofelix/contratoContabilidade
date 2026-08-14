@@ -21,19 +21,50 @@ function ensureDriveTokenClient() {
       client_id: DRIVE_CONFIG.clientId,
       scope: DRIVE_SCOPE,
       callback: () => {}, // sobrescrito a cada chamada de requestDriveAccessToken
+      error_callback: () => {}, // idem
     });
   }
   return driveTokenClient;
 }
 
+// Pede o token de acesso ao Drive. Tem timeout e captura o error_callback do
+// GIS porque, se o navegador bloquear o pop-up de autorização (comum no
+// Safari quando a chamada não acontece bem na sequência do clique do
+// usuário), nem callback nem erro disparam sozinhos — e sem isso a promise
+// ficava pendurada pra sempre, travando quem chamou.
 function requestDriveAccessToken() {
   return new Promise((resolve, reject) => {
     const client = ensureDriveTokenClient();
+    let settled = false;
+
+    const timeoutId = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error(
+        "Tempo esgotado aguardando a autorização do Google. Verifique se o navegador bloqueou um pop-up " +
+        "(no Safari costuma aparecer um aviso na barra de endereço) e permita pop-ups para este site."
+      ));
+    }, 45000);
+
     client.callback = (resp) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
       if (resp.error) { reject(new Error(resp.error)); return; }
       driveAccessToken = resp.access_token;
       resolve(driveAccessToken);
     };
+
+    client.error_callback = (err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      reject(new Error(
+        "Não foi possível abrir a janela de autorização do Google (" + (err && err.type ? err.type : "erro desconhecido") + "). " +
+        "Verifique se pop-ups estão bloqueados para este site."
+      ));
+    };
+
     client.requestAccessToken({ prompt: driveAccessToken ? "" : "consent" });
   });
 }
