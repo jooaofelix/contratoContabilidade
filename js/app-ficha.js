@@ -209,9 +209,35 @@ function setupPdfImportFicha() {
   });
 }
 
-// Percorre todas as empresas já cadastradas no banco, gera o PDF da ficha de
-// cada uma com os dados que já tem e sobe pra pasta de Ficha Cadastral no
-// Drive (uma subpasta por cliente, criada/reaproveitada automaticamente).
+function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+
+// Mesma lógica do enrichFichaFromApi, mas sobre um objeto (não sobre os
+// campos do formulário) — só preenche o que estiver vazio na empresa.
+function mergeCnpjEnrichment(empresa, parsed) {
+  const merged = Object.assign({}, empresa);
+  const fillIfEmpty = (key, value) => { if (value && !merged[key]) merged[key] = value; };
+  fillIfEmpty("endereco", parsed.endereco);
+  fillIfEmpty("bairro", parsed.bairro);
+  fillIfEmpty("cidade", parsed.cidade);
+  fillIfEmpty("estado", parsed.estado);
+  fillIfEmpty("cep", parsed.cep);
+  fillIfEmpty("email", parsed.email);
+  fillIfEmpty("cnaePrincipal", parsed.cnaePrincipal);
+  fillIfEmpty("cnaeSecundario", parsed.cnaeSecundario);
+  fillIfEmpty("tributacao", parsed.tributacao);
+  fillIfEmpty("valorCapital", parsed.valorCapital);
+  fillIfEmpty("situacao", parsed.situacao);
+  fillIfEmpty("socio1", parsed.socio1);
+  fillIfEmpty("capitalSocio1", parsed.capitalSocio1);
+  fillIfEmpty("socio2", parsed.socio2);
+  fillIfEmpty("capitalSocio2", parsed.capitalSocio2);
+  return merged;
+}
+
+// Percorre todas as empresas já cadastradas no banco, consulta a Receita
+// (BrasilAPI) por CNPJ pra completar os dados que faltarem, gera o PDF da
+// ficha de cada uma e sobe pra pasta de Ficha Cadastral no Drive (uma
+// subpasta por cliente, criada/reaproveitada automaticamente).
 async function gerarTodasFichas() {
   const status = document.getElementById("bulk-status");
 
@@ -241,21 +267,39 @@ async function gerarTodasFichas() {
 
   const formSnapshot = collectFichaData();
   let ok = 0;
+  let enriquecidas = 0;
   const falhas = [];
 
   for (let i = 0; i < empresas.length; i++) {
     const empresa = empresas[i];
     const nome = empresa.contratante || "";
-    status.textContent = `Gerando ${i + 1}/${empresas.length}: ${nome || "(sem nome)"}...`;
-    status.className = "pdf-status";
 
     if (!nome) {
       falhas.push(`Empresa sem nome (id ${empresa.id})`);
       continue;
     }
 
+    let dadosFicha = empresa;
+    if (empresa.cnpj) {
+      status.textContent = `Consultando Receita ${i + 1}/${empresas.length}: ${nome}...`;
+      status.className = "pdf-status";
+      try {
+        const parsed = await fetchCnpjFromApi(empresa.cnpj);
+        dadosFicha = mergeCnpjEnrichment(empresa, parsed);
+        await upsertEmpresa(dadosFicha, empresa.id);
+        enriquecidas++;
+      } catch (apiErr) {
+        console.error(apiErr);
+        // segue com os dados que já tinha no banco, sem travar a geração
+      }
+      await sleep(300); // pausa curta pra não estourar limite da API pública
+    }
+
+    status.textContent = `Gerando ${i + 1}/${empresas.length}: ${nome}...`;
+    status.className = "pdf-status";
+
     try {
-      document.getElementById("ficha-preview").innerHTML = renderFicha({ f: empresa });
+      document.getElementById("ficha-preview").innerHTML = renderFicha({ f: dadosFicha });
       await saveDocumentToDrive({
         elementId: "ficha-preview",
         empresaId: empresa.id,
@@ -273,7 +317,8 @@ async function gerarTodasFichas() {
 
   document.getElementById("ficha-preview").innerHTML = renderFicha(formSnapshot);
 
-  status.textContent = `Concluído: ${ok} ficha(s) salvas no Drive.` + (falhas.length ? ` ${falhas.length} falha(s): ${falhas.join("; ")}` : "");
+  status.textContent = `Concluído: ${ok} ficha(s) salvas no Drive (${enriquecidas} completadas com dados da Receita).` +
+    (falhas.length ? ` ${falhas.length} falha(s): ${falhas.join("; ")}` : "");
   status.className = falhas.length > 0 ? "pdf-status error" : "pdf-status ok";
 }
 
