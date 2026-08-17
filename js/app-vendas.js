@@ -185,6 +185,190 @@ async function removeVenda(id) {
   }
 }
 
+function setupVendasModeToggle() {
+  document.querySelectorAll(".mode-tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const mode = tab.dataset.modeTab;
+      document.querySelectorAll(".mode-tab").forEach((t) => t.classList.toggle("active", t === tab));
+      document.querySelectorAll("[data-mode]").forEach((el) => el.classList.toggle("hidden", el.dataset.mode !== mode));
+    });
+  });
+}
+
+// --- Importação de propostas via Excel -------------------------------
+
+function normalizeHeader(str) {
+  return String(str || "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+const IMPORT_COLUMN_ALIASES = {
+  empresaNome: ["empresa", "cliente", "nome", "lead", "razaosocial", "nomeempresa", "empresalead"],
+  contato: ["contato", "responsavel", "nomecontato", "nomedocontato", "pessoa"],
+  valor: ["valor", "valorproposto", "proposta", "valordaproposta"],
+  dataEnvio: ["data", "dataenvio", "dataproposta", "dataenviada", "dataenviocontato"],
+  observacoes: ["observacao", "observacoes", "obs", "notas", "comentario", "comentarios"],
+};
+
+function detectColumnMap(headerRow) {
+  const map = {};
+  headerRow.forEach((rawHeader, idx) => {
+    const norm = normalizeHeader(rawHeader);
+    Object.entries(IMPORT_COLUMN_ALIASES).forEach(([field, aliases]) => {
+      if (map[field] === undefined && aliases.includes(norm)) map[field] = idx;
+    });
+  });
+  return map;
+}
+
+function excelDateToIso(value) {
+  if (!value) return "";
+  if (value instanceof Date && !isNaN(value)) return value.toISOString().slice(0, 10);
+  const str = String(value).trim();
+  let m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+  return "";
+}
+
+function excelValueToBRL(value) {
+  if (value === undefined || value === null || value === "") return "";
+  if (typeof value === "number") {
+    return value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  return String(value).replace(/^R\$\s*/i, "").trim();
+}
+
+function parseImportFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, { type: "array", cellDates: true });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        resolve(XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" }));
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(new Error("Erro ao ler o arquivo."));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function buildImportPreview(rows) {
+  if (rows.length < 2) return [];
+  const colMap = detectColumnMap(rows[0]);
+
+  return rows
+    .slice(1)
+    .filter((r) => r.some((cell) => String(cell).trim() !== ""))
+    .map((r) => ({
+      empresaId: null,
+      empresaNome: colMap.empresaNome !== undefined ? String(r[colMap.empresaNome] || "").trim() : "",
+      contato: colMap.contato !== undefined ? String(r[colMap.contato] || "").trim() : "",
+      valor: colMap.valor !== undefined ? excelValueToBRL(r[colMap.valor]) : "",
+      dataEnvio: (colMap.dataEnvio !== undefined && excelDateToIso(r[colMap.dataEnvio])) || new Date().toISOString().slice(0, 10),
+      status: "Aguardando resposta",
+      observacoes: colMap.observacoes !== undefined ? String(r[colMap.observacoes] || "").trim() : "",
+    }));
+}
+
+function renderImportPreview(rows) {
+  const wrap = document.getElementById("import-preview-wrap");
+  if (rows.length === 0) {
+    wrap.innerHTML = "";
+    return;
+  }
+
+  const validas = rows.filter((r) => r.empresaNome);
+  const semEmpresa = rows.length - validas.length;
+
+  const tableRows = rows.map((r) => `
+    <tr class="${r.empresaNome ? "" : "import-row-invalid"}">
+      <td>${r.empresaNome || "⚠️ sem nome — será ignorada"}</td>
+      <td>${r.contato || "—"}</td>
+      <td>${r.valor ? "R$ " + r.valor : "—"}</td>
+      <td>${new Date(r.dataEnvio + "T00:00:00").toLocaleDateString("pt-BR")}</td>
+      <td>${r.observacoes || ""}</td>
+    </tr>
+  `).join("");
+
+  wrap.innerHTML = `
+    <p class="fixed-note">${rows.length} linha(s) lida(s) — ${validas.length} pronta(s) pra importar${semEmpresa ? `, ${semEmpresa} sem nome de empresa (serão ignoradas)` : ""}.</p>
+    <div class="import-preview-table-wrap">
+      <table class="vendas-table">
+        <thead><tr><th>Empresa / Lead</th><th>Contato</th><th>Valor</th><th>Data</th><th>Observações</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>
+    <div class="row" style="margin-top: 14px;">
+      <button id="confirmar-importacao" class="btn-primary">Importar ${validas.length} proposta(s)</button>
+      <button id="cancelar-importacao" class="btn-secondary">Cancelar</button>
+    </div>
+  `;
+
+  document.getElementById("confirmar-importacao").addEventListener("click", () => confirmImport(validas));
+  document.getElementById("cancelar-importacao").addEventListener("click", () => {
+    wrap.innerHTML = "";
+    document.getElementById("import-file-input").value = "";
+    document.getElementById("import-status").textContent = "";
+  });
+}
+
+async function confirmImport(rows) {
+  const status = document.getElementById("import-status");
+  let ok = 0;
+  for (const row of rows) {
+    status.textContent = `Importando ${ok + 1}/${rows.length}: ${row.empresaNome}...`;
+    status.className = "pdf-status";
+    try {
+      await upsertVenda(row, null);
+      ok++;
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  status.textContent = `${ok} de ${rows.length} proposta(s) importada(s) com sucesso.`;
+  status.className = "pdf-status ok";
+  document.getElementById("import-preview-wrap").innerHTML = "";
+  document.getElementById("import-file-input").value = "";
+  await refreshVendas();
+}
+
+function setupImportacao() {
+  document.getElementById("import-file-input").addEventListener("change", async () => {
+    const input = document.getElementById("import-file-input");
+    const status = document.getElementById("import-status");
+    const file = input.files[0];
+    if (!file) return;
+
+    status.textContent = "Lendo planilha...";
+    status.className = "pdf-status";
+    document.getElementById("import-preview-wrap").innerHTML = "";
+
+    try {
+      const rows = await parseImportFile(file);
+      const preview = buildImportPreview(rows);
+      if (preview.length === 0) {
+        status.textContent = "Não encontrei linhas de dados na planilha (confira se a primeira linha é o cabeçalho).";
+        status.className = "pdf-status error";
+        return;
+      }
+      status.textContent = "";
+      renderImportPreview(preview);
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao ler a planilha. Confira se é um .xlsx/.xls/.csv válido.";
+      status.className = "pdf-status error";
+    }
+  });
+}
+
 async function setupEmpresasVendas() {
   const select = document.getElementById("empresa-select");
   const search = document.getElementById("empresa-search");
@@ -237,6 +421,8 @@ function setupVendaActions() {
 
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("v_dataEnvio").value = new Date().toISOString().slice(0, 10);
+  setupVendasModeToggle();
+  setupImportacao();
   setupEmpresasVendas();
   setupVendaActions();
   refreshVendas();

@@ -43,10 +43,35 @@
   border-radius: 6px;
   padding: 8px 10px;
   font-size: 0.85rem;
+  font-weight: 400;
 }
 
-.vendas-toolbar input {
+.vendas-toolbar label {
+  font-size: 0.78rem;
+  color: #4b5563;
+  font-weight: 600;
+  gap: 4px;
+}
+
+.vendas-search-label {
   flex: 1;
+}
+
+.vendas-filtro-label {
+  flex: 0 0 200px;
+}
+
+.import-preview-table-wrap {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-top: 14px;
+}
+
+.import-row-invalid td {
+  background: #fee2e2 !important;
+  color: #991b1b;
 }
 
 .vendas-table-container {

@@ -25,9 +25,14 @@
   </nav>
 </header>
 
+<div class="mode-tabs">
+  <button type="button" class="mode-tab active" data-mode-tab="funil">📈 Funil de Vendas</button>
+  <button type="button" class="mode-tab" data-mode-tab="importar">📥 Início de Proposta</button>
+</div>
+
 <div class="app-layout">
 
-  <aside class="sidebar">
+  <aside class="sidebar" data-mode="funil">
 
     <section class="panel">
       <h2>🏢 Empresa já cadastrada (opcional)</h2>
@@ -79,22 +84,46 @@
 
   </aside>
 
-  <main class="preview-wrap">
+  <main class="preview-wrap" data-mode="funil">
 
     <div class="vendas-stats" id="vendas-stats"></div>
 
     <div class="vendas-toolbar">
-      <input type="text" id="vendas-search" placeholder="Buscar por empresa ou contato...">
-      <select id="vendas-filtro-status">
-        <option value="">Todos os status</option>
-        <option value="Aguardando resposta">Aguardando resposta</option>
-        <option value="Em negociação">Em negociação</option>
-        <option value="Fechado/Ganho">Fechado/Ganho</option>
-        <option value="Recusado/Perdido">Recusado/Perdido</option>
-      </select>
+      <label class="vendas-search-label">Buscar por empresa ou pelo nome do contato
+        <input type="text" id="vendas-search" placeholder="ex: Padaria do João, ou Maria">
+      </label>
+      <label class="vendas-filtro-label">Status
+        <select id="vendas-filtro-status">
+          <option value="">Todos os status</option>
+          <option value="Aguardando resposta">Aguardando resposta</option>
+          <option value="Em negociação">Em negociação</option>
+          <option value="Fechado/Ganho">Fechado/Ganho</option>
+          <option value="Recusado/Perdido">Recusado/Perdido</option>
+        </select>
+      </label>
     </div>
 
     <div id="vendas-table-wrap"></div>
+
+  </main>
+
+  <main class="preview-wrap hidden" data-mode="importar">
+
+    <section class="panel">
+      <h2>📥 Importar propostas via Excel</h2>
+      <div class="panel-body">
+        <p class="fixed-note">
+          Escolha uma planilha (.xlsx, .xls ou .csv) com uma linha de cabeçalho. Colunas reconhecidas
+          automaticamente (nomes parecidos também funcionam): <strong>Empresa</strong>, <strong>Contato</strong>,
+          <strong>Valor</strong>, <strong>Data</strong> e <strong>Observações</strong>. Todas as linhas entram
+          no funil como "Aguardando resposta" — dá pra conferir antes de confirmar.
+        </p>
+        <input type="file" id="import-file-input" accept=".xlsx,.xls,.csv">
+        <div id="import-status" class="pdf-status"></div>
+      </div>
+    </section>
+
+    <div id="import-preview-wrap"></div>
 
   </main>
 
@@ -105,6 +134,7 @@
 <script src="js/firebase-config.js"></script>
 <script src="js/empresas-store.js"></script>
 <script src="js/vendas-store.js"></script>
+<script src="js/vendor/xlsx.full.min.js"></script>
 <script src="js/app-vendas.js"></script>
 </body>
 </html>
