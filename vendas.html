@@ -28,6 +28,7 @@
 <div class="mode-tabs">
   <button type="button" class="mode-tab active" data-mode-tab="funil">📈 Funil de Vendas</button>
   <button type="button" class="mode-tab" data-mode-tab="importar">📥 Início de Proposta</button>
+  <button type="button" class="mode-tab" data-mode-tab="lote">📤 Envio em Lote</button>
 </div>
 
 <div class="app-layout">
@@ -214,6 +215,39 @@
       </div>
     </section>
 
+  </main>
+
+  <aside class="sidebar hidden" data-mode="lote">
+
+    <section class="panel">
+      <h2>🎯 Filtro do envio</h2>
+      <div class="panel-body">
+        <label>Serviço(s) a oferecer</label>
+        <div id="lote-produtos-checklist"></div>
+        <label>Grupo
+          <select id="lote-grupo">
+            <option value="todos">Todos</option>
+            <option value="pf">Só Pessoa Física</option>
+            <option value="pj">Só Pessoa Jurídica</option>
+          </select>
+        </label>
+        <label class="checkbox"><input type="checkbox" id="lote-pular-enviados" checked> Pular quem já recebeu esse(s) serviço(s) antes</label>
+        <label>Valor cheio (R$)
+          <input type="text" id="lote-valorCheio" placeholder="ex: 700,00">
+        </label>
+        <label class="checkbox"><input type="checkbox" id="lote-temDesconto"> Aplicar desconto</label>
+        <label id="lote-valorDescontoWrap" class="hidden">Valor com desconto (R$)
+          <input type="text" id="lote-valorDesconto" placeholder="ex: 500,00">
+        </label>
+        <button id="lote-iniciar" class="btn-primary">▶️ Iniciar fila</button>
+        <div id="lote-filtro-status" class="pdf-status"></div>
+      </div>
+    </section>
+
+  </aside>
+
+  <main class="preview-wrap hidden" data-mode="lote">
+    <div id="lote-wrap"></div>
   </main>
 
 </div>

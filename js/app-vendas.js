@@ -634,6 +634,7 @@ function populateProdutosChecklist() {
 async function refreshProdutos() {
   produtosCache = await getProdutos();
   populateProdutosChecklist();
+  populateLoteProdutosChecklist();
   renderProdutosManageList();
   atualizarMensagemPreview();
 }
@@ -681,6 +682,7 @@ function setupEnvioWhatsApp() {
 
       await upsertVenda({
         empresaId: null,
+        contatoId: record.id,
         empresaNome: contato.empresa || contato.nome,
         contato: [contato.nome, contato.telefone].filter(Boolean).join(" - "),
         valor: calcularValorFinalProposta(),
@@ -700,6 +702,207 @@ function setupEnvioWhatsApp() {
   });
 }
 
+
+// --- Envio em lote -------------------------------------------------------
+// Não existe forma de mandar mensagem no WhatsApp sem alguém clicar
+// "Enviar" dentro do próprio app — isso é limitação do WhatsApp (e
+// automatizar isso de verdade violaria os termos deles). O que dá pra fazer
+// é deixar o clique-a-clique bem mais rápido: passa pelos contatos filtrados
+// um de cada vez, mensagem já pronta, um clique abre o WhatsApp e já
+// registra no funil, outro avança pro próximo.
+
+let loteQueue = [];
+let loteIndex = 0;
+let loteProdutosSelecionados = [];
+let loteEnviados = 0;
+let lotePulados = 0;
+
+function populateLoteProdutosChecklist() {
+  const wrap = document.getElementById("lote-produtos-checklist");
+  const checkedIds = new Set(Array.from(wrap.querySelectorAll(".produto-check:checked")).map((c) => c.value));
+
+  wrap.innerHTML = produtosCache.map((p) => `
+    <label class="checkbox">
+      <input type="checkbox" class="produto-check" value="${p.id}" ${checkedIds.has(p.id) ? "checked" : ""}>
+      ${p.nome}
+    </label>
+  `).join("");
+
+  if (checkedIds.size === 0 && produtosCache.length > 0) {
+    wrap.querySelector(".produto-check").checked = true;
+  }
+}
+
+function getLoteSelectedProdutos() {
+  const ids = Array.from(document.querySelectorAll("#lote-produtos-checklist .produto-check:checked")).map((c) => c.value);
+  return produtosCache.filter((p) => ids.includes(p.id));
+}
+
+function calcularValorFinalLote() {
+  const temDesconto = document.getElementById("lote-temDesconto").checked;
+  const valorDesconto = getV("lote-valorDesconto");
+  const valorCheio = getV("lote-valorCheio");
+  return (temDesconto && valorDesconto) ? valorDesconto : valorCheio;
+}
+
+function setupLoteDesconto() {
+  const checkbox = document.getElementById("lote-temDesconto");
+  const wrap = document.getElementById("lote-valorDescontoWrap");
+  const sync = () => wrap.classList.toggle("hidden", !checkbox.checked);
+  checkbox.addEventListener("change", sync);
+  sync();
+}
+
+function montarMensagemLote(contato) {
+  const valor = calcularValorFinalLote();
+  const mensagens = loteProdutosSelecionados.map((p) => renderMensagemTemplate(p.mensagem, contato, valor));
+  return mensagens.join("\n\n");
+}
+
+function renderLoteFim() {
+  document.getElementById("lote-wrap").innerHTML = `
+    <div class="vendas-table-container">
+      <div class="vendas-empty">
+        Fila concluída. ${loteEnviados} enviado(s), ${lotePulados} pulado(s) de ${loteQueue.length} contato(s).
+      </div>
+    </div>
+  `;
+}
+
+function renderLoteAtual() {
+  const wrap = document.getElementById("lote-wrap");
+
+  if (loteIndex >= loteQueue.length) {
+    renderLoteFim();
+    return;
+  }
+
+  const contato = loteQueue[loteIndex];
+  const mensagem = montarMensagemLote(contato);
+
+  wrap.innerHTML = `
+    <section class="panel">
+      <h2>Contato ${loteIndex + 1} de ${loteQueue.length} — ${loteEnviados} enviado(s), ${lotePulados} pulado(s)</h2>
+      <div class="panel-body">
+        <label>Nome
+          <input type="text" id="lote-atual-nome" value="${(contato.nome || "").replace(/"/g, "&quot;")}">
+        </label>
+        <label>Empresa
+          <input type="text" id="lote-atual-empresa" value="${(contato.empresa || "").replace(/"/g, "&quot;")}">
+        </label>
+        <label>Telefone (WhatsApp)
+          <input type="text" id="lote-atual-telefone" value="${(contato.telefone || "").replace(/"/g, "&quot;")}" placeholder="preencha se estiver vazio">
+        </label>
+        <label>Mensagem
+          <textarea id="lote-atual-mensagem" rows="8">${mensagem}</textarea>
+        </label>
+        <div class="row">
+          <button id="lote-enviar" class="btn-primary">📲 Abrir no WhatsApp e marcar enviado</button>
+          <button id="lote-pular" class="btn-secondary">⏭️ Pular</button>
+        </div>
+        <button id="lote-parar" class="btn-danger">⏹️ Parar fila</button>
+        <div id="lote-status" class="pdf-status"></div>
+      </div>
+    </section>
+  `;
+
+  document.getElementById("lote-enviar").addEventListener("click", async () => {
+    const status = document.getElementById("lote-status");
+    const nome = getV("lote-atual-nome");
+    const empresa = getV("lote-atual-empresa");
+    const telefone = getV("lote-atual-telefone");
+    const mensagemAtual = getV("lote-atual-mensagem");
+
+    const link = buildWhatsAppLink(telefone, mensagemAtual);
+    if (!link) {
+      status.textContent = "Telefone inválido ou vazio. Preencha o telefone antes de enviar.";
+      status.className = "pdf-status error";
+      return;
+    }
+
+    // Mesma regra de sempre: abre o WhatsApp antes de qualquer await, senão
+    // o navegador pode bloquear como pop-up.
+    window.open(link, "_blank");
+
+    status.textContent = "WhatsApp aberto. Registrando...";
+    status.className = "pdf-status";
+    try {
+      const record = await upsertContato({ nome, empresa, telefone, email: contato.email || "", tipo: contato.tipo, observacoes: contato.observacoes || "" }, contato.id);
+      await upsertVenda({
+        empresaId: null,
+        contatoId: record.id,
+        empresaNome: empresa || nome,
+        contato: [nome, telefone].filter(Boolean).join(" - "),
+        valor: calcularValorFinalLote(),
+        dataEnvio: new Date().toISOString().slice(0, 10),
+        status: "Aguardando resposta",
+        observacoes: `Proposta enviada via WhatsApp: ${loteProdutosSelecionados.map((p) => p.nome).join(", ")}`,
+      }, null);
+      loteEnviados++;
+      loteIndex++;
+      await refreshVendas();
+      if (contatoPicker) await contatoPicker.refresh();
+      contatosCache = await getContatos();
+      renderLoteAtual();
+    } catch (err) {
+      console.error(err);
+      status.textContent = "WhatsApp aberto, mas houve erro ao registrar. Clique em Pular ou tente de novo.";
+      status.className = "pdf-status error";
+    }
+  });
+
+  document.getElementById("lote-pular").addEventListener("click", () => {
+    lotePulados++;
+    loteIndex++;
+    renderLoteAtual();
+  });
+
+  document.getElementById("lote-parar").addEventListener("click", () => {
+    document.getElementById("lote-wrap").innerHTML = "";
+  });
+}
+
+function setupLote() {
+  document.getElementById("lote-iniciar").addEventListener("click", async () => {
+    const status = document.getElementById("lote-filtro-status");
+    loteProdutosSelecionados = getLoteSelectedProdutos();
+    if (loteProdutosSelecionados.length === 0) {
+      status.textContent = "Marque ao menos um serviço.";
+      status.className = "pdf-status error";
+      return;
+    }
+
+    const grupo = getV("lote-grupo");
+    let filtrados = contatosCache;
+    if (grupo === "pf") filtrados = filtrados.filter((c) => c.tipo !== TIPO_PESSOA_JURIDICA);
+    if (grupo === "pj") filtrados = filtrados.filter((c) => c.tipo === TIPO_PESSOA_JURIDICA);
+
+    if (document.getElementById("lote-pular-enviados").checked) {
+      const nomesProdutos = loteProdutosSelecionados.map((p) => p.nome);
+      const vendas = await getVendas();
+      const idsJaEnviados = new Set(
+        vendas
+          .filter((v) => v.contatoId && nomesProdutos.some((nome) => (v.observacoes || "").includes(nome)))
+          .map((v) => v.contatoId)
+      );
+      filtrados = filtrados.filter((c) => !idsJaEnviados.has(c.id));
+    }
+
+    if (filtrados.length === 0) {
+      status.textContent = "Nenhum contato encontrado com esse filtro (ou todos já foram contatados sobre esse serviço).";
+      status.className = "pdf-status error";
+      return;
+    }
+
+    loteQueue = filtrados;
+    loteIndex = 0;
+    loteEnviados = 0;
+    lotePulados = 0;
+    status.textContent = `Fila pronta com ${filtrados.length} contato(s).`;
+    status.className = "pdf-status ok";
+    renderLoteAtual();
+  });
+}
 
 async function setupEmpresasVendas() {
   const select = document.getElementById("empresa-select");
@@ -765,4 +968,7 @@ document.addEventListener("DOMContentLoaded", () => {
   refreshProdutos();
   setupProdutos();
   setupEnvioWhatsApp();
+
+  setupLoteDesconto();
+  setupLote();
 });
