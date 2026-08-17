@@ -107,23 +107,84 @@
 
   </main>
 
-  <main class="preview-wrap hidden" data-mode="importar">
+  <aside class="sidebar hidden" data-mode="importar">
 
     <section class="panel">
-      <h2>📥 Importar propostas via Excel</h2>
+      <h2>👤 Cliente / Lead</h2>
+      <div class="panel-body">
+        <label>Buscar por nome ou empresa
+          <input type="text" id="contato-search" placeholder="Digite o nome da pessoa ou da empresa...">
+        </label>
+        <label>Selecionar contato
+          <select id="contato-select"></select>
+        </label>
+        <h3>Novo contato / editar selecionado</h3>
+        <label>Nome do contato
+          <input type="text" id="ct_nome" placeholder="ex: Maria">
+        </label>
+        <label>Empresa (opcional)
+          <input type="text" id="ct_empresa" placeholder="ex: Padaria do João">
+        </label>
+        <label>Telefone (WhatsApp)
+          <input type="text" id="ct_telefone" placeholder="ex: (12) 99999-0000">
+        </label>
+        <label>E-mail (opcional)
+          <input type="text" id="ct_email">
+        </label>
+        <label>Observações
+          <input type="text" id="ct_observacoes" placeholder="opcional">
+        </label>
+        <div class="row">
+          <button id="contato-save" class="btn-secondary">Salvar contato</button>
+          <button id="contato-new" class="btn-secondary">Novo</button>
+        </div>
+        <button id="contato-delete" class="btn-danger">Excluir este contato</button>
+        <div id="contato-status" class="pdf-status"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>📥 Importar contatos via planilha</h2>
       <div class="panel-body">
         <p class="fixed-note">
-          Escolha uma planilha (.xlsx, .xls ou .csv) com uma linha de cabeçalho. Colunas reconhecidas
-          automaticamente (nomes parecidos também funcionam): <strong>Empresa</strong>, <strong>Contato</strong>,
-          <strong>Valor</strong>, <strong>Data</strong> e <strong>Observações</strong>. Todas as linhas entram
-          no funil como "Aguardando resposta" — dá pra conferir antes de confirmar.
+          Planilha (.xlsx, .xls ou .csv) com cabeçalho. Colunas reconhecidas automaticamente: <strong>Nome</strong>,
+          <strong>Empresa</strong>, <strong>Telefone</strong>, <strong>E-mail</strong> e <strong>Observações</strong>.
         </p>
         <input type="file" id="import-file-input" accept=".xlsx,.xls,.csv">
         <div id="import-status" class="pdf-status"></div>
       </div>
     </section>
 
+  </aside>
+
+  <main class="preview-wrap hidden" data-mode="importar">
+
     <div id="import-preview-wrap"></div>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-servico">🧾 Serviço e mensagem ▾</h2>
+      <div id="panel-servico" class="panel-body">
+        <label>Serviço
+          <select id="produto-select"></select>
+        </label>
+        <label>Mensagem (editável antes de enviar)
+          <textarea id="proposta-mensagem" rows="8"></textarea>
+        </label>
+        <div id="proposta-preview" class="fixed-note"></div>
+        <div class="row">
+          <button id="btn-enviar-whatsapp" class="btn-primary">📲 Gerar link e abrir no WhatsApp</button>
+        </div>
+        <div id="proposta-status" class="pdf-status"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-gerenciar-produtos">⚙️ Gerenciar serviços e mensagens ▾</h2>
+      <div id="panel-gerenciar-produtos" class="panel-body collapsed">
+        <div id="produtos-list"></div>
+        <button id="add-produto" class="btn-secondary">+ Adicionar serviço</button>
+      </div>
+    </section>
 
   </main>
 
@@ -134,6 +195,8 @@
 <script src="js/firebase-config.js"></script>
 <script src="js/empresas-store.js"></script>
 <script src="js/vendas-store.js"></script>
+<script src="js/contatos-store.js"></script>
+<script src="js/produtos-store.js"></script>
 <script src="js/vendor/xlsx.full.min.js"></script>
 <script src="js/app-vendas.js"></script>
 </body>

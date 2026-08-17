@@ -1,29 +1,3 @@
-.alteracao-row {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px;
-  margin-bottom: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  position: relative;
-}
-
-.alteracao-row .row {
-  gap: 8px;
-}
-
-.alteracao-remove {
-  align-self: flex-end;
-  background: none;
-  border: none;
-  color: var(--danger);
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 2px 4px;
-}
-
 .fc-alt-table .fc-cell-label {
   flex: 0 0 170px;
 }
