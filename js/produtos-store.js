@@ -42,6 +42,10 @@ const PRODUTOS_SEED = [
     nome: "Certificado Digital",
     mensagem: "Olá {{nome}}! Aqui é da AEA Contabilidade Consultiva. Notei que a {{empresa}} pode estar precisando emitir ou renovar o certificado digital. Cuidamos de todo o processo pra você, rápido e sem dor de cabeça. Posso te ajudar?",
   },
+  {
+    nome: "Parceria Money Brokers Brasil",
+    mensagem: "Olá {{nome}}! Aqui é da AEA Contabilidade Consultiva 😊 Preparamos uma parceria estratégica exclusiva pra mentorados da Money Brokers Brasil: você indica os clientes que já atende, cuidamos de toda a contabilidade com foco em aprovação de crédito bancário, e você recebe comissão de 10% a 20% todo mês, de forma recorrente — sem nenhum esforço técnico da sua parte. Preparei os detalhes completos aqui: https://claude.ai/code/artifact/8abfeee0-7c80-476f-ac0b-f3efa1c6c70e. Posso te explicar melhor como funciona?",
+  },
 ];
 
 async function getProdutos() {
