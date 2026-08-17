@@ -93,7 +93,7 @@
       <label class="vendas-search-label">Buscar por empresa ou pelo nome do contato
         <input type="text" id="vendas-search" placeholder="ex: Padaria do João, ou Maria">
       </label>
-      <label class="vendas-filtro-label">Status
+      <label class="vendas-filtro-label" id="vendas-filtro-status-label">Status
         <select id="vendas-filtro-status">
           <option value="">Todos os status</option>
           <option value="Aguardando resposta">Aguardando resposta</option>
@@ -102,9 +102,14 @@
           <option value="Recusado/Perdido">Recusado/Perdido</option>
         </select>
       </label>
+      <div class="vendas-view-toggle">
+        <button type="button" class="view-toggle-btn active" id="vendas-view-lista">📋 Lista</button>
+        <button type="button" class="view-toggle-btn" id="vendas-view-quadro">🗂️ Quadro</button>
+      </div>
     </div>
 
     <div id="vendas-table-wrap"></div>
+    <div id="vendas-board-wrap" class="hidden"></div>
 
   </main>
 

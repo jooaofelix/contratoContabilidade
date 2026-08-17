@@ -142,3 +142,135 @@
 @media (max-width: 900px) {
   .vendas-table-container { overflow-x: auto; }
 }
+
+.vendas-view-toggle {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.view-toggle-btn {
+  background: #e5e7eb;
+  color: #111827;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.view-toggle-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.vendas-board {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.vendas-board-col {
+  flex: 0 0 270px;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 10px;
+  min-height: 120px;
+}
+
+.vendas-board-col.drag-over {
+  outline: 2px dashed var(--accent);
+  outline-offset: -4px;
+}
+
+.vendas-board-col-header {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--darker);
+  padding: 4px 4px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.vendas-board-col-count {
+  font-weight: 400;
+  color: #6b7280;
+  font-size: 0.72rem;
+}
+
+.vendas-board-col-total {
+  font-size: 0.7rem;
+  color: #6b7280;
+  padding: 0 4px 10px;
+}
+
+.vendas-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: grab;
+  font-size: 0.78rem;
+}
+
+.vendas-card:active {
+  cursor: grabbing;
+}
+
+.vendas-card.dragging {
+  opacity: 0.4;
+}
+
+.vendas-card-empresa {
+  font-weight: 700;
+  color: var(--darker);
+  margin-bottom: 2px;
+}
+
+.vendas-card-contato {
+  color: #4b5563;
+  margin-bottom: 4px;
+}
+
+.vendas-card-valor {
+  font-weight: 700;
+  color: #15803d;
+  margin-bottom: 4px;
+}
+
+.vendas-card-obs {
+  color: #6b7280;
+  font-size: 0.72rem;
+  margin-bottom: 8px;
+  max-height: 3.4em;
+  overflow: hidden;
+}
+
+.vendas-card-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.vendas-card-actions select {
+  flex: 1;
+  font-size: 0.7rem;
+  padding: 4px;
+}
+
+.vendas-card-actions button {
+  padding: 4px 6px;
+  font-size: 0.7rem;
+}
+
+.vendas-board-empty {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.75rem;
+  padding: 16px 4px;
+}

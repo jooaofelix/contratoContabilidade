@@ -96,18 +96,21 @@ function renderVendasStats(vendas) {
   document.getElementById("vendas-stats").innerHTML = cardsHtml + emAbertoHtml;
 }
 
-function renderVendasTable() {
+function getFilteredVendas() {
   const search = document.getElementById("vendas-search").value.trim().toLowerCase();
   const filtroStatus = document.getElementById("vendas-filtro-status").value;
 
-  const filtradas = vendasCache.filter((v) => {
+  return vendasCache.filter((v) => {
     const matchStatus = !filtroStatus || v.status === filtroStatus;
     const matchSearch = !search ||
       (v.empresaNome || "").toLowerCase().includes(search) ||
       (v.contato || "").toLowerCase().includes(search);
     return matchStatus && matchSearch;
   });
+}
 
+function renderVendasTable() {
+  const filtradas = getFilteredVendas();
   const wrap = document.getElementById("vendas-table-wrap");
 
   if (filtradas.length === 0) {
@@ -157,10 +160,125 @@ function renderVendasTable() {
   });
 }
 
+async function moverVendaStatus(id, novoStatus) {
+  const venda = vendasCache.find((v) => v.id === id);
+  if (!venda || venda.status === novoStatus) return;
+  try {
+    await upsertVenda(Object.assign({}, venda, { status: novoStatus }), id);
+    await refreshVendas();
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao mover o card. Tenta de novo.");
+  }
+}
+
+function vendaCardHtml(v) {
+  return `
+    <div class="vendas-card" draggable="true" data-id="${v.id}">
+      <div class="vendas-card-empresa">${v.empresaNome || "(sem nome)"}</div>
+      <div class="vendas-card-contato">${v.contato || "—"}</div>
+      ${v.valor ? `<div class="vendas-card-valor">R$ ${v.valor}</div>` : ""}
+      ${v.observacoes ? `<div class="vendas-card-obs">${v.observacoes}</div>` : ""}
+      <div class="vendas-card-actions">
+        <select class="venda-card-status" data-id="${v.id}">
+          ${VENDA_STATUS.map((s) => `<option value="${s}" ${s === v.status ? "selected" : ""}>${s}</option>`).join("")}
+        </select>
+        <button type="button" class="btn-secondary venda-edit" data-id="${v.id}">✎</button>
+        <button type="button" class="btn-danger venda-delete" data-id="${v.id}">✕</button>
+      </div>
+    </div>
+  `;
+}
+
+// Quadro estilo Trello: uma coluna por status, cards arrastáveis entre elas
+// (ou movidos pelo seletor, pra quem estiver no celular/tablet sem drag).
+function renderVendasBoard() {
+  const filtradas = getFilteredVendas();
+  const wrap = document.getElementById("vendas-board-wrap");
+
+  const colunas = VENDA_STATUS.map((status) => {
+    const vendasDoStatus = filtradas.filter((v) => v.status === status);
+    const total = vendasDoStatus.reduce((sum, v) => sum + parseValorBR(v.valor), 0);
+    const cards = vendasDoStatus.length
+      ? vendasDoStatus.map(vendaCardHtml).join("")
+      : `<div class="vendas-board-empty">Nenhum registro aqui.</div>`;
+
+    return `
+      <div class="vendas-board-col" data-status="${status}">
+        <div class="vendas-board-col-header">
+          <span>${status}</span>
+          <span class="vendas-board-col-count">${vendasDoStatus.length}</span>
+        </div>
+        <div class="vendas-board-col-total">${formatBRL(total)}</div>
+        ${cards}
+      </div>
+    `;
+  }).join("");
+
+  wrap.innerHTML = `<div class="vendas-board">${colunas}</div>`;
+
+  wrap.querySelectorAll(".venda-edit").forEach((btn) => {
+    btn.addEventListener("click", () => editVenda(btn.dataset.id));
+  });
+  wrap.querySelectorAll(".venda-delete").forEach((btn) => {
+    btn.addEventListener("click", () => removeVenda(btn.dataset.id));
+  });
+  wrap.querySelectorAll(".venda-card-status").forEach((select) => {
+    select.addEventListener("change", () => moverVendaStatus(select.dataset.id, select.value));
+  });
+
+  wrap.querySelectorAll(".vendas-card").forEach((card) => {
+    card.addEventListener("dragstart", (e) => {
+      e.dataTransfer.setData("text/plain", card.dataset.id);
+      card.classList.add("dragging");
+    });
+    card.addEventListener("dragend", () => card.classList.remove("dragging"));
+  });
+
+  wrap.querySelectorAll(".vendas-board-col").forEach((col) => {
+    col.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      col.classList.add("drag-over");
+    });
+    col.addEventListener("dragleave", () => col.classList.remove("drag-over"));
+    col.addEventListener("drop", (e) => {
+      e.preventDefault();
+      col.classList.remove("drag-over");
+      const id = e.dataTransfer.getData("text/plain");
+      moverVendaStatus(id, col.dataset.status);
+    });
+  });
+}
+
+function setupVendasViewToggle() {
+  const btnLista = document.getElementById("vendas-view-lista");
+  const btnQuadro = document.getElementById("vendas-view-quadro");
+  const tableWrap = document.getElementById("vendas-table-wrap");
+  const boardWrap = document.getElementById("vendas-board-wrap");
+
+  btnLista.addEventListener("click", () => {
+    btnLista.classList.add("active");
+    btnQuadro.classList.remove("active");
+    tableWrap.classList.remove("hidden");
+    boardWrap.classList.add("hidden");
+  });
+
+  btnQuadro.addEventListener("click", () => {
+    btnQuadro.classList.add("active");
+    btnLista.classList.remove("active");
+    boardWrap.classList.remove("hidden");
+    tableWrap.classList.add("hidden");
+    renderVendasBoard();
+  });
+}
+
 async function refreshVendas() {
   vendasCache = await getVendas();
   renderVendasStats(vendasCache);
   renderVendasTable();
+  if (!document.getElementById("vendas-board-wrap").classList.contains("hidden")) {
+    renderVendasBoard();
+  }
 }
 
 function editVenda(id) {
@@ -950,13 +1068,20 @@ function setupVendaActions() {
     document.getElementById("venda-status").textContent = "";
   });
 
-  document.getElementById("vendas-search").addEventListener("input", renderVendasTable);
-  document.getElementById("vendas-filtro-status").addEventListener("change", renderVendasTable);
+  const rerenderVisiveis = () => {
+    renderVendasTable();
+    if (!document.getElementById("vendas-board-wrap").classList.contains("hidden")) {
+      renderVendasBoard();
+    }
+  };
+  document.getElementById("vendas-search").addEventListener("input", rerenderVisiveis);
+  document.getElementById("vendas-filtro-status").addEventListener("change", rerenderVisiveis);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("v_dataEnvio").value = new Date().toISOString().slice(0, 10);
   setupVendasModeToggle();
+  setupVendasViewToggle();
   setupImportacao();
   setupEmpresasVendas();
   setupVendaActions();
