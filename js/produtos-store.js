@@ -26,6 +26,22 @@ const PRODUTOS_SEED = [
     nome: "Consultoria Tributária",
     mensagem: "Olá {{nome}}! Aqui é da AEA Contabilidade Consultiva. Notamos que pode haver oportunidades de economia tributária pra {{empresa}} com um planejamento adequado. Fazemos uma análise inicial gratuita pra te mostrar o potencial de redução legal de impostos. Podemos conversar?",
   },
+  {
+    nome: "Baixa de Empresa",
+    mensagem: "Olá {{nome}}! Aqui é da AEA Contabilidade Consultiva. Vi que a {{empresa}} está encerrando as atividades e quero te ajudar com todo o processo de baixa — regularização de pendências, comunicação aos órgãos e encerramento sem complicação. Posso te enviar mais detalhes e uma proposta?",
+  },
+  {
+    nome: "Alteração Contratual",
+    mensagem: "Olá {{nome}}! Aqui é da AEA Contabilidade Consultiva. Soube que a {{empresa}} precisa fazer uma alteração contratual (endereço, sócios, atividade, capital social etc.) e quero te ajudar a resolver isso rápido e sem burocracia. Posso te enviar mais informações?",
+  },
+  {
+    nome: "Transformação de Tipo Societário",
+    mensagem: "Olá {{nome}}! Aqui é da AEA Contabilidade Consultiva. Vi que pode ser interessante pra {{empresa}} avaliar uma transformação do tipo societário (ex: de MEI/EI para LTDA). Podemos conversar sobre as vantagens e como fazer essa mudança com segurança?",
+  },
+  {
+    nome: "Certificado Digital",
+    mensagem: "Olá {{nome}}! Aqui é da AEA Contabilidade Consultiva. Notei que a {{empresa}} pode estar precisando emitir ou renovar o certificado digital. Cuidamos de todo o processo pra você, rápido e sem dor de cabeça. Posso te ajudar?",
+  },
 ];
 
 async function getProdutos() {

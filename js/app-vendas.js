@@ -419,12 +419,20 @@ function calcularValorFinalProposta() {
   return (temDesconto && valorDesconto) ? valorDesconto : valorCheio;
 }
 
+function getSelectedProdutos() {
+  const ids = Array.from(document.querySelectorAll("#produtos-checklist .produto-check:checked")).map((c) => c.value);
+  return produtosCache.filter((p) => ids.includes(p.id));
+}
+
+// Com mais de um serviço marcado, junta as mensagens de cada um (já com
+// nome/empresa/valor substituídos) numa proposta só, separadas em parágrafos.
 function atualizarMensagemPreview() {
-  const produto = produtosCache.find((p) => p.id === document.getElementById("produto-select").value);
-  if (!produto) return;
+  const selecionados = getSelectedProdutos();
+  if (selecionados.length === 0) return;
   const contato = { nome: getCt("ct_nome"), empresa: getCt("ct_empresa") };
   const valor = calcularValorFinalProposta();
-  document.getElementById("proposta-mensagem").value = renderMensagemTemplate(produto.mensagem, contato, valor);
+  const mensagens = selecionados.map((p) => renderMensagemTemplate(p.mensagem, contato, valor));
+  document.getElementById("proposta-mensagem").value = mensagens.join("\n\n");
 }
 
 function setupDescontoProposta() {
@@ -585,26 +593,41 @@ function renderProdutosManageList() {
   });
 }
 
-function populateProdutoSelect() {
-  const select = document.getElementById("produto-select");
-  const current = select.value;
-  select.innerHTML = produtosCache.map((p) => `<option value="${p.id}">${p.nome}</option>`).join("");
-  if (produtosCache.some((p) => p.id === current)) select.value = current;
+function populateProdutosChecklist() {
+  const wrap = document.getElementById("produtos-checklist");
+  const checkedIds = new Set(Array.from(wrap.querySelectorAll(".produto-check:checked")).map((c) => c.value));
+
+  wrap.innerHTML = produtosCache.map((p) => `
+    <label class="checkbox">
+      <input type="checkbox" class="produto-check" value="${p.id}" ${checkedIds.has(p.id) ? "checked" : ""}>
+      ${p.nome}
+    </label>
+  `).join("");
+
+  if (checkedIds.size === 0 && produtosCache.length > 0) {
+    wrap.querySelector(".produto-check").checked = true;
+  }
+
+  wrap.querySelectorAll(".produto-check").forEach((c) => {
+    c.addEventListener("change", atualizarMensagemPreview);
+  });
 }
 
 async function refreshProdutos() {
   produtosCache = await getProdutos();
-  populateProdutoSelect();
+  populateProdutosChecklist();
   renderProdutosManageList();
   atualizarMensagemPreview();
 }
 
+async function criarNovoServico() {
+  await upsertProduto({ nome: "Novo serviço", mensagem: "Olá {{nome}}! Aqui é da AEA Contabilidade Consultiva." }, null);
+  await refreshProdutos();
+}
+
 function setupProdutos() {
-  document.getElementById("produto-select").addEventListener("change", atualizarMensagemPreview);
-  document.getElementById("add-produto").addEventListener("click", async () => {
-    await upsertProduto({ nome: "Novo serviço", mensagem: "Olá {{nome}}! Aqui é da AEA Contabilidade Consultiva." }, null);
-    await refreshProdutos();
-  });
+  document.getElementById("add-produto").addEventListener("click", criarNovoServico);
+  document.getElementById("add-produto-rapido").addEventListener("click", criarNovoServico);
 }
 
 function setupEnvioWhatsApp() {
@@ -612,7 +635,7 @@ function setupEnvioWhatsApp() {
     const status = document.getElementById("proposta-status");
     const contato = collectContatoForm();
     const mensagem = document.getElementById("proposta-mensagem").value;
-    const produto = produtosCache.find((p) => p.id === document.getElementById("produto-select").value);
+    const selecionados = getSelectedProdutos();
 
     if (!contato.nome && !contato.empresa) {
       status.textContent = "Selecione ou preencha um contato antes de enviar.";
@@ -645,7 +668,7 @@ function setupEnvioWhatsApp() {
         valor: calcularValorFinalProposta(),
         dataEnvio: new Date().toISOString().slice(0, 10),
         status: "Aguardando resposta",
-        observacoes: `Proposta enviada via WhatsApp: ${produto ? produto.nome : ""}`,
+        observacoes: `Proposta enviada via WhatsApp: ${selecionados.map((p) => p.nome).join(", ")}`,
       }, null);
       await refreshVendas();
 

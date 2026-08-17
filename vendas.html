@@ -175,11 +175,11 @@
     <div id="import-preview-wrap"></div>
 
     <section class="panel">
-      <h2 class="panel-toggle" data-target="panel-servico">🧾 Serviço e mensagem ▾</h2>
+      <h2 class="panel-toggle" data-target="panel-servico">🧾 Serviço(s) e mensagem ▾</h2>
       <div id="panel-servico" class="panel-body">
-        <label>Serviço
-          <select id="produto-select"></select>
-        </label>
+        <label>Serviço(s) — marque um ou mais pra oferecer junto</label>
+        <div id="produtos-checklist"></div>
+        <button type="button" id="add-produto-rapido" class="btn-secondary">+ Novo serviço</button>
         <label>Valor cheio (R$)
           <input type="text" id="pp_valorCheio" placeholder="ex: 700,00">
         </label>
@@ -199,8 +199,8 @@
     </section>
 
     <section class="panel">
-      <h2 class="panel-toggle" data-target="panel-gerenciar-produtos">⚙️ Gerenciar serviços e mensagens ▾</h2>
-      <div id="panel-gerenciar-produtos" class="panel-body collapsed">
+      <h2 class="panel-toggle" data-target="panel-gerenciar-produtos">⚙️ Editar/remover serviços ▾</h2>
+      <div id="panel-gerenciar-produtos" class="panel-body">
         <div id="produtos-list"></div>
         <button id="add-produto" class="btn-secondary">+ Adicionar serviço</button>
       </div>
