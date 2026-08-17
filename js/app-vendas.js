@@ -209,8 +209,17 @@ const IMPORT_COLUMN_ALIASES = {
   empresa: ["empresa", "cliente", "razaosocial", "nomeempresa", "empresalead"],
   telefone: ["telefone", "whatsapp", "celular", "fone", "telefonewhatsapp", "numero"],
   email: ["email", "emails"],
+  tipo: ["tipo", "tipodepessoa", "tipopessoa", "fisicaoujuridica", "pf ou pj", "pfoupj"],
   observacoes: ["observacao", "observacoes", "obs", "notas", "comentario", "comentarios"],
 };
+
+function normalizeTipoValue(raw) {
+  const norm = normalizeHeader(raw);
+  if (!norm) return "";
+  if (norm.startsWith("pj") || norm.includes("juridica")) return TIPO_PESSOA_JURIDICA;
+  if (norm.startsWith("pf") || norm.includes("fisica")) return TIPO_PESSOA_FISICA;
+  return "";
+}
 
 function detectColumnMap(headerRow) {
   const map = {};
@@ -264,11 +273,15 @@ function buildImportPreview(rows) {
         .filter(Boolean)
         .join(" — ");
 
+      const tipoPlanilha = colMap.tipo !== undefined ? normalizeTipoValue(r[colMap.tipo]) : "";
+      const tipo = tipoPlanilha || inferTipoContato(nome, empresa);
+
       return {
         nome,
         empresa,
         telefone: principal,
         email: colMap.email !== undefined ? String(r[colMap.email] || "").trim() : "",
+        tipo,
         observacoes,
       };
     });
@@ -288,6 +301,7 @@ function renderImportPreview(rows) {
     <tr class="${(r.nome || r.empresa) ? "" : "import-row-invalid"}">
       <td>${r.nome || "⚠️ sem nome/empresa — será ignorada"}</td>
       <td>${r.empresa || "—"}</td>
+      <td>${r.tipo === TIPO_PESSOA_JURIDICA ? "🏢 PJ" : "👤 PF"}</td>
       <td>${r.telefone || "—"}</td>
       <td>${r.email || "—"}</td>
       <td>${r.observacoes || ""}</td>
@@ -298,7 +312,7 @@ function renderImportPreview(rows) {
     <p class="fixed-note">${rows.length} linha(s) lida(s) — ${validas.length} pronta(s) pra importar${semNome ? `, ${semNome} sem nome nem empresa (serão ignoradas)` : ""}.</p>
     <div class="import-preview-table-wrap">
       <table class="vendas-table">
-        <thead><tr><th>Nome</th><th>Empresa</th><th>Telefone</th><th>E-mail</th><th>Observações</th></tr></thead>
+        <thead><tr><th>Nome</th><th>Empresa</th><th>Tipo</th><th>Telefone</th><th>E-mail</th><th>Observações</th></tr></thead>
         <tbody>${tableRows}</tbody>
       </table>
     </div>
@@ -380,11 +394,13 @@ function collectContatoForm() {
     empresa: getCt("ct_empresa"),
     telefone: getCt("ct_telefone"),
     email: getCt("ct_email"),
+    tipo: getCt("ct_tipo"),
     observacoes: getCt("ct_observacoes"),
   };
 }
 
 function applyContatoToForm(contato) {
+  document.getElementById("ct_tipo").value = contato.tipo || inferTipoContato(contato.nome, contato.empresa);
   document.getElementById("ct_nome").value = contato.nome || "";
   document.getElementById("ct_empresa").value = contato.empresa || "";
   document.getElementById("ct_telefone").value = contato.telefone || "";
@@ -394,6 +410,7 @@ function applyContatoToForm(contato) {
 
 function clearContatoForm() {
   contatoEditId = null;
+  document.getElementById("ct_tipo").value = "Pessoa Física";
   document.getElementById("ct_nome").value = "";
   document.getElementById("ct_empresa").value = "";
   document.getElementById("ct_telefone").value = "";
@@ -477,6 +494,7 @@ async function setupEmpresasProposta() {
     contatoEditId = null;
     document.getElementById("contato-select").value = "";
     applyContatoToForm({
+      tipo: TIPO_PESSOA_JURIDICA,
       nome: empresa.administracao || empresa.socio1 || "",
       empresa: empresa.contratante || "",
       telefone: "",

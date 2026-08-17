@@ -132,6 +132,12 @@
           <select id="contato-select"></select>
         </label>
         <h3>Novo contato / editar selecionado</h3>
+        <label>Tipo
+          <select id="ct_tipo">
+            <option value="Pessoa Física">Pessoa Física</option>
+            <option value="Pessoa Jurídica">Pessoa Jurídica</option>
+          </select>
+        </label>
         <label>Nome do contato
           <input type="text" id="ct_nome" placeholder="ex: Maria">
         </label>
@@ -161,7 +167,9 @@
       <div class="panel-body">
         <p class="fixed-note">
           Planilha (.xlsx, .xls ou .csv) com cabeçalho. Colunas reconhecidas automaticamente: <strong>Nome</strong>,
-          <strong>Empresa</strong>, <strong>Telefone</strong>, <strong>E-mail</strong> e <strong>Observações</strong>.
+          <strong>Empresa</strong>, <strong>Telefone</strong>, <strong>E-mail</strong>, <strong>Tipo</strong>
+          (Pessoa Física/Jurídica) e <strong>Observações</strong>. Sem coluna de Tipo, tenta adivinhar pelo nome —
+          confira depois.
         </p>
         <input type="file" id="import-file-input" accept=".xlsx,.xls,.csv">
         <div id="import-status" class="pdf-status"></div>
