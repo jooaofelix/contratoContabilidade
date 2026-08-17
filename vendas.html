@@ -110,7 +110,20 @@
   <aside class="sidebar hidden" data-mode="importar">
 
     <section class="panel">
-      <h2>👤 Cliente / Lead</h2>
+      <h2>🏢 Empresa já cadastrada</h2>
+      <div class="panel-body">
+        <label>Buscar por nome ou CNPJ
+          <input type="text" id="empresa-proposta-search" placeholder="Digite o nome ou CNPJ...">
+        </label>
+        <label>Selecionar empresa
+          <select id="empresa-proposta-select"></select>
+        </label>
+        <p class="fixed-note">Ficha cadastral geralmente não tem telefone salvo — confira/preencha o campo Telefone abaixo antes de enviar.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>👤 Ou contato / lead avulso</h2>
       <div class="panel-body">
         <label>Buscar por nome ou empresa
           <input type="text" id="contato-search" placeholder="Digite o nome da pessoa ou da empresa...">
@@ -167,7 +180,14 @@
         <label>Serviço
           <select id="produto-select"></select>
         </label>
-        <label>Mensagem (editável antes de enviar)
+        <label>Valor cheio (R$)
+          <input type="text" id="pp_valorCheio" placeholder="ex: 700,00">
+        </label>
+        <label class="checkbox"><input type="checkbox" id="pp_temDesconto"> Aplicar desconto</label>
+        <label id="pp_valorDescontoWrap" class="hidden">Valor com desconto (R$)
+          <input type="text" id="pp_valorDesconto" placeholder="ex: 500,00">
+        </label>
+        <label>Mensagem (editável antes de enviar — use {{nome}}, {{empresa}} e {{valor}})
           <textarea id="proposta-mensagem" rows="8"></textarea>
         </label>
         <div id="proposta-preview" class="fixed-note"></div>

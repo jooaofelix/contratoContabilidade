@@ -402,18 +402,39 @@ function clearContatoForm() {
   document.getElementById("contato-select").value = "";
 }
 
-// Troca {{nome}}/{{empresa}} pelos dados do contato selecionado.
-function renderMensagemTemplate(template, contato) {
+// Troca {{nome}}/{{empresa}}/{{valor}} pelos dados do contato e do valor
+// (já considerando o desconto, se marcado) selecionados.
+function renderMensagemTemplate(template, contato, valor) {
   return String(template || "")
     .replace(/\{\{\s*nome\s*\}\}/gi, contato.nome || contato.empresa || "")
-    .replace(/\{\{\s*empresa\s*\}\}/gi, contato.empresa || "");
+    .replace(/\{\{\s*empresa\s*\}\}/gi, contato.empresa || "")
+    .replace(/\{\{\s*valor\s*\}\}/gi, valor ? `R$ ${valor}` : "");
+}
+
+// Retorna o valor com desconto se marcado e preenchido, senão o valor cheio.
+function calcularValorFinalProposta() {
+  const temDesconto = document.getElementById("pp_temDesconto").checked;
+  const valorDesconto = getV("pp_valorDesconto");
+  const valorCheio = getV("pp_valorCheio");
+  return (temDesconto && valorDesconto) ? valorDesconto : valorCheio;
 }
 
 function atualizarMensagemPreview() {
   const produto = produtosCache.find((p) => p.id === document.getElementById("produto-select").value);
   if (!produto) return;
   const contato = { nome: getCt("ct_nome"), empresa: getCt("ct_empresa") };
-  document.getElementById("proposta-mensagem").value = renderMensagemTemplate(produto.mensagem, contato);
+  const valor = calcularValorFinalProposta();
+  document.getElementById("proposta-mensagem").value = renderMensagemTemplate(produto.mensagem, contato, valor);
+}
+
+function setupDescontoProposta() {
+  const checkbox = document.getElementById("pp_temDesconto");
+  const wrap = document.getElementById("pp_valorDescontoWrap");
+  const sync = () => wrap.classList.toggle("hidden", !checkbox.checked);
+  checkbox.addEventListener("change", () => { sync(); atualizarMensagemPreview(); });
+  document.getElementById("pp_valorCheio").addEventListener("input", atualizarMensagemPreview);
+  document.getElementById("pp_valorDesconto").addEventListener("input", atualizarMensagemPreview);
+  sync();
 }
 
 function normalizePhoneForWhatsApp(raw) {
@@ -431,6 +452,36 @@ function buildWhatsAppLink(telefone, mensagem) {
 }
 
 function contatosCacheFind(id) { return contatosCache.find((c) => c.id === id); }
+
+// Selecionar uma empresa já cadastrada (Ficha Cadastral) preenche o mesmo
+// formulário de contato — assim funciona pra cliente antigo e lead novo.
+async function setupEmpresasProposta() {
+  const select = document.getElementById("empresa-proposta-select");
+  const search = document.getElementById("empresa-proposta-search");
+  const status = document.getElementById("contato-status");
+
+  await initEmpresaPicker(search, select, "— Selecionar empresa cadastrada —");
+
+  select.addEventListener("change", async () => {
+    if (!select.value) return;
+    const empresa = await getEmpresa(select.value);
+    if (!empresa) return;
+    contatoEditId = null;
+    document.getElementById("contato-select").value = "";
+    applyContatoToForm({
+      nome: empresa.administracao || empresa.socio1 || "",
+      empresa: empresa.contratante || "",
+      telefone: "",
+      email: empresa.email || "",
+      observacoes: "",
+    });
+    atualizarMensagemPreview();
+    status.textContent = empresa.contatoPrincipal
+      ? `Empresa carregada. Contato principal na ficha: ${empresa.contatoPrincipal}. Confira/preencha o telefone.`
+      : "Empresa carregada. Preencha o telefone antes de enviar pelo WhatsApp.";
+    status.className = "pdf-status";
+  });
+}
 
 async function setupContatosProposta() {
   const select = document.getElementById("contato-select");
@@ -591,7 +642,7 @@ function setupEnvioWhatsApp() {
         empresaId: null,
         empresaNome: contato.empresa || contato.nome,
         contato: [contato.nome, contato.telefone].filter(Boolean).join(" - "),
-        valor: "",
+        valor: calcularValorFinalProposta(),
         dataEnvio: new Date().toISOString().slice(0, 10),
         status: "Aguardando resposta",
         observacoes: `Proposta enviada via WhatsApp: ${produto ? produto.nome : ""}`,
@@ -667,7 +718,9 @@ document.addEventListener("DOMContentLoaded", () => {
   setupVendaActions();
   refreshVendas();
 
+  setupEmpresasProposta();
   setupContatosProposta();
+  setupDescontoProposta();
   refreshProdutos();
   setupProdutos();
   setupEnvioWhatsApp();
