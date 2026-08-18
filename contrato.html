@@ -27,6 +27,7 @@
 <div class="mode-tabs">
   <button type="button" class="mode-tab active" data-mode-tab="servicos">📄 Prestação de Serviços</button>
   <button type="button" class="mode-tab" data-mode-tab="parceria">🤝 Parceria Comercial / Indicação</button>
+  <button type="button" class="mode-tab" data-mode-tab="honorarios">📑 Honorários (Numerado)</button>
 </div>
 
 <div class="app-layout">
@@ -361,6 +362,176 @@
     <div id="parceria-preview" class="contract-doc"></div>
   </main>
 
+  <aside class="sidebar hidden" data-mode="honorarios">
+
+    <section class="panel">
+      <h2>🏢 Empresas Salvas</h2>
+      <div class="panel-body">
+        <label>Buscar empresa
+          <input type="text" id="ch-empresa-search" placeholder="Digite o nome ou CNPJ...">
+        </label>
+        <label>Empresa
+          <select id="ch-empresa-select"></select>
+        </label>
+        <div id="ch-empresa-status" class="pdf-status"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Importar cartão CNPJ (PDF)</h2>
+      <input type="file" id="ch-pdf-input" accept="application/pdf">
+      <div id="ch-pdf-status" class="pdf-status"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Importar dados via Word (.docx)</h2>
+      <p class="fixed-note">Envie um contrato ou documento .docx já preenchido — o sistema tenta puxar razão social, CNPJ, endereço e representante automaticamente.</p>
+      <input type="file" id="ch-docx-input" accept=".docx">
+      <div id="ch-docx-status" class="pdf-status"></div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-ch-contratante">📋 Contratante (Cliente) ▾</h2>
+      <div id="panel-ch-contratante" class="panel-body">
+        <label>Razão Social
+          <input type="text" id="ch_razaoSocial" placeholder="Nome da empresa cliente">
+        </label>
+        <label>CNPJ
+          <input type="text" id="ch_cnpj" placeholder="00.000.000/0000-00">
+        </label>
+        <label>Endereço completo
+          <input type="text" id="ch_endereco" placeholder="Rua, número, bairro, cidade/UF, CEP">
+        </label>
+        <h3>Representante Legal</h3>
+        <label>Nome
+          <input type="text" id="ch_repNome" placeholder="Nome do sócio/administrador">
+        </label>
+        <div class="row">
+          <label>Profissão
+            <input type="text" id="ch_repProfissao" placeholder="ex: empresário">
+          </label>
+          <label class="small">CPF
+            <input type="text" id="ch_repCpf" placeholder="000.000.000-00">
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>🏢 Contratada (fixa)</h2>
+      <div class="panel-body">
+        <div class="fixed-info">
+          <strong id="ch-fixed-razaoSocial"></strong>
+          <span id="ch-fixed-cnpj"></span>
+          <span id="ch-fixed-endereco"></span>
+          <span id="ch-fixed-contato"></span>
+          <span id="ch-fixed-responsavel"></span>
+        </div>
+        <p class="fixed-note">A contratada é sempre a AEA Contabilidade Consultiva — não editável.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-ch-honorarios">💰 Honorários ▾</h2>
+      <div id="panel-ch-honorarios" class="panel-body">
+        <label>Valor cheio mensal (R$)
+          <input type="text" id="ch_valorCheio" placeholder="ex: 3.621,00">
+        </label>
+        <label class="checkbox"><input type="checkbox" id="ch_temDesconto"> Aplicar desconto temporário</label>
+        <div id="ch_descontoWrap" class="hidden">
+          <label>Valor com desconto (R$)
+            <input type="text" id="ch_valorDesconto" placeholder="ex: 2.621,00">
+          </label>
+          <div class="row">
+            <label>Desconto de (mês/ano)
+              <input type="month" id="ch_descontoInicio">
+            </label>
+            <label>até (mês/ano)
+              <input type="month" id="ch_descontoFim">
+            </label>
+          </div>
+        </div>
+        <label>Vencimento (dia)
+          <input type="number" id="ch_vencimentoDia" min="1" max="31" placeholder="5">
+        </label>
+        <label>Texto da parcela anual (cláusula 4.4)
+          <textarea id="ch_parcelaAnualTexto" rows="4"></textarea>
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-ch-vigencia">📅 Vigência e Fidelidade ▾</h2>
+      <div id="panel-ch-vigencia" class="panel-body">
+        <div class="row">
+          <label>Início
+            <input type="date" id="ch_vigenciaInicio">
+          </label>
+          <label>Término
+            <input type="date" id="ch_vigenciaFim">
+          </label>
+        </div>
+        <label>Aviso prévio para rescisão (dias)
+          <input type="number" id="ch_avisoPrevio" min="0" value="30">
+        </label>
+        <label class="checkbox"><input type="checkbox" id="ch_temFidelidade" checked> Incluir cláusula de fidelidade contratual</label>
+        <label id="ch_multaWrap">Multa rescisória (%)
+          <input type="number" id="ch_multaPercent" min="0" max="100" value="30">
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-ch-grupo">🏭 Grupo Econômico (opcional) ▾</h2>
+      <div id="panel-ch-grupo" class="panel-body collapsed">
+        <p class="fixed-note">Se a extensão do contrato a empresas do mesmo grupo econômico não se aplicar, deixe a lista vazia.</p>
+        <div id="ch-grupo-list"></div>
+        <button type="button" id="ch-add-grupo" class="btn-secondary">+ Adicionar empresa do grupo</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-ch-foro">✍️ Foro e Assinaturas ▾</h2>
+      <div id="panel-ch-foro" class="panel-body">
+        <label>Cidade/Comarca do foro
+          <input type="text" id="ch_foroCidade">
+        </label>
+        <div class="row">
+          <label>Local do contrato
+            <input type="text" id="ch_local" placeholder="Cidade/UF">
+          </label>
+          <label>Data
+            <input type="date" id="ch_data">
+          </label>
+        </div>
+        <h3>Testemunhas</h3>
+        <label>Testemunha 1 (nome / CPF)
+          <div class="row">
+            <input type="text" id="ch_test1Nome" placeholder="Nome">
+            <input type="text" id="ch_test1Cpf" placeholder="CPF">
+          </div>
+        </label>
+        <label>Testemunha 2 (nome / CPF)
+          <div class="row">
+            <input type="text" id="ch_test2Nome" placeholder="Nome">
+            <input type="text" id="ch_test2Cpf" placeholder="CPF">
+          </div>
+        </label>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button id="ch-btn-print" class="btn-primary">Imprimir / Exportar PDF</button>
+      <button id="ch-btn-word" class="btn-secondary">📝 Baixar como Word</button>
+      <button id="ch-btn-clear" class="btn-danger">Limpar formulário</button>
+    </div>
+
+  </aside>
+
+  <main class="preview-wrap hidden" data-mode="honorarios">
+    <div id="honorarios-preview" class="contract-doc"></div>
+  </main>
+
 </div>
 
 <script src="js/vendor/pdf.min.js"></script>
@@ -375,11 +546,13 @@
 <script src="js/contatos-store.js"></script>
 <script src="js/contract-template.js"></script>
 <script src="js/parceria-contract-template.js"></script>
+<script src="js/honorarios-contract-template.js"></script>
 <script src="js/vendor/html2pdf.bundle.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="js/drive-config.js"></script>
 <script src="js/drive-upload.js"></script>
 <script src="js/app.js"></script>
 <script src="js/app-parceria.js"></script>
+<script src="js/app-honorarios.js"></script>
 </body>
 </html>

@@ -164,9 +164,11 @@ function setupModeToggleContrato() {
       const mode = tab.dataset.modeTab;
       document.querySelectorAll(".mode-tab").forEach((t) => t.classList.toggle("active", t === tab));
       document.querySelectorAll("[data-mode]").forEach((el) => el.classList.toggle("hidden", el.dataset.mode !== mode));
-      document.getElementById("app-title").textContent = mode === "parceria"
-        ? "Gerador de Contrato de Parceria Comercial / Indicação de Clientes"
-        : "Gerador de Contrato de Prestação de Serviços Contábeis";
+      const titulos = {
+        parceria: "Gerador de Contrato de Parceria Comercial / Indicação de Clientes",
+        honorarios: "Gerador de Contrato de Honorários - Contabilidade",
+      };
+      document.getElementById("app-title").textContent = titulos[mode] || "Gerador de Contrato de Prestação de Serviços Contábeis";
     });
   });
 }
