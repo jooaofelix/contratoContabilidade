@@ -5,7 +5,15 @@
 
 const VENDAS_COLLECTION = "vendas";
 
-const VENDA_STATUS = ["Aguardando resposta", "Em negociação", "Fechado/Ganho", "Recusado/Perdido"];
+const VENDA_STATUS = [
+  "Aguardando resposta",
+  "Aguardando reunião",
+  "Em negociação",
+  "Analisando proposta",
+  "Analisando contrato",
+  "Fechado/Ganho",
+  "Recusado/Perdido",
+];
 
 async function getVendas() {
   const snap = await db.collection(VENDAS_COLLECTION).get();

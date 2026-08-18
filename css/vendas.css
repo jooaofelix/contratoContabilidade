@@ -125,7 +125,10 @@
 }
 
 .status-badge.status-aguardando { background: #fef3c7; color: #92400e; }
+.status-badge.status-reuniao { background: #ede9fe; color: #5b21b6; }
 .status-badge.status-negociacao { background: #dbeafe; color: #1e40af; }
+.status-badge.status-analisando-proposta { background: #cffafe; color: #155e75; }
+.status-badge.status-analisando-contrato { background: #ffedd5; color: #9a3412; }
 .status-badge.status-ganho { background: #dcfce7; color: #15803d; }
 .status-badge.status-perdido { background: #fee2e2; color: #b91c1c; }
 

@@ -18,7 +18,10 @@ function formatBRL(n) {
 function statusClass(status) {
   switch (status) {
     case "Aguardando resposta": return "status-aguardando";
+    case "Aguardando reunião": return "status-reuniao";
     case "Em negociação": return "status-negociacao";
+    case "Analisando proposta": return "status-analisando-proposta";
+    case "Analisando contrato": return "status-analisando-contrato";
     case "Fechado/Ganho": return "status-ganho";
     case "Recusado/Perdido": return "status-perdido";
     default: return "";
@@ -59,6 +62,8 @@ function clearVendaForm() {
   document.getElementById("empresa-select").value = "";
 }
 
+const VENDA_STATUS_FINAIS = ["Fechado/Ganho", "Recusado/Perdido"];
+
 function renderVendasStats(vendas) {
   const porStatus = {};
   VENDA_STATUS.forEach((s) => { porStatus[s] = { count: 0, valor: 0 }; });
@@ -68,20 +73,15 @@ function renderVendasStats(vendas) {
     porStatus[v.status].valor += parseValorBR(v.valor);
   });
 
-  const emAberto = (porStatus["Aguardando resposta"]?.valor || 0) + (porStatus["Em negociação"]?.valor || 0);
+  const emAberto = VENDA_STATUS
+    .filter((s) => !VENDA_STATUS_FINAIS.includes(s))
+    .reduce((sum, s) => sum + porStatus[s].valor, 0);
 
-  const cards = [
-    { label: "Aguardando resposta", data: porStatus["Aguardando resposta"] },
-    { label: "Em negociação", data: porStatus["Em negociação"] },
-    { label: "Fechado/Ganho", data: porStatus["Fechado/Ganho"] },
-    { label: "Recusado/Perdido", data: porStatus["Recusado/Perdido"] },
-  ];
-
-  const cardsHtml = cards.map((c) => `
+  const cardsHtml = VENDA_STATUS.map((s) => `
     <div class="vendas-stat-card">
-      <div class="vendas-stat-label">${c.label}</div>
-      <div class="vendas-stat-value">${c.data ? c.data.count : 0}</div>
-      <div class="vendas-stat-sub">${formatBRL(c.data ? c.data.valor : 0)}</div>
+      <div class="vendas-stat-label">${s}</div>
+      <div class="vendas-stat-value">${porStatus[s].count}</div>
+      <div class="vendas-stat-sub">${formatBRL(porStatus[s].valor)}</div>
     </div>
   `).join("");
 
@@ -89,7 +89,7 @@ function renderVendasStats(vendas) {
     <div class="vendas-stat-card">
       <div class="vendas-stat-label">Pipeline em aberto</div>
       <div class="vendas-stat-value">${formatBRL(emAberto)}</div>
-      <div class="vendas-stat-sub">aguardando + em negociação</div>
+      <div class="vendas-stat-sub">tudo que ainda não fechou nem foi perdido</div>
     </div>
   `;
 
