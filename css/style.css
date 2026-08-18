@@ -490,7 +490,7 @@ button {
 .witnesses .sig-line .line { width: 260px; }
 
 @media print {
-  .sidebar, .app-header { display: none; }
+  .sidebar, .app-header, .mode-tabs { display: none; }
   .app-layout { padding: 0; }
   .preview-wrap { width: 100%; }
   .contract-doc { border: none; box-shadow: none; max-width: 100%; padding: 0 24px; }

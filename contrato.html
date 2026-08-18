@@ -10,7 +10,7 @@
 <header class="app-header">
   <div class="app-brand">
     <img src="assets/aea-logo.svg" alt="AEA Contabilidade Consultiva" class="app-logo">
-    <h1>Gerador de Contrato de Prestação de Serviços Contábeis</h1>
+    <h1 id="app-title">Gerador de Contrato de Prestação de Serviços Contábeis</h1>
   </div>
   <nav class="app-nav">
     <a href="index.html">Início</a>
@@ -24,9 +24,14 @@
   </nav>
 </header>
 
+<div class="mode-tabs">
+  <button type="button" class="mode-tab active" data-mode-tab="servicos">📄 Prestação de Serviços</button>
+  <button type="button" class="mode-tab" data-mode-tab="parceria">🤝 Parceria Comercial / Indicação</button>
+</div>
+
 <div class="app-layout">
 
-  <aside class="sidebar">
+  <aside class="sidebar" data-mode="servicos">
 
     <div class="warning-banner">
       ⚠ A leitura é por busca de padrões no texto do PDF do cartão CNPJ da Receita Federal — layout diferente (digitalizado/escaneado, por exemplo) pode não extrair tudo. Confira sempre os campos preenchidos.
@@ -210,8 +215,134 @@
 
   </aside>
 
-  <main class="preview-wrap">
+  <main class="preview-wrap" data-mode="servicos">
     <div id="contract-preview" class="contract-doc"></div>
+  </main>
+
+  <aside class="sidebar hidden" data-mode="parceria">
+
+    <section class="panel">
+      <h2>🤝 Contato/Mentorado já cadastrado</h2>
+      <div class="panel-body">
+        <label>Buscar por nome ou empresa
+          <input type="text" id="pc-contato-search" placeholder="Digite o nome da pessoa ou da empresa...">
+        </label>
+        <label>Selecionar contato
+          <select id="pc-contato-select"></select>
+        </label>
+        <p class="fixed-note">Preenche nome/e-mail/telefone. RG, CPF, endereço e qualificação continuam manuais.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-mentorado">👤 Mentorado(a) ▾</h2>
+      <div id="panel-mentorado" class="panel-body">
+        <label>Nome completo
+          <input type="text" id="pc_nome" placeholder="Nome do(a) mentorado(a)">
+        </label>
+        <div class="row">
+          <label>Nacionalidade
+            <input type="text" id="pc_nacionalidade" placeholder="ex: brasileiro(a)">
+          </label>
+          <label>Estado civil
+            <input type="text" id="pc_estadoCivil" placeholder="ex: casado(a)">
+          </label>
+        </div>
+        <label>Profissão
+          <input type="text" id="pc_profissao">
+        </label>
+        <div class="row">
+          <label>RG
+            <input type="text" id="pc_rg">
+          </label>
+          <label class="small">CPF
+            <input type="text" id="pc_cpf">
+          </label>
+        </div>
+        <label>Endereço completo
+          <input type="text" id="pc_endereco" placeholder="Rua, número, bairro, cidade/UF, CEP">
+        </label>
+        <div class="row">
+          <label>E-mail
+            <input type="text" id="pc_email">
+          </label>
+          <label>Telefone
+            <input type="text" id="pc_telefone">
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>🏢 Contratante (fixa)</h2>
+      <div class="panel-body">
+        <div class="fixed-info">
+          <strong id="pc-fixed-razaoSocial"></strong>
+          <span id="pc-fixed-cnpj"></span>
+          <span id="pc-fixed-endereco"></span>
+          <span id="pc-fixed-contato"></span>
+          <span id="pc-fixed-responsavel"></span>
+        </div>
+        <p class="fixed-note">A contratante é sempre a AEA Contabilidade Consultiva — não editável.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-remuneracao">💰 Remuneração e Pagamento ▾</h2>
+      <div id="panel-remuneracao" class="panel-body">
+        <label>Comissão do(a) mentorado(a) (%)
+          <input type="number" id="pc_percentual" min="0" max="100" value="10">
+        </label>
+        <div class="row">
+          <label>Prazo de pagamento (dias)
+            <input type="number" id="pc_prazoDias" min="0" placeholder="ex: 5">
+          </label>
+          <label>Forma de pagamento
+            <input type="text" id="pc_forma" placeholder="ex: Pix">
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-pc-foro">✍️ Foro e Assinaturas ▾</h2>
+      <div id="panel-pc-foro" class="panel-body">
+        <label>Cidade/Comarca do foro
+          <input type="text" id="pc_foroCidade">
+        </label>
+        <div class="row">
+          <label>Local do contrato
+            <input type="text" id="pc_local" placeholder="Cidade/UF">
+          </label>
+          <label>Data
+            <input type="date" id="pc_data">
+          </label>
+        </div>
+        <h3>Testemunhas</h3>
+        <label>Testemunha 1 (nome / CPF)
+          <div class="row">
+            <input type="text" id="pc_test1Nome" placeholder="Nome">
+            <input type="text" id="pc_test1Cpf" placeholder="CPF">
+          </div>
+        </label>
+        <label>Testemunha 2 (nome / CPF)
+          <div class="row">
+            <input type="text" id="pc_test2Nome" placeholder="Nome">
+            <input type="text" id="pc_test2Cpf" placeholder="CPF">
+          </div>
+        </label>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button id="pc-btn-print" class="btn-primary">Imprimir / Exportar PDF</button>
+      <button id="pc-btn-clear" class="btn-danger">Limpar formulário</button>
+    </div>
+
+  </aside>
+
+  <main class="preview-wrap hidden" data-mode="parceria">
+    <div id="parceria-preview" class="contract-doc"></div>
   </main>
 
 </div>
@@ -222,11 +353,14 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="js/firebase-config.js"></script>
 <script src="js/empresas-store.js"></script>
+<script src="js/contatos-store.js"></script>
 <script src="js/contract-template.js"></script>
+<script src="js/parceria-contract-template.js"></script>
 <script src="js/vendor/html2pdf.bundle.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="js/drive-config.js"></script>
 <script src="js/drive-upload.js"></script>
 <script src="js/app.js"></script>
+<script src="js/app-parceria.js"></script>
 </body>
 </html>
