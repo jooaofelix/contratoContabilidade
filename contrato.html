@@ -58,6 +58,13 @@
     </section>
 
     <section class="panel">
+      <h2>Importar dados via Word (.docx)</h2>
+      <p class="fixed-note">Envie um contrato ou documento .docx já preenchido — o sistema tenta puxar razão social, CNPJ, endereço e representante automaticamente.</p>
+      <input type="file" id="docx-input" accept=".docx">
+      <div id="docx-status" class="pdf-status"></div>
+    </section>
+
+    <section class="panel">
       <h2 class="panel-toggle" data-target="panel-contratante">📋 Contratante (Cliente) ▾</h2>
       <div id="panel-contratante" class="panel-body">
         <label>Razão Social
@@ -210,6 +217,7 @@
 
     <div class="actions">
       <button id="btn-print" class="btn-primary">Imprimir / Exportar PDF</button>
+      <button id="btn-word" class="btn-secondary">📝 Baixar como Word</button>
       <button id="btn-clear" class="btn-danger">Limpar formulário</button>
     </div>
 
@@ -220,6 +228,13 @@
   </main>
 
   <aside class="sidebar hidden" data-mode="parceria">
+
+    <section class="panel">
+      <h2>Importar dados via Word (.docx)</h2>
+      <p class="fixed-note">Envie um contrato ou documento .docx já preenchido — o sistema tenta puxar nome, RG, CPF, endereço, e-mail e telefone do(a) mentorado(a) automaticamente.</p>
+      <input type="file" id="pc-docx-input" accept=".docx">
+      <div id="pc-docx-status" class="pdf-status"></div>
+    </section>
 
     <section class="panel">
       <h2>🤝 Contato/Mentorado já cadastrado</h2>
@@ -336,6 +351,7 @@
 
     <div class="actions">
       <button id="pc-btn-print" class="btn-primary">Imprimir / Exportar PDF</button>
+      <button id="pc-btn-word" class="btn-secondary">📝 Baixar como Word</button>
       <button id="pc-btn-clear" class="btn-danger">Limpar formulário</button>
     </div>
 
@@ -349,6 +365,9 @@
 
 <script src="js/vendor/pdf.min.js"></script>
 <script src="js/pdf-extractor.js"></script>
+<script src="js/vendor/jszip.min.js"></script>
+<script src="js/docx-extractor.js"></script>
+<script src="js/word-export.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="js/firebase-config.js"></script>

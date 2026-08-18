@@ -198,6 +198,52 @@ function setupPdfImport() {
   });
 }
 
+function setupDocxImport() {
+  const input = document.getElementById("docx-input");
+  const status = document.getElementById("docx-status");
+
+  input.addEventListener("change", async () => {
+    const file = input.files[0];
+    if (!file) return;
+
+    status.textContent = "Lendo o Word...";
+    status.className = "pdf-status";
+
+    try {
+      const text = await extractTextFromDocx(file);
+      const parsed = parseContratanteFromDocxText(text);
+
+      let foundCount = 0;
+      const setIfFound = (id, value) => {
+        if (value) {
+          document.getElementById(id).value = value;
+          foundCount++;
+        }
+      };
+
+      setIfFound("c_razaoSocial", parsed.razaoSocial);
+      setIfFound("c_cnpj", parsed.cnpj);
+      setIfFound("c_endereco", parsed.endereco);
+      setIfFound("c_repNome", parsed.repNome);
+      setIfFound("c_repCpf", parsed.repCpf);
+
+      if (foundCount > 0) {
+        status.textContent = `${foundCount} campo(s) preenchido(s) automaticamente a partir do Word. Confira os dados.`;
+        status.className = "pdf-status ok";
+      } else {
+        status.textContent = "Não consegui reconhecer os dados neste arquivo. Preencha manualmente.";
+        status.className = "pdf-status error";
+      }
+
+      updatePreview();
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao ler o arquivo Word. Confira se é um .docx válido.";
+      status.className = "pdf-status error";
+    }
+  });
+}
+
 function empresaToContratante(empresa) {
   const enderecoPartes = [
     empresa.endereco,
@@ -291,6 +337,11 @@ function setupActions() {
     window.print();
   });
 
+  document.getElementById("btn-word").addEventListener("click", () => {
+    const nome = get("c_razaoSocial") || "Contrato";
+    exportElementAsWord("contract-preview", `Contrato de Prestação de Serviços - ${nome}`);
+  });
+
   document.getElementById("btn-clear").addEventListener("click", () => {
     if (!confirm("Limpar todos os campos do contratante e das condições do contrato?")) return;
     FIELD_IDS.forEach((id) => {
@@ -304,6 +355,8 @@ function setupActions() {
     document.getElementById("v_avisoPrevio").value = "30";
     document.getElementById("pdf-input").value = "";
     document.getElementById("pdf-status").textContent = "";
+    document.getElementById("docx-input").value = "";
+    document.getElementById("docx-status").textContent = "";
     setupEscopoDefaults();
     setupConditionalFields();
     updatePreview();
@@ -318,6 +371,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupEscopoDefaults();
   setupLiveUpdate();
   setupPdfImport();
+  setupDocxImport();
   setupEmpresasContrato();
   setupActions();
   updatePreview();

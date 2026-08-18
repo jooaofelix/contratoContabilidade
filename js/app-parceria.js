@@ -91,6 +91,11 @@ function setupActionsParceria() {
     window.print();
   });
 
+  document.getElementById("pc-btn-word").addEventListener("click", () => {
+    const nome = getPc("pc_nome") || "Contrato de Parceria";
+    exportElementAsWord("parceria-preview", `Contrato de Parceria - ${nome}`);
+  });
+
   document.getElementById("pc-btn-clear").addEventListener("click", () => {
     if (!confirm("Limpar todos os campos do contrato de parceria?")) return;
     FIELD_IDS_PARCERIA.forEach((id) => {
@@ -98,7 +103,58 @@ function setupActionsParceria() {
     });
     document.getElementById("pc_percentual").value = "10";
     document.getElementById("pc-contato-select").value = "";
+    document.getElementById("pc-docx-input").value = "";
+    document.getElementById("pc-docx-status").textContent = "";
     updateParceriaPreview();
+  });
+}
+
+function setupDocxImportParceria() {
+  const input = document.getElementById("pc-docx-input");
+  const status = document.getElementById("pc-docx-status");
+
+  input.addEventListener("change", async () => {
+    const file = input.files[0];
+    if (!file) return;
+
+    status.textContent = "Lendo o Word...";
+    status.className = "pdf-status";
+
+    try {
+      const text = await extractTextFromDocx(file);
+      const parsed = parseMentoradoFromDocxText(text);
+
+      let foundCount = 0;
+      const setIfFound = (id, value) => {
+        if (value) {
+          document.getElementById(id).value = value;
+          foundCount++;
+        }
+      };
+
+      setIfFound("pc_nome", parsed.nome);
+      setIfFound("pc_nacionalidade", parsed.nacionalidade);
+      setIfFound("pc_estadoCivil", parsed.estadoCivil);
+      setIfFound("pc_rg", parsed.rg);
+      setIfFound("pc_cpf", parsed.cpf);
+      setIfFound("pc_endereco", parsed.endereco);
+      setIfFound("pc_email", parsed.email);
+      setIfFound("pc_telefone", parsed.telefone);
+
+      if (foundCount > 0) {
+        status.textContent = `${foundCount} campo(s) preenchido(s) automaticamente a partir do Word. Confira os dados.`;
+        status.className = "pdf-status ok";
+      } else {
+        status.textContent = "Não consegui reconhecer os dados neste arquivo. Preencha manualmente.";
+        status.className = "pdf-status error";
+      }
+
+      updateParceriaPreview();
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao ler o arquivo Word. Confira se é um .docx válido.";
+      status.className = "pdf-status error";
+    }
   });
 }
 
@@ -122,5 +178,6 @@ document.addEventListener("DOMContentLoaded", () => {
   setupLiveUpdateParceria();
   setupContatosParceria();
   setupActionsParceria();
+  setupDocxImportParceria();
   updateParceriaPreview();
 });
