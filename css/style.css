@@ -179,6 +179,35 @@ textarea {
 
 .hidden { display: none !important; }
 
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-box {
+  background: #fff;
+  border-radius: 10px;
+  padding: 22px;
+  width: 420px;
+  max-width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-box h2 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+}
+
 .pdf-status {
   margin-top: 8px;
   font-size: 0.8rem;

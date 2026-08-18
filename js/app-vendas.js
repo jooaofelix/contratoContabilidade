@@ -128,6 +128,7 @@ function renderVendasTable() {
       <td>${v.observacoes || ""}</td>
       <td class="vendas-row-actions">
         <button type="button" class="btn-secondary venda-followup" data-id="${v.id}" title="Enviar 2ª chamada por WhatsApp">📲 2ª chamada</button>
+        <button type="button" class="btn-secondary venda-reuniao" data-id="${v.id}" title="Marcar reunião no Google Calendar">📅 Reunião</button>
         <button type="button" class="btn-secondary venda-edit" data-id="${v.id}">Editar</button>
         <button type="button" class="btn-danger venda-delete" data-id="${v.id}">Excluir</button>
       </td>
@@ -161,6 +162,9 @@ function renderVendasTable() {
   });
   wrap.querySelectorAll(".venda-followup").forEach((btn) => {
     btn.addEventListener("click", () => enviarSegundaChamada(btn.dataset.id));
+  });
+  wrap.querySelectorAll(".venda-reuniao").forEach((btn) => {
+    btn.addEventListener("click", () => abrirModalReuniao(btn.dataset.id));
   });
 }
 
@@ -213,6 +217,87 @@ async function enviarSegundaChamada(id) {
   }
 }
 
+// --- Marcar reunião (link rápido do Google Calendar) --------------------
+
+let reuniaoVendaId = null;
+
+// dateStr "AAAA-MM-DD" + timeStr "HH:MM" são interpretados como horário
+// local do navegador; convertidos pra UTC no formato que o link "quick add"
+// do Google Calendar espera (AAAAMMDDTHHMMSSZ).
+function formatGCalDateTime(dateStr, timeStr, minutosDuracao) {
+  const inicio = new Date(`${dateStr}T${timeStr}:00`);
+  const fim = new Date(inicio.getTime() + minutosDuracao * 60000);
+  const fmt = (d) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  return `${fmt(inicio)}/${fmt(fim)}`;
+}
+
+function buildGoogleCalendarLink({ titulo, dataInicio, dataFim, detalhes }) {
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: titulo,
+    dates: `${dataInicio}/${dataFim}`,
+    details: detalhes || "",
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function abrirModalReuniao(id) {
+  const venda = vendasCache.find((v) => v.id === id);
+  if (!venda) return;
+  reuniaoVendaId = id;
+
+  document.getElementById("reuniao-titulo").value = `Reunião - AEA Contabilidade × ${venda.empresaNome || venda.contato || ""}`;
+  document.getElementById("reuniao-data").value = new Date().toISOString().slice(0, 10);
+  document.getElementById("reuniao-hora").value = "14:00";
+  document.getElementById("reuniao-duracao").value = "60";
+  document.getElementById("reuniao-detalhes").value = [venda.contato, venda.observacoes].filter(Boolean).join("\n");
+
+  document.getElementById("reuniao-modal").classList.remove("hidden");
+}
+
+function fecharModalReuniao() {
+  document.getElementById("reuniao-modal").classList.add("hidden");
+  reuniaoVendaId = null;
+}
+
+function setupReuniaoModal() {
+  document.getElementById("reuniao-cancelar").addEventListener("click", fecharModalReuniao);
+
+  document.getElementById("reuniao-confirmar").addEventListener("click", async () => {
+    const id = reuniaoVendaId;
+    const venda = vendasCache.find((v) => v.id === id);
+    if (!venda) { fecharModalReuniao(); return; }
+
+    const titulo = getV("reuniao-titulo");
+    const data = getV("reuniao-data");
+    const hora = getV("reuniao-hora");
+    const duracao = parseInt(getV("reuniao-duracao"), 10) || 60;
+    const detalhes = getV("reuniao-detalhes");
+
+    if (!data || !hora) {
+      alert("Preencha a data e a hora da reunião.");
+      return;
+    }
+
+    const [dataInicio, dataFim] = formatGCalDateTime(data, hora, duracao).split("/");
+    const link = buildGoogleCalendarLink({ titulo, dataInicio, dataFim, detalhes });
+
+    // Abre já, antes de qualquer await — mesma regra de sempre pra não
+    // arriscar o navegador bloquear o pop-up.
+    window.open(link, "_blank");
+    fecharModalReuniao();
+
+    try {
+      const dataHoraFmt = new Date(`${data}T${hora}:00`).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+      const novasObs = [venda.observacoes, `Reunião marcada para ${dataHoraFmt}`].filter(Boolean).join(" — ");
+      await upsertVenda(Object.assign({}, venda, { status: "Aguardando reunião", observacoes: novasObs }), id);
+      await refreshVendas();
+    } catch (err) {
+      console.error(err);
+    }
+  });
+}
+
 async function moverVendaStatus(id, novoStatus) {
   const venda = vendasCache.find((v) => v.id === id);
   if (!venda || venda.status === novoStatus) return;
@@ -237,6 +322,7 @@ function vendaCardHtml(v) {
           ${VENDA_STATUS.map((s) => `<option value="${s}" ${s === v.status ? "selected" : ""}>${s}</option>`).join("")}
         </select>
         <button type="button" class="btn-secondary venda-followup" data-id="${v.id}" title="Enviar 2ª chamada por WhatsApp">📲</button>
+        <button type="button" class="btn-secondary venda-reuniao" data-id="${v.id}" title="Marcar reunião no Google Calendar">📅</button>
         <button type="button" class="btn-secondary venda-edit" data-id="${v.id}">✎</button>
         <button type="button" class="btn-danger venda-delete" data-id="${v.id}">✕</button>
       </div>
@@ -279,6 +365,9 @@ function renderVendasBoard() {
   });
   wrap.querySelectorAll(".venda-followup").forEach((btn) => {
     btn.addEventListener("click", () => enviarSegundaChamada(btn.dataset.id));
+  });
+  wrap.querySelectorAll(".venda-reuniao").forEach((btn) => {
+    btn.addEventListener("click", () => abrirModalReuniao(btn.dataset.id));
   });
   wrap.querySelectorAll(".venda-card-status").forEach((select) => {
     select.addEventListener("change", () => moverVendaStatus(select.dataset.id, select.value));
@@ -1139,6 +1228,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("v_dataEnvio").value = new Date().toISOString().slice(0, 10);
   setupVendasModeToggle();
   setupVendasViewToggle();
+  setupReuniaoModal();
   setupImportacao();
   setupEmpresasVendas();
   setupVendaActions();

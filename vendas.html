@@ -263,6 +263,38 @@
 
 </div>
 
+<div id="reuniao-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h2>📅 Marcar reunião</h2>
+    <label>Título
+      <input type="text" id="reuniao-titulo">
+    </label>
+    <div class="row">
+      <label>Data
+        <input type="date" id="reuniao-data">
+      </label>
+      <label>Hora
+        <input type="time" id="reuniao-hora" value="14:00">
+      </label>
+    </div>
+    <label>Duração
+      <select id="reuniao-duracao">
+        <option value="30">30 minutos</option>
+        <option value="60" selected>1 hora</option>
+        <option value="90">1h30</option>
+        <option value="120">2 horas</option>
+      </select>
+    </label>
+    <label>Detalhes (opcional)
+      <textarea id="reuniao-detalhes" rows="3"></textarea>
+    </label>
+    <div class="row">
+      <button id="reuniao-confirmar" class="btn-primary">Abrir no Google Calendar</button>
+      <button id="reuniao-cancelar" class="btn-secondary">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="js/firebase-config.js"></script>
