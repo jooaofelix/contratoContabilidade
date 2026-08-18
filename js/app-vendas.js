@@ -127,6 +127,7 @@ function renderVendasTable() {
       <td><span class="status-badge ${statusClass(v.status)}">${v.status || "—"}</span></td>
       <td>${v.observacoes || ""}</td>
       <td class="vendas-row-actions">
+        <button type="button" class="btn-secondary venda-followup" data-id="${v.id}" title="Enviar 2ª chamada por WhatsApp">📲 2ª chamada</button>
         <button type="button" class="btn-secondary venda-edit" data-id="${v.id}">Editar</button>
         <button type="button" class="btn-danger venda-delete" data-id="${v.id}">Excluir</button>
       </td>
@@ -158,6 +159,58 @@ function renderVendasTable() {
   wrap.querySelectorAll(".venda-delete").forEach((btn) => {
     btn.addEventListener("click", () => removeVenda(btn.dataset.id));
   });
+  wrap.querySelectorAll(".venda-followup").forEach((btn) => {
+    btn.addEventListener("click", () => enviarSegundaChamada(btn.dataset.id));
+  });
+}
+
+// Extrai um telefone pra 2ª chamada: prioriza o contato vinculado
+// (contatoId, já carregado em memória em contatosCache) e cai pra um regex
+// em cima do texto livre "Nome - telefone" salvo no registro da venda.
+function resolveTelefoneVenda(venda) {
+  if (venda.contatoId) {
+    const contato = contatosCache.find((c) => c.id === venda.contatoId);
+    if (contato && contato.telefone) return contato.telefone;
+  }
+  const match = (venda.contato || "").match(/[\d()+\-.\s]{8,}/);
+  return match ? match[0].trim() : "";
+}
+
+function buildFollowUpMensagem(venda) {
+  const nome = (venda.contato || "").split(" - ")[0].trim() || venda.empresaNome || "";
+  const servicoMatch = (venda.observacoes || "").match(/Proposta enviada via WhatsApp: (.+)/);
+  const servico = servicoMatch ? servicoMatch[1].split(",")[0].trim() : "";
+  const sobre = servico ? ` sobre ${servico}` : "";
+  return `Olá ${nome}! Aqui é da AEA Contabilidade Consultiva de novo 😊 Só passando pra saber se você viu minha mensagem anterior${sobre}. Ainda tem interesse ou ficou alguma dúvida? Fico à disposição!`;
+}
+
+// Botão de acesso rápido pra reforçar contato com quem já foi prospectado e
+// ainda não respondeu. Abre o WhatsApp com uma mensagem de follow-up pronta
+// e marca nas observações da venda que a 2ª chamada foi enviada.
+async function enviarSegundaChamada(id) {
+  const venda = vendasCache.find((v) => v.id === id);
+  if (!venda) return;
+
+  const telefone = resolveTelefoneVenda(venda);
+  const mensagem = buildFollowUpMensagem(venda);
+  const link = buildWhatsAppLink(telefone, mensagem);
+  if (!link) {
+    alert('Não encontrei um telefone válido nesse registro. Clique em "Editar" e confira o campo Contato.');
+    return;
+  }
+
+  // Abre já, antes de qualquer await — mesma regra de sempre pra não
+  // arriscar o navegador bloquear o pop-up.
+  window.open(link, "_blank");
+
+  try {
+    const hoje = new Date().toLocaleDateString("pt-BR");
+    const novasObs = [venda.observacoes, `2ª chamada enviada em ${hoje}`].filter(Boolean).join(" — ");
+    await upsertVenda(Object.assign({}, venda, { observacoes: novasObs }), id);
+    await refreshVendas();
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 async function moverVendaStatus(id, novoStatus) {
@@ -183,6 +236,7 @@ function vendaCardHtml(v) {
         <select class="venda-card-status" data-id="${v.id}">
           ${VENDA_STATUS.map((s) => `<option value="${s}" ${s === v.status ? "selected" : ""}>${s}</option>`).join("")}
         </select>
+        <button type="button" class="btn-secondary venda-followup" data-id="${v.id}" title="Enviar 2ª chamada por WhatsApp">📲</button>
         <button type="button" class="btn-secondary venda-edit" data-id="${v.id}">✎</button>
         <button type="button" class="btn-danger venda-delete" data-id="${v.id}">✕</button>
       </div>
@@ -222,6 +276,9 @@ function renderVendasBoard() {
   });
   wrap.querySelectorAll(".venda-delete").forEach((btn) => {
     btn.addEventListener("click", () => removeVenda(btn.dataset.id));
+  });
+  wrap.querySelectorAll(".venda-followup").forEach((btn) => {
+    btn.addEventListener("click", () => enviarSegundaChamada(btn.dataset.id));
   });
   wrap.querySelectorAll(".venda-card-status").forEach((select) => {
     select.addEventListener("change", () => moverVendaStatus(select.dataset.id, select.value));
