@@ -473,14 +473,20 @@ async function removeVenda(id) {
   }
 }
 
+function ativarModoVendas(mode) {
+  const tab = document.querySelector(`.mode-tab[data-mode-tab="${mode}"]`);
+  if (!tab) return;
+  document.querySelectorAll(".mode-tab").forEach((t) => t.classList.toggle("active", t === tab));
+  document.querySelectorAll("[data-mode]").forEach((el) => el.classList.toggle("hidden", el.dataset.mode !== mode));
+}
+
 function setupVendasModeToggle() {
   document.querySelectorAll(".mode-tab").forEach((tab) => {
-    tab.addEventListener("click", () => {
-      const mode = tab.dataset.modeTab;
-      document.querySelectorAll(".mode-tab").forEach((t) => t.classList.toggle("active", t === tab));
-      document.querySelectorAll("[data-mode]").forEach((el) => el.classList.toggle("hidden", el.dataset.mode !== mode));
-    });
+    tab.addEventListener("click", () => ativarModoVendas(tab.dataset.modeTab));
   });
+
+  const modeParam = new URLSearchParams(window.location.search).get("mode");
+  if (modeParam) ativarModoVendas(modeParam);
 }
 
 // --- Importação de contatos via Excel ---------------------------------
