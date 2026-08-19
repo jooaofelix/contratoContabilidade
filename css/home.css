@@ -59,3 +59,16 @@
     grid-template-columns: 1fr;
   }
 }
+
+.home-extra-link {
+  display: inline-block;
+  margin-top: 40px;
+  font-size: 0.82rem;
+  color: #9ca3af;
+  text-decoration: none;
+}
+
+.home-extra-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}

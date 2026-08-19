@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consulta CNPJ (uso interno)</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/consulta.css">
+</head>
+<body>
+<header class="app-header">
+  <div class="app-brand">
+    <img src="assets/aea-logo.svg" alt="AEA Contabilidade Consultiva" class="app-logo">
+    <h1>Consulta CNPJ</h1>
+  </div>
+  <nav class="app-nav">
+    <a href="index.html">← Início</a>
+  </nav>
+</header>
+
+<main class="consulta-wrap">
+  <p class="pdf-status">Ferramenta avulsa de consulta pública (Receita Federal + Portal da Transparência). Não faz parte do funil de vendas nem salva nada — é só pra consultar na hora.</p>
+
+  <div class="consulta-form">
+    <input type="text" id="consulta-cnpj" placeholder="Digite o CNPJ (só números ou com máscara)">
+    <button type="button" id="consulta-btn" class="btn-primary">Consultar</button>
+  </div>
+
+  <div id="consulta-status" class="pdf-status"></div>
+  <div id="consulta-resultado" class="consulta-resultado"></div>
+</main>
+
+<script src="js/transparencia-config.js"></script>
+<script src="js/app-consulta.js"></script>
+</body>
+</html>
