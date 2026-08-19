@@ -1224,6 +1224,130 @@ function setupVendaActions() {
   document.getElementById("vendas-filtro-status").addEventListener("change", rerenderVisiveis);
 }
 
+// --- Anotações livres -----------------------------------------------------
+
+let notasCache = [];
+let notaEditId = null;
+
+function formatNotaData(nota) {
+  const ms = nota.updatedAtMs || 0;
+  if (!ms) return "";
+  return new Date(ms).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+}
+
+function notaCardHtml(n) {
+  return `
+    <div class="nota-card" data-id="${n.id}">
+      ${n.titulo ? `<div class="nota-card-titulo">${escapeHtmlVendas(n.titulo)}</div>` : ""}
+      <div class="nota-card-texto">${escapeHtmlVendas(n.texto || "").replace(/\n/g, "<br>")}</div>
+      <div class="nota-card-footer">
+        <span class="nota-card-data">${formatNotaData(n)}</span>
+        <div class="vendas-row-actions">
+          <button type="button" class="btn-secondary nota-edit" data-id="${n.id}">Editar</button>
+          <button type="button" class="btn-danger nota-delete" data-id="${n.id}">Excluir</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtmlVendas(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function renderNotasList() {
+  const search = document.getElementById("notas-search").value.trim().toLowerCase();
+  const filtradas = search
+    ? notasCache.filter((n) =>
+        (n.titulo || "").toLowerCase().includes(search) || (n.texto || "").toLowerCase().includes(search)
+      )
+    : notasCache;
+
+  const wrap = document.getElementById("notas-list-wrap");
+  if (filtradas.length === 0) {
+    wrap.innerHTML = `<div class="vendas-table-container"><div class="vendas-empty">Nenhuma anotação ainda.</div></div>`;
+    return;
+  }
+
+  wrap.innerHTML = `<div class="notas-grid">${filtradas.map(notaCardHtml).join("")}</div>`;
+
+  wrap.querySelectorAll(".nota-edit").forEach((btn) => {
+    btn.addEventListener("click", () => editNota(btn.dataset.id));
+  });
+  wrap.querySelectorAll(".nota-delete").forEach((btn) => {
+    btn.addEventListener("click", () => removeNota(btn.dataset.id));
+  });
+}
+
+async function refreshNotas() {
+  notasCache = await getNotas();
+  renderNotasList();
+}
+
+function clearNotaForm() {
+  notaEditId = null;
+  document.getElementById("nota-titulo").value = "";
+  document.getElementById("nota-texto").value = "";
+}
+
+function editNota(id) {
+  const nota = notasCache.find((n) => n.id === id);
+  if (!nota) return;
+  notaEditId = id;
+  document.getElementById("nota-titulo").value = nota.titulo || "";
+  document.getElementById("nota-texto").value = nota.texto || "";
+  document.getElementById("nota-status").textContent = "Editando anotação. Altere e clique em Salvar.";
+  document.getElementById("nota-status").className = "pdf-status";
+}
+
+async function removeNota(id) {
+  if (!confirm("Excluir esta anotação?")) return;
+  try {
+    await deleteNota(id);
+    if (notaEditId === id) clearNotaForm();
+    await refreshNotas();
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao excluir a anotação.");
+  }
+}
+
+function setupNotas() {
+  document.getElementById("nota-salvar").addEventListener("click", async () => {
+    const status = document.getElementById("nota-status");
+    const titulo = document.getElementById("nota-titulo").value;
+    const texto = document.getElementById("nota-texto").value;
+    if (!titulo && !texto) {
+      status.textContent = "Escreva algo antes de salvar.";
+      status.className = "pdf-status error";
+      return;
+    }
+    status.textContent = "Salvando...";
+    status.className = "pdf-status";
+    try {
+      await upsertNota({ titulo, texto }, notaEditId);
+      status.textContent = "Anotação salva.";
+      status.className = "pdf-status ok";
+      clearNotaForm();
+      await refreshNotas();
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao salvar a anotação.";
+      status.className = "pdf-status error";
+    }
+  });
+
+  document.getElementById("nota-nova").addEventListener("click", () => {
+    clearNotaForm();
+    document.getElementById("nota-status").textContent = "";
+  });
+
+  document.getElementById("notas-search").addEventListener("input", renderNotasList);
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("v_dataEnvio").value = new Date().toISOString().slice(0, 10);
   setupVendasModeToggle();
@@ -1243,4 +1367,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   setupLoteDesconto();
   setupLote();
+
+  setupNotas();
+  refreshNotas();
 });

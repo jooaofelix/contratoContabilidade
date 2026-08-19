@@ -29,6 +29,7 @@
   <button type="button" class="mode-tab active" data-mode-tab="funil">📈 Funil de Vendas</button>
   <button type="button" class="mode-tab" data-mode-tab="importar">📥 Início de Proposta</button>
   <button type="button" class="mode-tab" data-mode-tab="lote">📤 Envio em Lote</button>
+  <button type="button" class="mode-tab" data-mode-tab="notas">📝 Anotações</button>
 </div>
 
 <div class="app-layout">
@@ -261,6 +262,34 @@
     <div id="lote-wrap"></div>
   </main>
 
+  <aside class="sidebar hidden" data-mode="notas">
+    <section class="panel">
+      <h2>📝 Nova anotação</h2>
+      <div class="panel-body">
+        <label>Título (opcional)
+          <input type="text" id="nota-titulo" placeholder="ex: Ideia pra campanha de fim de ano">
+        </label>
+        <label>Anotação
+          <textarea id="nota-texto" rows="8" placeholder="Escreva aqui qualquer informação que queira guardar..."></textarea>
+        </label>
+        <div class="row">
+          <button id="nota-salvar" class="btn-primary">Salvar</button>
+          <button id="nota-nova" class="btn-secondary">Nova</button>
+        </div>
+        <div id="nota-status" class="pdf-status"></div>
+      </div>
+    </section>
+  </aside>
+
+  <main class="preview-wrap hidden" data-mode="notas">
+    <div class="vendas-toolbar">
+      <label class="vendas-search-label">Buscar nas anotações
+        <input type="text" id="notas-search" placeholder="Digite uma palavra...">
+      </label>
+    </div>
+    <div id="notas-list-wrap"></div>
+  </main>
+
 </div>
 
 <div id="reuniao-modal" class="modal-overlay hidden">
@@ -302,6 +331,7 @@
 <script src="js/vendas-store.js"></script>
 <script src="js/contatos-store.js"></script>
 <script src="js/produtos-store.js"></script>
+<script src="js/notas-store.js"></script>
 <script src="js/vendor/xlsx.full.min.js"></script>
 <script src="js/app-vendas.js"></script>
 </body>
