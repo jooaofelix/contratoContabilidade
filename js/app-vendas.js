@@ -255,6 +255,22 @@ function abrirModalReuniao(id) {
   document.getElementById("reuniao-modal").classList.remove("hidden");
 }
 
+// Agendamento avulso (ex: a partir de uma anotação) — abre o mesmo modal,
+// mas sem vínculo com nenhum card do funil.
+function abrirModalReuniaoDeNota(id) {
+  const nota = notasCache.find((n) => n.id === id);
+  if (!nota) return;
+  reuniaoVendaId = null;
+
+  document.getElementById("reuniao-titulo").value = nota.titulo || "Anotação";
+  document.getElementById("reuniao-data").value = new Date().toISOString().slice(0, 10);
+  document.getElementById("reuniao-hora").value = "14:00";
+  document.getElementById("reuniao-duracao").value = "60";
+  document.getElementById("reuniao-detalhes").value = nota.texto || "";
+
+  document.getElementById("reuniao-modal").classList.remove("hidden");
+}
+
 function fecharModalReuniao() {
   document.getElementById("reuniao-modal").classList.add("hidden");
   reuniaoVendaId = null;
@@ -265,8 +281,7 @@ function setupReuniaoModal() {
 
   document.getElementById("reuniao-confirmar").addEventListener("click", async () => {
     const id = reuniaoVendaId;
-    const venda = vendasCache.find((v) => v.id === id);
-    if (!venda) { fecharModalReuniao(); return; }
+    const venda = id ? vendasCache.find((v) => v.id === id) : null;
 
     const titulo = getV("reuniao-titulo");
     const data = getV("reuniao-data");
@@ -287,10 +302,19 @@ function setupReuniaoModal() {
     window.open(link, "_blank");
     fecharModalReuniao();
 
+    // Agendamento avulso (sem venda vinculada, ex: veio de uma anotação):
+    // só abre o link mesmo, não mexe no funil.
+    if (!venda) return;
+
     try {
       const dataHoraFmt = new Date(`${data}T${hora}:00`).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
       const novasObs = [venda.observacoes, `Reunião marcada para ${dataHoraFmt}`].filter(Boolean).join(" — ");
-      await upsertVenda(Object.assign({}, venda, { status: "Aguardando reunião", observacoes: novasObs }), id);
+      await upsertVenda(Object.assign({}, venda, {
+        status: "Aguardando reunião",
+        observacoes: novasObs,
+        reuniaoData: data,
+        reuniaoHora: hora,
+      }), id);
       await refreshVendas();
     } catch (err) {
       console.error(err);
@@ -1236,6 +1260,9 @@ function formatNotaData(nota) {
 }
 
 function notaCardHtml(n) {
+  const cartaoBtn = n.cartaoVendaId
+    ? `<button type="button" class="btn-secondary nota-cartao" data-id="${n.id}" disabled>✅ Já no funil</button>`
+    : `<button type="button" class="btn-secondary nota-cartao" data-id="${n.id}">📌 Gerar cartão</button>`;
   return `
     <div class="nota-card" data-id="${n.id}">
       ${n.titulo ? `<div class="nota-card-titulo">${escapeHtmlVendas(n.titulo)}</div>` : ""}
@@ -1243,6 +1270,8 @@ function notaCardHtml(n) {
       <div class="nota-card-footer">
         <span class="nota-card-data">${formatNotaData(n)}</span>
         <div class="vendas-row-actions">
+          <button type="button" class="btn-secondary nota-agenda" data-id="${n.id}">📅 Agenda</button>
+          ${cartaoBtn}
           <button type="button" class="btn-secondary nota-edit" data-id="${n.id}">Editar</button>
           <button type="button" class="btn-danger nota-delete" data-id="${n.id}">Excluir</button>
         </div>
@@ -1280,6 +1309,35 @@ function renderNotasList() {
   wrap.querySelectorAll(".nota-delete").forEach((btn) => {
     btn.addEventListener("click", () => removeNota(btn.dataset.id));
   });
+  wrap.querySelectorAll(".nota-agenda").forEach((btn) => {
+    btn.addEventListener("click", () => abrirModalReuniaoDeNota(btn.dataset.id));
+  });
+  wrap.querySelectorAll(".nota-cartao:not([disabled])").forEach((btn) => {
+    btn.addEventListener("click", () => gerarCartaoDoNota(btn.dataset.id));
+  });
+}
+
+async function gerarCartaoDoNota(id) {
+  const nota = notasCache.find((n) => n.id === id);
+  if (!nota) return;
+  if (nota.cartaoVendaId) return;
+  try {
+    const venda = await upsertVenda({
+      empresaNome: nota.titulo || "Anotação sem título",
+      contato: "",
+      valor: "",
+      dataEnvio: new Date().toISOString().slice(0, 10),
+      status: "Aguardando resposta",
+      observacoes: nota.texto || "",
+    });
+    await upsertNota(Object.assign({}, nota, { cartaoVendaId: venda.id }), id);
+    await refreshNotas();
+    await refreshVendas();
+    alert("Cartão criado no funil de vendas.");
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao gerar o cartão no funil de vendas.");
+  }
 }
 
 async function refreshNotas() {
