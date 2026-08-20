@@ -292,6 +292,7 @@ async function setupEmpresasContrato() {
       document.getElementById("c_endereco").value = mapped.endereco;
       document.getElementById("c_repNome").value = mapped.repNome;
       updatePreview();
+      updateDriveFolderLink(document.getElementById("empresa-drive-link"), empresa.driveFolders && empresa.driveFolders.contrato);
       status.textContent = "Dados do cliente carregados. Confira o CPF do representante.";
       status.className = "pdf-status ok";
     } catch (err) {
@@ -321,7 +322,8 @@ async function setupEmpresasContrato() {
       const record = await upsertEmpresa(data, select.value || null);
       await picker.refresh();
       select.value = record.id;
-      await saveDocumentToDrive({ elementId: "contract-preview", empresaId: record.id, empresaNome: nome, cnpj, tipoLabel: "Contrato", tipoKey: "contrato" });
+      const result = await saveDocumentToDrive({ elementId: "contract-preview", empresaId: record.id, empresaNome: nome, cnpj, tipoLabel: "Contrato", tipoKey: "contrato" });
+      updateDriveFolderLink(document.getElementById("empresa-drive-link"), result.folderId);
       status.textContent = "Contrato salvo no Drive.";
       status.className = "pdf-status ok";
     } catch (err) {

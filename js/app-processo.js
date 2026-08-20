@@ -225,9 +225,21 @@ function buildFichaAtualizada(f, alteracoes) {
 }
 
 let processoMode = "alteracao";
+let empresaCarregadaProcesso = null;
 
 function isAberturaMode() {
   return processoMode === "abertura";
+}
+
+// O tipo de documento (e a pasta do Drive) muda conforme o modo (abertura x
+// alteração), então recalcula o link toda vez que troca de aba ou de empresa
+// selecionada, reaproveitando a empresa já carregada em memória.
+function atualizarLinkDriveProcesso() {
+  const tipoKey = isAberturaMode() ? "aberturaEmpresa" : "fichaProcesso";
+  const folderId = empresaCarregadaProcesso && empresaCarregadaProcesso.driveFolders
+    ? empresaCarregadaProcesso.driveFolders[tipoKey]
+    : null;
+  updateDriveFolderLink(document.getElementById("empresa-drive-link"), folderId);
 }
 
 function updateProcessoPreview() {
@@ -263,6 +275,7 @@ function syncModeVisibility() {
   document.querySelectorAll('[data-mode="alteracao"]').forEach((el) => el.classList.toggle("hidden", abertura));
   document.querySelectorAll('[data-mode="abertura"]').forEach((el) => el.classList.toggle("hidden", !abertura));
   updateProcessoPreview();
+  atualizarLinkDriveProcesso();
 }
 
 function setupModeToggle() {
@@ -506,7 +519,13 @@ async function saveProcessoPdfToDrive(showBusy) {
     status.className = "pdf-status";
   }
   try {
-    await saveDocumentToDrive({ elementId, empresaId, empresaNome: nome, cnpj, tipoLabel, tipoKey });
+    const result = await saveDocumentToDrive({ elementId, empresaId, empresaNome: nome, cnpj, tipoLabel, tipoKey });
+    const driveFoldersAnteriores = empresaCarregadaProcesso && empresaCarregadaProcesso.id === empresaId ? empresaCarregadaProcesso.driveFolders : null;
+    empresaCarregadaProcesso = Object.assign({}, empresaCarregadaProcesso, {
+      id: empresaId,
+      driveFolders: Object.assign({}, driveFoldersAnteriores, { [tipoKey]: result.folderId }),
+    });
+    atualizarLinkDriveProcesso();
     status.textContent = "Salvo e PDF enviado para o Drive.";
     status.className = "pdf-status ok";
   } catch (err) {
@@ -563,8 +582,10 @@ async function setupEmpresasProcesso() {
       const empresa = await getEmpresa(select.value);
       if (!empresa) return;
 
+      empresaCarregadaProcesso = empresa;
       applyEmpresaToForm(empresa, "f_");
       updateProcessoPreview();
+      atualizarLinkDriveProcesso();
 
       if (!empresa.cnpj) {
         status.textContent = "Dados carregados.";
@@ -632,6 +653,8 @@ async function setupEmpresasProcesso() {
     FICHA_FIELD_MAP.forEach(({ key }) => { document.getElementById("f_" + key).value = ""; });
     status.textContent = "";
     updateProcessoPreview();
+    empresaCarregadaProcesso = null;
+    atualizarLinkDriveProcesso();
   });
 
   document.getElementById("empresa-delete").addEventListener("click", async () => {
@@ -646,6 +669,8 @@ async function setupEmpresasProcesso() {
     try {
       await deleteEmpresa(select.value);
       await empresaPicker.refresh();
+      empresaCarregadaProcesso = null;
+      atualizarLinkDriveProcesso();
       status.textContent = "Empresa excluída.";
       status.className = "pdf-status ok";
     } catch (err) {

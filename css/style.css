@@ -245,6 +245,17 @@ button {
 .btn-secondary { background: #e5e7eb; color: #111827; }
 .btn-danger { background: #fee2e2; color: var(--danger); }
 
+.drive-folder-link {
+  display: inline-block;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
 .actions {
   display: flex;
   flex-direction: column;

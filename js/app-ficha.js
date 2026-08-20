@@ -71,7 +71,7 @@ async function saveFichaPdfToDrive(showBusy) {
     status.className = "pdf-status";
   }
   try {
-    await saveDocumentToDrive({
+    const result = await saveDocumentToDrive({
       elementId: "ficha-preview",
       empresaId,
       empresaNome: nome,
@@ -79,6 +79,7 @@ async function saveFichaPdfToDrive(showBusy) {
       tipoLabel: "Ficha Cadastral",
       tipoKey: "fichaCadastral",
     });
+    updateDriveFolderLink(document.getElementById("empresa-drive-link"), result.folderId);
     status.textContent = "Ficha salva e PDF enviado para o Drive.";
     status.className = "pdf-status ok";
   } catch (err) {
@@ -389,6 +390,7 @@ async function setupEmpresasFicha() {
 
       applyEmpresaToForm(empresa, "f_");
       updateFichaPreview();
+      updateDriveFolderLink(document.getElementById("empresa-drive-link"), empresa.driveFolders && empresa.driveFolders.fichaCadastral);
 
       if (!empresa.cnpj) {
         status.textContent = "Dados carregados.";
@@ -459,6 +461,7 @@ async function setupEmpresasFicha() {
     FIELD_IDS_FICHA.forEach((id) => { document.getElementById(id).value = ""; });
     status.textContent = "";
     updateFichaPreview();
+    updateDriveFolderLink(document.getElementById("empresa-drive-link"), null);
   });
 
   document.getElementById("empresa-delete").addEventListener("click", async () => {
@@ -473,6 +476,7 @@ async function setupEmpresasFicha() {
     try {
       await deleteEmpresa(select.value);
       await picker.refresh();
+      updateDriveFolderLink(document.getElementById("empresa-drive-link"), null);
       status.textContent = "Empresa excluída.";
       status.className = "pdf-status ok";
     } catch (err) {

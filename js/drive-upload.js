@@ -183,6 +183,28 @@ function sanitizeDriveFilename(name) {
   return name.replace(/[\\/:*?"<>|]/g, "-").trim();
 }
 
+// Monta o link direto pra pasta do cliente no Drive (a mesma pasta lembrada
+// em empresa.driveFolders[tipoKey]), pra abrir onde o PDF já está salvo sem
+// precisar caçar no Drive manualmente.
+function driveFolderUrl(folderId) {
+  return folderId ? `https://drive.google.com/drive/folders/${folderId}` : null;
+}
+
+// Atualiza um <a> de "abrir pasta no Drive": mostra e aponta pro folderId
+// quando existe, esconde quando não tem nada salvo ainda pra essa
+// empresa/tipo de documento.
+function updateDriveFolderLink(linkEl, folderId) {
+  if (!linkEl) return;
+  const url = driveFolderUrl(folderId);
+  if (url) {
+    linkEl.href = url;
+    linkEl.classList.remove("hidden");
+  } else {
+    linkEl.removeAttribute("href");
+    linkEl.classList.add("hidden");
+  }
+}
+
 // Orquestra: pede acesso, garante a subpasta do cliente, gera o PDF a partir
 // do preview já renderizado na tela e sobe pro Drive.
 async function saveDocumentToDrive({ elementId, empresaId, empresaNome, cnpj, tipoLabel, tipoKey }) {
@@ -193,5 +215,6 @@ async function saveDocumentToDrive({ elementId, empresaId, empresaNome, cnpj, ti
   const folderId = await getOrCreateEmpresaFolder(empresaId, empresaNome, tipoKey);
   const blob = await generatePdfBlob(elementId);
   const filename = sanitizeDriveFilename(`${tipoLabel} - ${empresaNome}${cnpj ? " - " + cnpj : ""}.pdf`);
-  return uploadPdfToDrive(blob, filename, folderId);
+  const uploadResult = await uploadPdfToDrive(blob, filename, folderId);
+  return Object.assign({ folderId }, uploadResult);
 }

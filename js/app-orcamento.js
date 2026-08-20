@@ -99,6 +99,7 @@ async function setupEmpresasOrcamento() {
       document.getElementById("q_nomeResponsavel").value = responsavel.split(" ")[0] || "";
       document.getElementById("q_email").value = empresa.email || "";
       updateProposalPreview();
+      updateDriveFolderLink(document.getElementById("empresa-drive-link"), empresa.driveFolders && empresa.driveFolders.orcamento);
       status.textContent = "Dados do cliente carregados. Confira telefone e nome de saudação.";
       status.className = "pdf-status ok";
     } catch (err) {
@@ -128,7 +129,8 @@ async function setupEmpresasOrcamento() {
       const record = await upsertEmpresa(data, select.value || null);
       await picker.refresh();
       select.value = record.id;
-      await saveDocumentToDrive({ elementId: "proposal-preview", empresaId: record.id, empresaNome: nome, cnpj, tipoLabel: "Orçamento", tipoKey: "orcamento" });
+      const result = await saveDocumentToDrive({ elementId: "proposal-preview", empresaId: record.id, empresaNome: nome, cnpj, tipoLabel: "Orçamento", tipoKey: "orcamento" });
+      updateDriveFolderLink(document.getElementById("empresa-drive-link"), result.folderId);
       status.textContent = "Proposta salva no Drive.";
       status.className = "pdf-status ok";
     } catch (err) {
