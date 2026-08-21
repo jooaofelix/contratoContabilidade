@@ -31,7 +31,7 @@ const FICHA_FIELD_MAP = [
 
 const FIELD_IDS_PROCESSO = [
   "f_contratante", "f_numero", "f_cnpj", "f_endereco", "f_bairro", "f_cidade", "f_estado", "f_cep",
-  "f_email", "f_contatoPrincipal", "f_administracao", "f_socio1", "f_capitalSocio1", "f_socio2", "f_capitalSocio2",
+  "f_email", "f_telefone", "f_contatoPrincipal", "f_administracao", "f_socio1", "f_capitalSocio1", "f_socio2", "f_capitalSocio2",
   "f_vigencia", "f_plano",
   "f_cnaePrincipal", "f_cnaeSecundario", "f_tributacao", "f_valorCapital",
   "f_proLabore", "f_funcionarios",
@@ -338,6 +338,8 @@ function setupPdfImportProcesso() {
       setIfFound("f_cep", parsed.cep);
       setIfFound("f_cnaePrincipal", parsed.cnaePrincipal);
       setIfFound("f_cnaeSecundario", parsed.cnaeSecundario);
+      setIfFound("f_email", parsed.email);
+      setIfFound("f_telefone", parsed.telefone);
 
       if (parsed.endereco) {
         document.getElementById("f_endereco").value = parsed.endereco;
@@ -547,6 +549,7 @@ async function enrichProcessoFromApi(empresaCnpj) {
   fillIfEmpty("f_estado", parsed.estado);
   fillIfEmpty("f_cep", parsed.cep);
   fillIfEmpty("f_email", parsed.email);
+  fillIfEmpty("f_telefone", parsed.telefone);
   fillIfEmpty("f_cnaePrincipal", parsed.cnaePrincipal);
   fillIfEmpty("f_cnaeSecundario", parsed.cnaeSecundario);
   fillIfEmpty("f_tributacao", parsed.tributacao);

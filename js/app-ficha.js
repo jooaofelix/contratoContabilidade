@@ -1,6 +1,6 @@
 const FIELD_IDS_FICHA = [
   "f_contratante", "f_numero", "f_cnpj", "f_endereco", "f_bairro", "f_cidade", "f_estado", "f_cep",
-  "f_email", "f_contatoPrincipal", "f_administracao", "f_socio1", "f_capitalSocio1", "f_socio2", "f_capitalSocio2",
+  "f_email", "f_telefone", "f_contatoPrincipal", "f_administracao", "f_socio1", "f_capitalSocio1", "f_socio2", "f_capitalSocio2",
   "f_vigencia", "f_plano",
   "f_cnaePrincipal", "f_cnaeSecundario", "f_tributacao", "f_valorCapital",
   "f_proLabore", "f_funcionarios",
@@ -118,6 +118,7 @@ function setupCnpjLookupFicha() {
       setIfFound("f_tributacao", parsed.tributacao);
       setIfFound("f_valorCapital", parsed.valorCapital);
       setIfFound("f_situacao", parsed.situacao);
+      setIfFound("f_telefone", parsed.telefone);
       setIfFound("f_socio1", parsed.socio1);
       setIfFound("f_capitalSocio1", parsed.capitalSocio1);
       setIfFound("f_socio2", parsed.socio2);
@@ -179,6 +180,8 @@ function setupPdfImportFicha() {
       setIfFound("f_cep", parsed.cep);
       setIfFound("f_cnaePrincipal", parsed.cnaePrincipal);
       setIfFound("f_cnaeSecundario", parsed.cnaeSecundario);
+      setIfFound("f_email", parsed.email);
+      setIfFound("f_telefone", parsed.telefone);
 
       const enderecoPartes = [parsed.endereco].filter(Boolean).join(", ");
       if (enderecoPartes) {
@@ -223,6 +226,7 @@ function mergeCnpjEnrichment(empresa, parsed) {
   fillIfEmpty("estado", parsed.estado);
   fillIfEmpty("cep", parsed.cep);
   fillIfEmpty("email", parsed.email);
+  fillIfEmpty("telefone", parsed.telefone);
   fillIfEmpty("cnaePrincipal", parsed.cnaePrincipal);
   fillIfEmpty("cnaeSecundario", parsed.cnaeSecundario);
   fillIfEmpty("tributacao", parsed.tributacao);
@@ -352,6 +356,7 @@ async function enrichFichaFromApi(empresaCnpj) {
   fillIfEmpty("f_estado", parsed.estado);
   fillIfEmpty("f_cep", parsed.cep);
   fillIfEmpty("f_email", parsed.email);
+  fillIfEmpty("f_telefone", parsed.telefone);
   fillIfEmpty("f_cnaePrincipal", parsed.cnaePrincipal);
   fillIfEmpty("f_cnaeSecundario", parsed.cnaeSecundario);
   fillIfEmpty("f_tributacao", parsed.tributacao);

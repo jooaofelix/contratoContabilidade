@@ -7,7 +7,7 @@ const ALTERACOES_SUBCOLLECTION = "alteracoes";
 
 const EMPRESA_FIELDS = [
   "contratante", "cnpj", "endereco", "bairro", "cidade", "estado", "cep",
-  "email", "contatoPrincipal", "administracao", "socio1", "capitalSocio1", "socio2", "capitalSocio2",
+  "email", "telefone", "contatoPrincipal", "administracao", "socio1", "capitalSocio1", "socio2", "capitalSocio2",
   "vigencia", "plano",
   "cnaePrincipal", "cnaeSecundario", "tributacao", "valorCapital",
   "proLabore", "funcionarios",

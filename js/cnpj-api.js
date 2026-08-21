@@ -18,6 +18,13 @@ function formatCepMask(value) {
   return `${digits.slice(0, 5)}-${digits.slice(5, 8)}`;
 }
 
+function formatTelefoneBr(value) {
+  const digits = onlyDigitsCnpj(value);
+  if (digits.length === 11) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  if (digits.length === 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return value || "";
+}
+
 function formatMoedaBr(value) {
   if (value === null || value === undefined || value === "") return "";
   const n = Number(value);
@@ -76,6 +83,7 @@ async function fetchCnpjFromApi(cnpjRaw) {
     estado: d.uf || "",
     cep: formatCepMask(d.cep),
     email: d.email || "",
+    telefone: formatTelefoneBr(d.ddd_telefone_1),
     cnaePrincipal: d.cnae_fiscal ? `${d.cnae_fiscal} - ${d.cnae_fiscal_descricao || ""}`.trim() : "",
     cnaeSecundario,
     tributacao,

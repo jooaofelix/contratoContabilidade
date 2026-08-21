@@ -66,7 +66,7 @@ function renderFicha(data) {
       ${fcRow("Bairro:", f.bairro)}
       ${fcRow("Cidade:", f.cidade)}
       ${fcRowSplit("Estado:", f.estado, "CEP:", f.cep)}
-      ${fcRow("E-mail:", f.email)}
+      ${fcRowSplit("E-mail:", f.email, "Telefone:", f.telefone)}
       ${fcRow("Contato Principal:", f.contatoPrincipal)}
       ${fcRow("Administração:", f.administracao)}
       ${fcRowSplit("Sócio 01:", f.socio1, "CAPITAL", f.capitalSocio1 ? f.capitalSocio1 + "%" : "")}

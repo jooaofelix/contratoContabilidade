@@ -107,6 +107,18 @@ function parseCnpjCardText(text) {
     ["LOGRADOURO"]
   );
 
+  const email = matchAfterLabel(
+    clean,
+    ["ENDEREÇO ELETRÔNICO"],
+    ["TELEFONE", "ENTE FEDERATIVO RESPONSÁVEL"]
+  );
+
+  const telefone = matchAfterLabel(
+    clean,
+    ["TELEFONE"],
+    ["ENTE FEDERATIVO RESPONSÁVEL", "SITUAÇÃO CADASTRAL"]
+  );
+
   return {
     razaoSocial,
     cnpj: cnpjMatch ? cnpjMatch[0] : "",
@@ -118,5 +130,7 @@ function parseCnpjCardText(text) {
     cnaePrincipal,
     cnaeSecundario,
     naturezaJuridica,
+    email,
+    telefone,
   };
 }
