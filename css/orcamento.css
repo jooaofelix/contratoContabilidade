@@ -265,6 +265,41 @@
   gap: 16px;
 }
 
+.proposal-servicos-extra {
+  background: var(--p-bg);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+.proposal-servicos-extra h4 {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--p-navy);
+  letter-spacing: 0.02em;
+}
+
+.proposal-servicos-extra-list {
+  margin: 0;
+  padding: 0 0 0 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: #111827;
+}
+
+.proposal-box-grupo {
+  margin-top: 16px;
+}
+
+.proposal-box-grupo p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #374151;
+  line-height: 1.5;
+}
+
 .proposal-service-row {
   display: flex;
   align-items: flex-start;

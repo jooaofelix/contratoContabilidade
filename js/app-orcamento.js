@@ -7,6 +7,75 @@ const FIELD_IDS_ORC = [
 function getOrc(id) { return document.getElementById(id).value; }
 function checkedOrc(id) { return document.getElementById(id).checked; }
 
+// --- Serviços incluídos (mesmo catálogo usado em Vendas) -----------------
+
+let produtosCacheOrc = [];
+
+function populateServicosChecklistOrc() {
+  const wrap = document.getElementById("orc-servicos-checklist");
+  const checkedNomes = new Set(
+    Array.from(wrap.querySelectorAll(".orc-servico-check:checked")).map((c) => c.value)
+  );
+
+  if (produtosCacheOrc.length === 0) {
+    wrap.innerHTML = `<p class="fixed-note">Nenhum serviço cadastrado ainda (cadastre em Vendas → Início de Proposta).</p>`;
+    return;
+  }
+
+  wrap.innerHTML = produtosCacheOrc.map((p) => `
+    <label class="checkbox">
+      <input type="checkbox" class="orc-servico-check" value="${escapeHtmlP(p.nome)}" ${checkedNomes.has(p.nome) ? "checked" : ""}>
+      ${escapeHtmlP(p.nome)}
+    </label>
+  `).join("");
+
+  wrap.querySelectorAll(".orc-servico-check").forEach((c) => {
+    c.addEventListener("change", updateProposalPreview);
+  });
+}
+
+function collectServicosSelecionadosOrc() {
+  return Array.from(document.querySelectorAll("#orc-servicos-checklist .orc-servico-check:checked")).map((c) => c.value);
+}
+
+// --- Grupo Econômico (mais de uma empresa na mesma proposta) -------------
+
+let grupoCountOrc = 0;
+
+function addGrupoRowOrc(nome, cnpj) {
+  const id = grupoCountOrc++;
+  const wrap = document.createElement("div");
+  wrap.className = "alteracao-row";
+  wrap.dataset.grupoRow = id;
+  wrap.innerHTML = `
+    <button type="button" class="alteracao-remove" data-remove-grupo-orc="${id}">Remover ✕</button>
+    <label>Razão social
+      <input type="text" class="orc-grupo-nome" placeholder="Razão social">
+    </label>
+    <label>CNPJ
+      <input type="text" class="orc-grupo-cnpj" placeholder="00.000.000/0000-00">
+    </label>
+  `;
+  document.getElementById("orc-grupo-list").appendChild(wrap);
+  wrap.querySelector(".orc-grupo-nome").value = nome || "";
+  wrap.querySelector(".orc-grupo-cnpj").value = cnpj || "";
+
+  wrap.querySelectorAll("input").forEach((el) => el.addEventListener("input", updateProposalPreview));
+  wrap.querySelector("[data-remove-grupo-orc]").addEventListener("click", () => {
+    wrap.remove();
+    updateProposalPreview();
+  });
+}
+
+function collectGrupoOrc() {
+  return Array.from(document.querySelectorAll("#orc-grupo-list .alteracao-row"))
+    .map((row) => ({
+      nome: row.querySelector(".orc-grupo-nome").value,
+      cnpj: row.querySelector(".orc-grupo-cnpj").value,
+    }))
+    .filter((g) => g.nome || g.cnpj);
+}
+
 function collectProposalData() {
   return {
     cliente: {
@@ -27,6 +96,8 @@ function collectProposalData() {
       segmento: getOrc("d_segmento"),
       observacoes: getOrc("d_observacoes"),
     },
+    servicos: collectServicosSelecionadosOrc(),
+    grupo: collectGrupoOrc(),
     investimento: {
       valorCheio: getOrc("i_valorCheio"),
       temDesconto: checkedOrc("i_temDesconto"),
@@ -157,9 +228,28 @@ function setupActionsOrc() {
     document.getElementById("i_formaPagamento").value = "A combinar";
     document.getElementById("i_prazoInicio").value = "Após aceite";
     document.getElementById("d_regime").value = "Simples Nacional";
+    document.getElementById("orc-grupo-list").innerHTML = "";
+    document.querySelectorAll(".orc-servico-check").forEach((c) => { c.checked = false; });
     setupDescontoToggle();
     updateProposalPreview();
   });
+}
+
+function setupGrupoEconomicoOrc() {
+  document.getElementById("orc-add-grupo").addEventListener("click", () => {
+    addGrupoRowOrc();
+    updateProposalPreview();
+  });
+}
+
+async function setupServicosOrc() {
+  try {
+    produtosCacheOrc = await getProdutos();
+  } catch (err) {
+    console.error(err);
+    produtosCacheOrc = [];
+  }
+  populateServicosChecklistOrc();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -167,6 +257,8 @@ document.addEventListener("DOMContentLoaded", () => {
   setupDescontoToggle();
   setupLiveUpdateOrc();
   setupEmpresasOrcamento();
+  setupServicosOrc();
+  setupGrupoEconomicoOrc();
   setupActionsOrc();
   updateProposalPreview();
 });

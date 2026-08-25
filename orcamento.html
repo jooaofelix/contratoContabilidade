@@ -110,6 +110,23 @@
     </section>
 
     <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-servicos">🧩 Serviços incluídos (opcional) ▾</h2>
+      <div id="panel-servicos" class="panel-body">
+        <p class="fixed-note">Marque os serviços específicos desta proposta (ex: Abertura de Empresa). Aparecem como uma lista adicional na página de Serviços e Investimento.</p>
+        <div id="orc-servicos-checklist"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-grupo">🏭 Grupo Econômico (opcional) ▾</h2>
+      <div id="panel-grupo" class="panel-body collapsed">
+        <p class="fixed-note">Se esta proposta cobrir mais de uma empresa (mesmo grupo econômico), adicione as demais aqui. Deixe vazio se for só uma empresa.</p>
+        <div id="orc-grupo-list"></div>
+        <button type="button" id="orc-add-grupo" class="btn-secondary">+ Adicionar empresa do grupo</button>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2 class="panel-toggle" data-target="panel-investimento">💰 Investimento ▾</h2>
       <div id="panel-investimento" class="panel-body">
         <label>Valor cheio (R$)
@@ -145,6 +162,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="js/firebase-config.js"></script>
 <script src="js/empresas-store.js"></script>
+<script src="js/produtos-store.js"></script>
 <script src="js/proposal-template.js"></script>
 <script src="js/vendor/html2pdf.bundle.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>

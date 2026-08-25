@@ -82,7 +82,7 @@ function renderCapa(cliente) {
     </section>`;
 }
 
-function renderDadosCliente(cliente, diagnostico) {
+function renderDadosCliente(cliente, diagnostico, grupo) {
   return `
     <section class="proposal-page">
       ${brandBar()}
@@ -116,11 +116,33 @@ function renderDadosCliente(cliente, diagnostico) {
           </ul>
         </div>
       </div>
+      ${renderGrupoEconomico(grupo)}
       ${pageFooter(2)}
     </section>`;
 }
 
-function renderServicosInvestimento(investimento) {
+function renderServicosSelecionados(servicos) {
+  if (!servicos || servicos.length === 0) return "";
+  return `
+    <div class="proposal-servicos-extra">
+      <h4>SERVIÇOS INCLUÍDOS NESTA PROPOSTA</h4>
+      <ul class="proposal-servicos-extra-list">
+        ${servicos.map((s) => `<li>${escapeHtmlP(s)}</li>`).join("")}
+      </ul>
+    </div>`;
+}
+
+function renderGrupoEconomico(grupo) {
+  if (!grupo || grupo.length === 0) return "";
+  const lista = grupo.map((g) => `${escapeHtmlP(g.nome || "[empresa]")} (CNPJ ${escapeHtmlP(g.cnpj || "não informado")})`).join(", ");
+  return `
+    <div class="proposal-box proposal-box-grupo">
+      <h4>3. GRUPO ECONÔMICO</h4>
+      <p>Este orçamento também contempla as seguintes empresas do mesmo grupo econômico da CONTRATANTE: ${lista}.</p>
+    </div>`;
+}
+
+function renderServicosInvestimento(investimento, servicos) {
   const temDesconto = investimento.temDesconto && investimento.valorFinal;
   const desconto = temDesconto
     ? (parseFloat((investimento.valorCheio || "0").replace(/\./g, "").replace(",", ".")) -
@@ -148,6 +170,7 @@ function renderServicosInvestimento(investimento) {
 
       <div class="proposal-columns proposal-columns-services">
         <div class="proposal-services">
+          ${renderServicosSelecionados(servicos)}
           ${SERVICOS_PADRAO.map((s) => `
             <div class="proposal-service-row">
               <span class="service-n">${s.n}</span>
@@ -177,7 +200,7 @@ function renderServicosInvestimento(investimento) {
 function renderProposal(data) {
   return (
     renderCapa(data.cliente) +
-    renderDadosCliente(data.cliente, data.diagnostico) +
-    renderServicosInvestimento(data.investimento)
+    renderDadosCliente(data.cliente, data.diagnostico, data.grupo) +
+    renderServicosInvestimento(data.investimento, data.servicos)
   );
 }
