@@ -289,16 +289,6 @@
   color: #111827;
 }
 
-.proposal-box-grupo {
-  margin-top: 16px;
-}
-
-.proposal-box-grupo p {
-  margin: 0;
-  font-size: 0.8rem;
-  color: #374151;
-  line-height: 1.5;
-}
 
 .proposal-service-row {
   display: flex;

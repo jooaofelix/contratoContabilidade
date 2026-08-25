@@ -82,7 +82,7 @@ function renderCapa(cliente) {
     </section>`;
 }
 
-function renderDadosCliente(cliente, diagnostico, grupo) {
+function renderDadosCliente(cliente, diagnostico, pageNumber) {
   return `
     <section class="proposal-page">
       ${brandBar()}
@@ -116,8 +116,31 @@ function renderDadosCliente(cliente, diagnostico, grupo) {
           </ul>
         </div>
       </div>
-      ${renderGrupoEconomico(grupo)}
-      ${pageFooter(2)}
+      ${pageFooter(pageNumber)}
+    </section>`;
+}
+
+// Página extra de "Dados do Cliente", uma por empresa do mesmo grupo
+// econômico/dono adicionada na proposta — mesma estrutura da página
+// principal, só que sem o bloco de diagnóstico (esse é único por proposta).
+function renderDadosClienteExtra(empresa, indice, pageNumber) {
+  return `
+    <section class="proposal-page">
+      ${brandBar()}
+      <h2 class="proposal-h2">DADOS DO CLIENTE — EMPRESA ${indice}</h2>
+      <p class="proposal-sub">Empresa adicional do mesmo grupo econômico/responsável, incluída nesta proposta.</p>
+
+      <div class="proposal-box">
+        <h4>DADOS DA EMPRESA</h4>
+        <div class="proposal-fieldgrid">
+          <div><span class="fl">Empresa</span><span class="fv">${phP(empresa.nome, "[Empresa]")}</span></div>
+          <div><span class="fl">CPF/CNPJ</span><span class="fv fv-lg">${phP(empresa.cnpj, "[CNPJ]")}</span></div>
+          <div><span class="fl">Responsável</span><span class="fv fv-lg">${phP(empresa.responsavel, "[Responsável]")}</span></div>
+          <div><span class="fl">Telefone</span><span class="fv fv-lg">${phP(empresa.telefone, "[Telefone]")}</span></div>
+          <div><span class="fl">E-mail</span><span class="fv">${phP(empresa.email, "[E-mail]")}</span></div>
+        </div>
+      </div>
+      ${pageFooter(pageNumber)}
     </section>`;
 }
 
@@ -132,17 +155,7 @@ function renderServicosSelecionados(servicos) {
     </div>`;
 }
 
-function renderGrupoEconomico(grupo) {
-  if (!grupo || grupo.length === 0) return "";
-  const lista = grupo.map((g) => `${escapeHtmlP(g.nome || "[empresa]")} (CNPJ ${escapeHtmlP(g.cnpj || "não informado")})`).join(", ");
-  return `
-    <div class="proposal-box proposal-box-grupo">
-      <h4>3. GRUPO ECONÔMICO</h4>
-      <p>Este orçamento também contempla as seguintes empresas do mesmo grupo econômico da CONTRATANTE: ${lista}.</p>
-    </div>`;
-}
-
-function renderServicosInvestimento(investimento, servicos) {
+function renderServicosInvestimento(investimento, servicos, pageNumber) {
   const temDesconto = investimento.temDesconto && investimento.valorFinal;
   const desconto = temDesconto
     ? (parseFloat((investimento.valorCheio || "0").replace(/\./g, "").replace(",", ".")) -
@@ -193,14 +206,24 @@ function renderServicosInvestimento(investimento, servicos) {
           <p class="proposal-price-fine">Proposta válida mediante conferência das informações cadastrais e confirmação do escopo final.</p>
         </div>
       </div>
-      ${pageFooter(3)}
+      ${pageFooter(pageNumber)}
     </section>`;
 }
 
 function renderProposal(data) {
-  return (
-    renderCapa(data.cliente) +
-    renderDadosCliente(data.cliente, data.diagnostico, data.grupo) +
-    renderServicosInvestimento(data.investimento, data.servicos)
-  );
+  const grupo = data.grupo || [];
+  let pagina = 1;
+
+  let html = renderCapa(data.cliente);
+  pagina += 1;
+  html += renderDadosCliente(data.cliente, data.diagnostico, pagina);
+  pagina += 1;
+
+  grupo.forEach((empresa, i) => {
+    html += renderDadosClienteExtra(empresa, i + 2, pagina);
+    pagina += 1;
+  });
+
+  html += renderServicosInvestimento(data.investimento, data.servicos, pagina);
+  return html;
 }

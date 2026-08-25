@@ -42,7 +42,8 @@ function collectServicosSelecionadosOrc() {
 
 let grupoCountOrc = 0;
 
-function addGrupoRowOrc(nome, cnpj) {
+function addGrupoRowOrc(empresa) {
+  empresa = empresa || {};
   const id = grupoCountOrc++;
   const wrap = document.createElement("div");
   wrap.className = "alteracao-row";
@@ -55,10 +56,24 @@ function addGrupoRowOrc(nome, cnpj) {
     <label>CNPJ
       <input type="text" class="orc-grupo-cnpj" placeholder="00.000.000/0000-00">
     </label>
+    <label>Responsável
+      <input type="text" class="orc-grupo-responsavel" placeholder="Nome completo">
+    </label>
+    <div class="row">
+      <label>Telefone
+        <input type="text" class="orc-grupo-telefone">
+      </label>
+      <label>E-mail
+        <input type="text" class="orc-grupo-email">
+      </label>
+    </div>
   `;
   document.getElementById("orc-grupo-list").appendChild(wrap);
-  wrap.querySelector(".orc-grupo-nome").value = nome || "";
-  wrap.querySelector(".orc-grupo-cnpj").value = cnpj || "";
+  wrap.querySelector(".orc-grupo-nome").value = empresa.nome || "";
+  wrap.querySelector(".orc-grupo-cnpj").value = empresa.cnpj || "";
+  wrap.querySelector(".orc-grupo-responsavel").value = empresa.responsavel || "";
+  wrap.querySelector(".orc-grupo-telefone").value = empresa.telefone || "";
+  wrap.querySelector(".orc-grupo-email").value = empresa.email || "";
 
   wrap.querySelectorAll("input").forEach((el) => el.addEventListener("input", updateProposalPreview));
   wrap.querySelector("[data-remove-grupo-orc]").addEventListener("click", () => {
@@ -72,6 +87,9 @@ function collectGrupoOrc() {
     .map((row) => ({
       nome: row.querySelector(".orc-grupo-nome").value,
       cnpj: row.querySelector(".orc-grupo-cnpj").value,
+      responsavel: row.querySelector(".orc-grupo-responsavel").value,
+      telefone: row.querySelector(".orc-grupo-telefone").value,
+      email: row.querySelector(".orc-grupo-email").value,
     }))
     .filter((g) => g.nome || g.cnpj);
 }
