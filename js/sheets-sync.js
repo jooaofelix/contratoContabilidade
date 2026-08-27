@@ -151,7 +151,7 @@ async function syncEmpresaToSheet(empresa) {
   const data = [
     { range: `${sheet}!A${row}`, values: [[empresa.numero || ""]] },
     { range: `${sheet}!B${row}`, values: [[empresa.contratante || ""]] },
-    { range: `${sheet}!F${row}`, values: [[empresa.administracao || ""]] },
+    { range: `${sheet}!F${row}`, values: [[empresa.administracao || empresa.contatoPrincipal || ""]] },
     { range: `${sheet}!G${row}`, values: [[(empresa.tributacao || "").toUpperCase()]] },
     { range: `${sheet}!L${row}`, values: [[empresa.cnpj || ""]] },
     { range: `${sheet}!M${row}`, values: [[empresa.inscEstadual || ""]] },
