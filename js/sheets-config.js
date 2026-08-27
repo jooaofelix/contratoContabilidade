@@ -3,6 +3,6 @@
 // que recebe os cadastros novos/atualizados vindos da Ficha Cadastral.
 
 const SHEETS_CONFIG = {
-  spreadsheetId: "1SqbtIuQhhS2zrimnqOogd2up4-HdDFE0XDRpeLwtLe4",
+  spreadsheetId: "1bnonty04VT5nrGcV1F6kKVkp97cWZK0pN7Z6Xj_M-o4",
   sheetName: "ATIVOS",
 };
