@@ -266,6 +266,7 @@ async function gerarTodasFichas() {
   status.className = "pdf-status";
   try {
     await ensureDriveAccessToken();
+    if (sheetsConfigured()) await ensureSheetsAccessToken();
   } catch (err) {
     console.error(err);
     status.textContent = err.message;
@@ -279,6 +280,7 @@ async function gerarTodasFichas() {
   const formSnapshot = collectFichaData();
   let ok = 0;
   let enriquecidas = 0;
+  let sincronizadas = 0;
   const falhas = [];
 
   for (let i = 0; i < empresas.length; i++) {
@@ -323,12 +325,23 @@ async function gerarTodasFichas() {
     } catch (err) {
       console.error(err);
       falhas.push(`${nome} (${err.message})`);
+      continue;
+    }
+
+    if (sheetsConfigured() && dadosFicha.numero) {
+      try {
+        await syncEmpresaToSheet(dadosFicha);
+        sincronizadas++;
+      } catch (err) {
+        console.error(err);
+        falhas.push(`${nome} — planilha (${err.message})`);
+      }
     }
   }
 
   document.getElementById("ficha-preview").innerHTML = renderFicha(formSnapshot);
 
-  status.textContent = `Concluído: ${ok} ficha(s) salvas no Drive (${enriquecidas} completadas com dados da Receita).` +
+  status.textContent = `Concluído: ${ok} ficha(s) salvas no Drive (${enriquecidas} completadas com dados da Receita, ${sincronizadas} sincronizadas na planilha).` +
     (falhas.length ? ` ${falhas.length} falha(s): ${falhas.join("; ")}` : "");
   status.className = falhas.length > 0 ? "pdf-status error" : "pdf-status ok";
 }
@@ -465,6 +478,33 @@ async function setupEmpresasFicha() {
       return;
     }
     await saveFichaPdfToDrive(true);
+  });
+
+  document.getElementById("empresa-planilha").addEventListener("click", async () => {
+    if (!sheetsConfigured()) {
+      status.textContent = "A integração com a planilha ainda não foi configurada.";
+      status.className = "pdf-status error";
+      return;
+    }
+    if (!select.value) {
+      status.textContent = 'Salve a empresa (botão "Salvar/Atualizar") antes de enviar para a planilha.';
+      status.className = "pdf-status error";
+      return;
+    }
+    status.textContent = "Aguardando autorização do Google (confira se abriu um pop-up)...";
+    status.className = "pdf-status";
+    try {
+      const empresa = collectEmpresaFromForm("f_");
+      const result = await syncEmpresaToSheet(empresa);
+      status.textContent = result.isNew
+        ? `Empresa adicionada na planilha (linha ${result.row}).`
+        : `Linha ${result.row} da planilha atualizada.`;
+      status.className = "pdf-status ok";
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao enviar para a planilha: " + err.message;
+      status.className = "pdf-status error";
+    }
   });
 
   document.getElementById("empresa-new").addEventListener("click", () => {
