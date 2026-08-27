@@ -1,11 +1,13 @@
 // Sincroniza uma empresa da Ficha Cadastral com a planilha "Cadastro Geral
-// de Empresas" (Google Sheets) já usada pela AEA. Escreve só as colunas que
-// a Ficha tem dado confiável pra preencher (Nº, Nome, Administrador, Regime
-// Fiscal, CNPJ, IE, IM) e recalcula as colunas de fórmula da planilha
-// (PENDÊNCIAS, flag_busca, rank_busca, pendencias_raw) pra continuar
-// funcionando com a busca e o dashboard. Não mexe nas colunas preenchidas
-// manualmente (Competência, Contrato, Plano, Movimento, Atividade, DP,
-// Contábil) — nem ao atualizar uma linha existente.
+// de Empresas" (Google Sheets) já usada pela AEA. Escreve as colunas que a
+// Ficha tem dado confiável pra preencher (Nº, Competência, Nome,
+// Administrador, Regime Fiscal, CNPJ, IE, IM), Movimento/Atividade/DP/
+// Contábil quando preenchidos na Ficha, e recalcula as colunas de fórmula
+// da planilha (PENDÊNCIAS, flag_busca, rank_busca, pendencias_raw) pra
+// continuar funcionando com a busca e o dashboard. Não mexe nas colunas
+// preenchidas manualmente (Contrato, Plano) nem em Movimento/Atividade/DP/
+// Contábil quando a Ficha não tem esse dado — nem ao atualizar uma linha
+// existente.
 //
 // Usa o Nº como chave: se já existir uma linha com esse número na coluna A,
 // atualiza ela; senão, cria uma linha nova no final.
@@ -138,6 +140,14 @@ async function findOrNextRowByNumero(numero) {
   return { row: lastUsed + 2, isNew: true };
 }
 
+// Primeiro dia do mês atual, em formato ISO — a planilha entende como data
+// e mostra formatado (ex: "set.-26"), igual às linhas já existentes.
+function competenciaAtual() {
+  const hoje = new Date();
+  const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+  return `${hoje.getFullYear()}-${mes}-01`;
+}
+
 async function syncEmpresaToSheet(empresa) {
   if (!sheetsConfigured()) throw new Error("Integração com a planilha ainda não foi configurada.");
   if (!empresa.numero) throw new Error('Preencha o campo "Nº" antes de enviar para a planilha (é usado pra identificar a empresa lá).');
@@ -151,6 +161,7 @@ async function syncEmpresaToSheet(empresa) {
   const data = [
     { range: `${sheet}!A${row}`, values: [[empresa.numero || ""]] },
     { range: `${sheet}!B${row}`, values: [[empresa.contratante || ""]] },
+    { range: `${sheet}!C${row}`, values: [[competenciaAtual()]] },
     { range: `${sheet}!F${row}`, values: [[empresa.administracao || empresa.contatoPrincipal || ""]] },
     { range: `${sheet}!G${row}`, values: [[(empresa.tributacao || "").toUpperCase()]] },
     { range: `${sheet}!L${row}`, values: [[empresa.cnpj || ""]] },
