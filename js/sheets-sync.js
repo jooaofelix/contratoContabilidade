@@ -162,6 +162,20 @@ async function syncEmpresaToSheet(empresa) {
     { range: `${sheet}!R${row}`, values: [[f.R]] },
   ];
 
+  // Essas 4 colunas são quase sempre preenchidas manualmente na planilha
+  // (não vêm da Ficha hoje). Só escreve quando a Ficha realmente tem o
+  // dado — senão pula a coluna inteira, pra não apagar por cima do que já
+  // estava lá quando a Ficha ainda não tem essa informação.
+  const classificacao = [
+    ["H", (empresa.movimento || "").toUpperCase()],
+    ["I", (empresa.atividade || "").toUpperCase()],
+    ["J", (empresa.dp || "").toUpperCase()],
+    ["K", (empresa.contabil || "").toUpperCase()],
+  ];
+  classificacao.forEach(([coluna, valor]) => {
+    if (valor) data.push({ range: `${sheet}!${coluna}${row}`, values: [[valor]] });
+  });
+
   await sheetsFetch(
     `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_CONFIG.spreadsheetId}/values:batchUpdate`,
     {

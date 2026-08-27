@@ -151,11 +151,67 @@
           <textarea id="f_cnaeSecundario" rows="4"></textarea>
         </label>
         <label>Tributação
-          <input type="text" id="f_tributacao" placeholder="ex: Simples Nacional">
+          <input type="text" id="f_tributacao" list="fc-tributacao-options" placeholder="ex: Simples Nacional">
+          <datalist id="fc-tributacao-options">
+            <option value="Simples Nacional">
+            <option value="Lucro Presumido">
+            <option value="Lucro Real">
+            <option value="MEI">
+            <option value="Holding">
+            <option value="Holding Patrimonial">
+            <option value="Filial">
+          </datalist>
         </label>
         <label>Valor Capital
           <input type="text" id="f_valorCapital" placeholder="R$">
         </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-classificacao">📊 Classificação (planilha) ▾</h2>
+      <div id="panel-classificacao" class="panel-body">
+        <p class="fixed-note">Usado só pra alimentar as colunas correspondentes da planilha "Cadastro Geral de Empresas". Deixe em branco se não souber — não apaga o que já estiver preenchido na planilha.</p>
+        <div class="row">
+          <label>Movimento
+            <select id="f_movimento">
+              <option value=""></option>
+              <option value="COM">COM</option>
+              <option value="SEM">SEM</option>
+            </select>
+          </label>
+          <label>Atividade
+            <select id="f_atividade">
+              <option value=""></option>
+              <option value="SERVIÇO">SERVIÇO</option>
+              <option value="COMÉRCIO">COMÉRCIO</option>
+              <option value="COMÉRCIO/SERVIÇO">COMÉRCIO/SERVIÇO</option>
+              <option value="LOCAÇÃO/COMÉRCIO">LOCAÇÃO/COMÉRCIO</option>
+              <option value="INDÚSTRIA/COMÉRCIO">INDÚSTRIA/COMÉRCIO</option>
+              <option value="INDÚSTRIA/COMÉRCIO/SERVIÇO">INDÚSTRIA/COMÉRCIO/SERVIÇO</option>
+              <option value="TRANSPORTADORA">TRANSPORTADORA</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <label>DP (plano)
+            <select id="f_dp">
+              <option value=""></option>
+              <option value="X">X</option>
+              <option value="PL">PL</option>
+              <option value="FOLHA">FOLHA</option>
+              <option value="FOLHA / PL">FOLHA / PL</option>
+              <option value="SEM FUN">SEM FUN</option>
+            </select>
+          </label>
+          <label>Contábil
+            <select id="f_contabil">
+              <option value=""></option>
+              <option value="COMPLETA">COMPLETA</option>
+              <option value="CONSULTIVA">CONSULTIVA</option>
+            </select>
+          </label>
+        </div>
       </div>
     </section>
 

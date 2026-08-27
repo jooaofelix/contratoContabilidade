@@ -3,6 +3,7 @@ const FIELD_IDS_FICHA = [
   "f_email", "f_telefone", "f_contatoPrincipal", "f_administracao", "f_socio1", "f_capitalSocio1", "f_socio2", "f_capitalSocio2",
   "f_vigencia", "f_plano",
   "f_cnaePrincipal", "f_cnaeSecundario", "f_tributacao", "f_valorCapital",
+  "f_movimento", "f_atividade", "f_dp", "f_contabil",
   "f_proLabore", "f_funcionarios",
   "f_emissaoNota", "f_situacao", "f_anexoSimples", "f_inscEstadual", "f_inscMunicipal",
   "f_observacoes",
