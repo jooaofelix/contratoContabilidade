@@ -57,6 +57,12 @@ async function autoCadastrarEmpresa(status, contratanteNome, origemLabel) {
   }
 }
 
+// Prefixa o nome com o Nº da ficha (se preenchido), pra identificar a pasta
+// e o arquivo no Drive sem precisar abrir cada um pra saber de qual cliente é.
+function nomeComNumero(nome, numero) {
+  return numero ? `${numero} - ${nome}` : nome;
+}
+
 // Gera o PDF da ficha em tela e sobe para a subpasta da empresa no Drive.
 // Não faz nada se a integração ainda não foi configurada (rootFolderId vazio).
 async function saveFichaPdfToDrive(showBusy) {
@@ -74,7 +80,7 @@ async function saveFichaPdfToDrive(showBusy) {
     const result = await saveDocumentToDrive({
       elementId: "ficha-preview",
       empresaId,
-      empresaNome: nome,
+      empresaNome: nomeComNumero(nome, getF("f_numero")),
       cnpj: getF("f_cnpj"),
       tipoLabel: "Ficha Cadastral",
       tipoKey: "fichaCadastral",
@@ -308,7 +314,7 @@ async function gerarTodasFichas() {
       await saveDocumentToDrive({
         elementId: "ficha-preview",
         empresaId: empresa.id,
-        empresaNome: nome,
+        empresaNome: nomeComNumero(nome, dadosFicha.numero),
         cnpj: empresa.cnpj,
         tipoLabel: "Ficha Cadastral",
         tipoKey: "fichaCadastral",

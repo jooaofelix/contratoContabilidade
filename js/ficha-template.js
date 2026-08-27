@@ -61,6 +61,7 @@ function renderFicha(data) {
     <div class="fc-table">
       ${fcSectionBar("DADOS CONTÁBEIS")}
       ${fcNameRow(f.contratante)}
+      ${fcRow("Nº:", f.numero)}
       ${fcRow("CNPJ:", f.cnpj)}
       ${fcRow("Endereço:", f.endereco)}
       ${fcRow("Bairro:", f.bairro)}
