@@ -10,7 +10,7 @@ const EMPRESA_FIELDS = [
   "email", "telefone", "contatoPrincipal", "administracao", "socio1", "capitalSocio1", "socio2", "capitalSocio2",
   "vigencia", "plano",
   "cnaePrincipal", "cnaeSecundario", "tributacao", "valorCapital",
-  "movimento", "atividade", "dp", "contabil",
+  "competencia", "movimento", "atividade", "dp", "contabil",
   "proLabore", "funcionarios",
   "emissaoNota", "situacao", "anexoSimples", "inscEstadual", "inscMunicipal",
   "observacoes",

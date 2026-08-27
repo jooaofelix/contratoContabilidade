@@ -140,12 +140,12 @@ async function findOrNextRowByNumero(numero) {
   return { row: lastUsed + 2, isNew: true };
 }
 
-// Primeiro dia do mês atual, em formato ISO — a planilha entende como data
-// e mostra formatado (ex: "set.-26"), igual às linhas já existentes.
-function competenciaAtual() {
-  const hoje = new Date();
-  const mes = String(hoje.getMonth() + 1).padStart(2, "0");
-  return `${hoje.getFullYear()}-${mes}-01`;
+// O campo Competência na Ficha é um <input type="month"> (ex: "2026-09").
+// Converte pro primeiro dia daquele mês em formato ISO, que a planilha
+// entende como data e mostra formatado (ex: "set.-26"), igual às linhas já
+// existentes.
+function competenciaParaData(competencia) {
+  return competencia ? `${competencia}-01` : "";
 }
 
 async function syncEmpresaToSheet(empresa) {
@@ -161,7 +161,6 @@ async function syncEmpresaToSheet(empresa) {
   const data = [
     { range: `${sheet}!A${row}`, values: [[empresa.numero || ""]] },
     { range: `${sheet}!B${row}`, values: [[empresa.contratante || ""]] },
-    { range: `${sheet}!C${row}`, values: [[competenciaAtual()]] },
     { range: `${sheet}!F${row}`, values: [[empresa.administracao || empresa.contatoPrincipal || ""]] },
     { range: `${sheet}!G${row}`, values: [[(empresa.tributacao || "").toUpperCase()]] },
     { range: `${sheet}!L${row}`, values: [[empresa.cnpj || ""]] },
@@ -173,11 +172,12 @@ async function syncEmpresaToSheet(empresa) {
     { range: `${sheet}!R${row}`, values: [[f.R]] },
   ];
 
-  // Essas 4 colunas são quase sempre preenchidas manualmente na planilha
-  // (não vêm da Ficha hoje). Só escreve quando a Ficha realmente tem o
-  // dado — senão pula a coluna inteira, pra não apagar por cima do que já
-  // estava lá quando a Ficha ainda não tem essa informação.
+  // Essas colunas são escolhidas manualmente na Ficha (não têm um valor
+  // "padrão" certo) e a planilha já tem a maioria preenchida à mão há
+  // tempos. Só escreve quando a Ficha realmente tem o dado — senão pula a
+  // coluna inteira, pra não apagar por cima do que já estava lá.
   const classificacao = [
+    ["C", competenciaParaData(empresa.competencia)],
     ["H", (empresa.movimento || "").toUpperCase()],
     ["I", (empresa.atividade || "").toUpperCase()],
     ["J", (empresa.dp || "").toUpperCase()],

@@ -76,8 +76,9 @@ function renderFicha(data) {
       ${fcRow("CNAE Principal:", f.cnaePrincipal)}
       ${fcRowLong("CNAE Secundário:", f.cnaeSecundario)}
       ${fcRowSplit("TRIBUTAÇÃO", f.tributacao, "VALOR CAPITAL", f.valorCapital)}
-      ${fcRowSplit("Movimento:", f.movimento, "Atividade:", f.atividade)}
-      ${fcRowSplit("DP (plano):", f.dp, "Contábil:", f.contabil)}
+      ${fcRowSplit("Competência:", f.competencia, "Movimento:", f.movimento)}
+      ${fcRowSplit("Atividade:", f.atividade, "DP (plano):", f.dp)}
+      ${fcRow("Contábil:", f.contabil)}
 
       ${fcSectionBar("DEPARTAMENTO PESSOAL (DP)")}
       ${fcRowSplit("Pró-labore:", f.proLabore, "Funcionários:", f.funcionarios)}
