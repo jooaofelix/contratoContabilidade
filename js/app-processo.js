@@ -498,9 +498,15 @@ function setupActionsProcesso() {
   });
 }
 
-// Gera o PDF do documento certo pra cada modo (ficha atualizada/nova empresa
-// ou a ficha de processo pura, se "gerar ficha atualizada" estiver desmarcado)
-// e sobe pra subpasta da empresa no Drive.
+// Sobe o PDF certo pra cada modo. No modo Abertura, é o próprio documento de
+// abertura. No modo Alteração, SEMPRE sobe a Ficha de Processo (o registro
+// da alteração em si) pra pasta "fichaProcesso" — e, se "Gerar ficha
+// atualizada" estiver marcado, sobe TAMBÉM a ficha cadastral já atualizada
+// pra pasta "fichaCadastral" (a mesma que a própria Ficha Cadastral usa),
+// como um upload separado. Antes os dois documentos disputavam a mesma
+// pasta/rótulo "Ficha de Processo", e como a checkbox vem marcada por
+// padrão, o que realmente subia ali era a ficha atualizada — nunca o
+// processo em si.
 async function saveProcessoPdfToDrive(showBusy) {
   if (!driveConfigured()) return;
   const status = document.getElementById("empresa-status");
@@ -511,24 +517,48 @@ async function saveProcessoPdfToDrive(showBusy) {
   const cnpj = abertura ? "" : getP("f_cnpj");
   if (!empresaId || !nome) return;
 
-  const gerarFicha = abertura || document.getElementById("p_gerarFicha").checked;
-  const elementId = gerarFicha ? "ficha-atualizada-preview" : "processo-preview";
-  const tipoLabel = abertura ? "Abertura de Empresa" : "Ficha de Processo";
-  const tipoKey = abertura ? "aberturaEmpresa" : "fichaProcesso";
-
   if (showBusy) {
     status.textContent = "Enviando PDF para o Drive...";
     status.className = "pdf-status";
   }
+
+  const driveFoldersAnteriores = empresaCarregadaProcesso && empresaCarregadaProcesso.id === empresaId ? empresaCarregadaProcesso.driveFolders : null;
+  const novosFolders = Object.assign({}, driveFoldersAnteriores);
+
   try {
-    const result = await saveDocumentToDrive({ elementId, empresaId, empresaNome: nome, cnpj, tipoLabel, tipoKey });
-    const driveFoldersAnteriores = empresaCarregadaProcesso && empresaCarregadaProcesso.id === empresaId ? empresaCarregadaProcesso.driveFolders : null;
-    empresaCarregadaProcesso = Object.assign({}, empresaCarregadaProcesso, {
-      id: empresaId,
-      driveFolders: Object.assign({}, driveFoldersAnteriores, { [tipoKey]: result.folderId }),
-    });
+    if (abertura) {
+      const result = await saveDocumentToDrive({
+        elementId: "processo-preview",
+        empresaId, empresaNome: nome, cnpj,
+        tipoLabel: "Abertura de Empresa",
+        tipoKey: "aberturaEmpresa",
+      });
+      novosFolders.aberturaEmpresa = result.folderId;
+      status.textContent = "Salvo e PDF enviado para o Drive.";
+    } else {
+      const resultProcesso = await saveDocumentToDrive({
+        elementId: "processo-preview",
+        empresaId, empresaNome: nome, cnpj,
+        tipoLabel: "Ficha de Processo",
+        tipoKey: "fichaProcesso",
+      });
+      novosFolders.fichaProcesso = resultProcesso.folderId;
+      status.textContent = "Ficha de Processo enviada para o Drive.";
+
+      if (document.getElementById("p_gerarFicha").checked) {
+        const resultFicha = await saveDocumentToDrive({
+          elementId: "ficha-atualizada-preview",
+          empresaId, empresaNome: nome, cnpj,
+          tipoLabel: "Ficha Cadastral",
+          tipoKey: "fichaCadastral",
+        });
+        novosFolders.fichaCadastral = resultFicha.folderId;
+        status.textContent = "Ficha de Processo e Ficha Cadastral atualizada enviadas para o Drive.";
+      }
+    }
+
+    empresaCarregadaProcesso = Object.assign({}, empresaCarregadaProcesso, { id: empresaId, driveFolders: novosFolders });
     atualizarLinkDriveProcesso();
-    status.textContent = "Salvo e PDF enviado para o Drive.";
     status.className = "pdf-status ok";
   } catch (err) {
     console.error(err);
