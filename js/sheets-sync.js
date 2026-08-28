@@ -178,23 +178,35 @@ function pendenciasFormulas(row) {
   };
 }
 
+// Compara Nº só pelos dígitos (sem zero à esquerda) — a planilha às vezes
+// guarda o número como valor numérico de verdade (Sheets tira zero à
+// esquerda e pode formatar diferente do texto que a Ficha manda), então um
+// match de texto exato ("0693" !== "693") deixava de achar a linha certa e
+// criava uma linha duplicada com o mesmo Nº.
+function normalizarNumeroPlanilha(v) {
+  const digitos = (v || "").toString().replace(/\D/g, "");
+  if (!digitos) return "";
+  return String(parseInt(digitos, 10));
+}
+
 // Lê as colunas A (Nº) e B (Nome) de uma vez: acha a linha já existente com
 // esse número (se houver) e também a próxima linha livre pra caso precise
-// criar uma nova.
+// criar uma nova. valueRenderOption=UNFORMATTED_VALUE evita que formatação
+// de exibição (separador de milhar etc.) atrapalhe a comparação.
 async function findOrNextRowByNumero(numero) {
   const sheet = SHEETS_CONFIG.sheetName;
   const range = `${sheet}!A2:B1000`;
   const res = await sheetsFetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_CONFIG.spreadsheetId}/values/${encodeURIComponent(range)}`
+    `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_CONFIG.spreadsheetId}/values/${encodeURIComponent(range)}?valueRenderOption=UNFORMATTED_VALUE`
   );
   const data = await res.json();
   const rows = data.values || [];
-  const alvo = String(numero || "").trim();
+  const alvo = normalizarNumeroPlanilha(numero);
 
   let lastUsed = 0;
   let matchRow = null;
   rows.forEach((r, i) => {
-    const a = (r[0] || "").toString().trim();
+    const a = normalizarNumeroPlanilha(r[0]);
     const b = (r[1] || "").toString().trim();
     if (a || b) lastUsed = i + 1;
     if (alvo && a === alvo) matchRow = i + 2;
@@ -286,12 +298,12 @@ async function fetchLinhasPlanilha() {
   const sheet = SHEETS_CONFIG.sheetName;
   const range = `${sheet}!A2:L1000`;
   const res = await sheetsFetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_CONFIG.spreadsheetId}/values/${encodeURIComponent(range)}`
+    `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_CONFIG.spreadsheetId}/values/${encodeURIComponent(range)}?valueRenderOption=UNFORMATTED_VALUE`
   );
   const data = await res.json();
   return (data.values || [])
     .map((r) => ({
-      numero: (r[0] || "").toString().trim(),
+      numero: normalizarNumeroPlanilha(r[0]),
       nome: (r[1] || "").toString().trim(),
       cnpj: (r[11] || "").toString().trim(), // coluna L
     }))
