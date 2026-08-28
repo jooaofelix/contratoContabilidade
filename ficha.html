@@ -44,6 +44,7 @@
           <button id="empresa-new" class="btn-secondary">Nova</button>
         </div>
         <button id="empresa-delete" class="btn-danger">Excluir esta empresa</button>
+        <button id="empresa-salvar-tudo" class="btn-primary">💾 Salvar tudo (Drive + Planilha)</button>
         <button id="empresa-drive" class="btn-secondary">☁️ Salvar PDF no Drive</button>
         <a id="empresa-drive-link" class="btn-secondary drive-folder-link hidden" target="_blank" rel="noopener">📁 Abrir pasta no Drive</a>
         <button id="empresa-planilha" class="btn-secondary">📊 Enviar para planilha</button>
@@ -54,8 +55,8 @@
     <section class="panel">
       <h2>📦 Gerar todas as fichas</h2>
       <div class="panel-body">
-        <p class="fixed-note">Gera o PDF da ficha de cada empresa já cadastrada no banco e salva na pasta de Ficha Cadastral no Drive (cria/reaproveita a subpasta de cada cliente).</p>
-        <button id="gerar-todas-fichas" class="btn-secondary">Gerar e salvar todas no Drive</button>
+        <p class="fixed-note">Gera o PDF da ficha de cada empresa já cadastrada no banco, salva na pasta de Ficha Cadastral no Drive (cria/reaproveita a subpasta de cada cliente) e sincroniza cada uma com a planilha (quando tiver Nº preenchido) — tudo numa única autorização.</p>
+        <button id="gerar-todas-fichas" class="btn-secondary">Gerar e salvar todas (Drive + Planilha)</button>
         <div id="bulk-status" class="pdf-status"></div>
       </div>
     </section>

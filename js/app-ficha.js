@@ -467,6 +467,68 @@ async function setupEmpresasFicha() {
     }
   });
 
+  document.getElementById("empresa-salvar-tudo").addEventListener("click", async () => {
+    if (!select.value) {
+      status.textContent = 'Salve a empresa (botão "Salvar/Atualizar") antes.';
+      status.className = "pdf-status error";
+      return;
+    }
+    if (!driveConfigured() && !sheetsConfigured()) {
+      status.textContent = "Nem o Drive nem a planilha estão configurados ainda.";
+      status.className = "pdf-status error";
+      return;
+    }
+
+    status.textContent = "Aguardando autorização do Google (confira se abriu um pop-up)...";
+    status.className = "pdf-status";
+    try {
+      if (driveConfigured()) await ensureDriveAccessToken();
+      if (sheetsConfigured()) await ensureSheetsAccessToken();
+    } catch (err) {
+      console.error(err);
+      status.textContent = err.message;
+      status.className = "pdf-status error";
+      return;
+    }
+
+    const partes = [];
+    let temErro = false;
+
+    if (driveConfigured()) {
+      try {
+        const result = await saveDocumentToDrive({
+          elementId: "ficha-preview",
+          empresaId: select.value,
+          empresaNome: nomeComNumero(getF("f_contratante"), getF("f_numero")),
+          cnpj: getF("f_cnpj"),
+          tipoLabel: "Ficha Cadastral",
+          tipoKey: "fichaCadastral",
+        });
+        updateDriveFolderLink(document.getElementById("empresa-drive-link"), result.folderId);
+        partes.push("PDF salvo no Drive");
+      } catch (err) {
+        console.error(err);
+        partes.push("erro no Drive: " + err.message);
+        temErro = true;
+      }
+    }
+
+    if (sheetsConfigured()) {
+      try {
+        const empresa = collectEmpresaFromForm("f_");
+        const result = await syncEmpresaToSheet(empresa);
+        partes.push(result.isNew ? `linha ${result.row} criada na planilha` : `linha ${result.row} atualizada na planilha`);
+      } catch (err) {
+        console.error(err);
+        partes.push("erro na planilha: " + err.message);
+        temErro = true;
+      }
+    }
+
+    status.textContent = partes.join(" · ");
+    status.className = temErro ? "pdf-status error" : "pdf-status ok";
+  });
+
   document.getElementById("empresa-drive").addEventListener("click", async () => {
     if (!driveConfigured()) {
       status.textContent = "A integração com o Google Drive ainda não foi configurada.";
