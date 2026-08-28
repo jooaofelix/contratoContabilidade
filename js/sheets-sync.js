@@ -261,3 +261,75 @@ async function syncEmpresaToSheet(empresa) {
 
   return { row, isNew };
 }
+
+// --- Importar os Nº já existentes na planilha pras empresas cadastradas ---
+// no sistema que ainda não têm número (usado uma vez, pra "acertar o
+// ponteiro" das empresas que já foram cadastradas antes dessa integração
+// existir). Casa por CNPJ (mais confiável) e, sem isso, por nome.
+
+function normalizarCnpjPlanilha(v) {
+  return (v || "").toString().replace(/\D/g, "");
+}
+
+function normalizarNomePlanilha(v) {
+  return (v || "")
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function fetchLinhasPlanilha() {
+  const sheet = SHEETS_CONFIG.sheetName;
+  const range = `${sheet}!A2:L1000`;
+  const res = await sheetsFetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_CONFIG.spreadsheetId}/values/${encodeURIComponent(range)}`
+  );
+  const data = await res.json();
+  return (data.values || [])
+    .map((r) => ({
+      numero: (r[0] || "").toString().trim(),
+      nome: (r[1] || "").toString().trim(),
+      cnpj: (r[11] || "").toString().trim(), // coluna L
+    }))
+    .filter((r) => r.numero);
+}
+
+async function importarNumerosDaPlanilha(empresas) {
+  if (!sheetsConfigured()) throw new Error("Integração com a planilha ainda não foi configurada.");
+  await ensureSheetsAccessToken();
+
+  const linhas = await fetchLinhasPlanilha();
+  const porCnpj = new Map();
+  const porNome = new Map();
+  linhas.forEach((l) => {
+    const cnpjNorm = normalizarCnpjPlanilha(l.cnpj);
+    if (cnpjNorm && !porCnpj.has(cnpjNorm)) porCnpj.set(cnpjNorm, l.numero);
+    const nomeNorm = normalizarNomePlanilha(l.nome);
+    if (nomeNorm && !porNome.has(nomeNorm)) porNome.set(nomeNorm, l.numero);
+  });
+
+  const resultado = { atualizadas: 0, jaTinhamNumero: 0, semCorrespondencia: [] };
+  for (const empresa of empresas) {
+    if (empresa.numero) {
+      resultado.jaTinhamNumero++;
+      continue;
+    }
+    const cnpjNorm = normalizarCnpjPlanilha(empresa.cnpj);
+    let numero = cnpjNorm ? porCnpj.get(cnpjNorm) : undefined;
+    if (!numero) {
+      const nomeNorm = normalizarNomePlanilha(empresa.contratante);
+      numero = nomeNorm ? porNome.get(nomeNorm) : undefined;
+    }
+    if (numero) {
+      await upsertEmpresa({ numero }, empresa.id);
+      resultado.atualizadas++;
+    } else {
+      resultado.semCorrespondencia.push(empresa.contratante || empresa.id);
+    }
+  }
+  return resultado;
+}

@@ -600,6 +600,45 @@ async function setupEmpresasFicha() {
       status.className = "pdf-status error";
     }
   });
+
+  document.getElementById("importar-numeros").addEventListener("click", async () => {
+    const impStatus = document.getElementById("importar-numeros-status");
+    if (!sheetsConfigured()) {
+      impStatus.textContent = "A integração com a planilha ainda não foi configurada.";
+      impStatus.className = "pdf-status error";
+      return;
+    }
+    impStatus.textContent = "Aguardando autorização do Google (confira se abriu um pop-up)...";
+    impStatus.className = "pdf-status";
+    try {
+      await ensureSheetsAccessToken();
+    } catch (err) {
+      console.error(err);
+      impStatus.textContent = err.message;
+      impStatus.className = "pdf-status error";
+      return;
+    }
+
+    try {
+      const empresas = await getEmpresas();
+      if (!confirm(`Isso vai conferir ${empresas.length} empresa(s) cadastradas contra a planilha e preencher o Nº de quem ainda não tiver. Continuar?`)) {
+        impStatus.textContent = "";
+        return;
+      }
+      impStatus.textContent = "Lendo a planilha e comparando...";
+      const resultado = await importarNumerosDaPlanilha(empresas);
+      await picker.refresh();
+      impStatus.textContent = `Concluído: ${resultado.atualizadas} número(s) preenchido(s), ${resultado.jaTinhamNumero} já tinham número.` +
+        (resultado.semCorrespondencia.length
+          ? ` ${resultado.semCorrespondencia.length} sem correspondência na planilha: ${resultado.semCorrespondencia.join("; ")}`
+          : "");
+      impStatus.className = "pdf-status ok";
+    } catch (err) {
+      console.error(err);
+      impStatus.textContent = "Erro ao importar: " + err.message;
+      impStatus.className = "pdf-status error";
+    }
+  });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
