@@ -77,6 +77,13 @@ function requestDriveAccessToken() {
 // pra tudo, resolve.
 async function ensureDriveAccessToken() {
   if (driveAccessToken) return driveAccessToken;
+  // Se a página também tem a integração com a planilha (sheets-sync.js),
+  // pede as duas permissões juntas na primeira vez — evita um segundo
+  // pop-up mais tarde (que o navegador costuma fechar sozinho por não
+  // reconhecer como resposta direta a um clique).
+  if (typeof sheetsConfigured === "function" && sheetsConfigured() && typeof ensureDriveAndSheetsAccessToken === "function") {
+    return ensureDriveAndSheetsAccessToken();
+  }
   return requestDriveAccessToken();
 }
 

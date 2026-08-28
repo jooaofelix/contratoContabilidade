@@ -26,6 +26,65 @@ function sheetsConfigured() {
   );
 }
 
+let combinedTokenClient = null;
+
+// Pede Drive + Sheets numa autorização só. Precisa disso porque dois
+// pop-ups em sequência (um pro Drive, outro pra planilha) fazem o navegador
+// fechar o segundo sozinho — só reconhece o primeiro como resposta direta
+// ao clique do usuário. Preenche o token cacheado dos dois lados
+// (driveAccessToken vem de drive-upload.js, carregado antes deste arquivo).
+function requestDriveAndSheetsAccessToken() {
+  return new Promise((resolve, reject) => {
+    if (!combinedTokenClient) {
+      combinedTokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: DRIVE_CONFIG.clientId,
+        scope: `${DRIVE_SCOPE} ${SHEETS_SCOPE}`,
+        callback: () => {},
+        error_callback: () => {},
+      });
+    }
+    let settled = false;
+
+    const timeoutId = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error(
+        "Tempo esgotado aguardando a autorização do Google. Verifique se o navegador bloqueou um pop-up " +
+        "e permita pop-ups para este site."
+      ));
+    }, 45000);
+
+    combinedTokenClient.callback = (resp) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      if (resp.error) { reject(new Error(resp.error)); return; }
+      driveAccessToken = resp.access_token;
+      sheetsAccessToken = resp.access_token;
+      resolve(resp.access_token);
+    };
+
+    combinedTokenClient.error_callback = (err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      reject(new Error(
+        "Não foi possível abrir a janela de autorização do Google (" + (err && err.type ? err.type : "erro desconhecido") + "). " +
+        "Verifique se pop-ups estão bloqueados para este site."
+      ));
+    };
+
+    combinedTokenClient.requestAccessToken({ prompt: "consent" });
+  });
+}
+
+// Usa o token já cacheado de qualquer um dos dois lados se existir; senão
+// pede os dois juntos numa autorização só.
+async function ensureDriveAndSheetsAccessToken() {
+  if (driveAccessToken && sheetsAccessToken) return driveAccessToken;
+  return requestDriveAndSheetsAccessToken();
+}
+
 function ensureSheetsTokenClient() {
   if (!sheetsTokenClient) {
     sheetsTokenClient = google.accounts.oauth2.initTokenClient({
@@ -80,6 +139,11 @@ function requestSheetsAccessToken() {
 
 async function ensureSheetsAccessToken() {
   if (sheetsAccessToken) return sheetsAccessToken;
+  // Mesma ideia do lado do Drive: se a página também tem Drive configurado,
+  // pede as duas permissões juntas, pra nunca precisar de um segundo pop-up.
+  if (typeof driveConfigured === "function" && driveConfigured()) {
+    return ensureDriveAndSheetsAccessToken();
+  }
   return requestSheetsAccessToken();
 }
 

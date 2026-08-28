@@ -266,8 +266,8 @@ async function gerarTodasFichas() {
   status.textContent = "Aguardando autorização do Google (confira se abriu um pop-up)...";
   status.className = "pdf-status";
   try {
-    await ensureDriveAccessToken();
-    if (sheetsConfigured()) await ensureSheetsAccessToken();
+    if (sheetsConfigured()) await ensureDriveAndSheetsAccessToken();
+    else await ensureDriveAccessToken();
   } catch (err) {
     console.error(err);
     status.textContent = err.message;
@@ -482,8 +482,9 @@ async function setupEmpresasFicha() {
     status.textContent = "Aguardando autorização do Google (confira se abriu um pop-up)...";
     status.className = "pdf-status";
     try {
-      if (driveConfigured()) await ensureDriveAccessToken();
-      if (sheetsConfigured()) await ensureSheetsAccessToken();
+      if (driveConfigured() && sheetsConfigured()) await ensureDriveAndSheetsAccessToken();
+      else if (driveConfigured()) await ensureDriveAccessToken();
+      else if (sheetsConfigured()) await ensureSheetsAccessToken();
     } catch (err) {
       console.error(err);
       status.textContent = err.message;
