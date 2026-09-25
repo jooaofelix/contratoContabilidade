@@ -243,6 +243,11 @@
     <section class="panel hidden" data-mode="abertura">
       <h2 class="panel-toggle" data-target="panel-empresa-pretendida">🏗️ Dados da Empresa Pretendida ▾</h2>
       <div id="panel-empresa-pretendida" class="panel-body">
+        <label>Clonar dados de um CNPJ existente (opcional)
+          <input type="text" id="ab-clonar-cnpj-input" placeholder="Digite o CNPJ de uma empresa parecida">
+        </label>
+        <button type="button" id="ab-clonar-cnpj-btn" class="btn-secondary">🔎 Clonar dados</button>
+        <div id="ab-clonar-cnpj-status" class="pdf-status"></div>
         <label>Razão social
           <input type="text" id="ab_razaoSocial">
         </label>

@@ -105,7 +105,7 @@ function addAlteracaoRow(key, campoCustom, de, para) {
   updateProcessoPreview();
 }
 
-function addSocioRow() {
+function addSocioRow(nome, participacao) {
   const id = socioCount++;
   const wrap = document.createElement("div");
   wrap.className = "alteracao-row";
@@ -143,6 +143,8 @@ function addSocioRow() {
     <label class="checkbox"><input type="checkbox" class="socio-comprovanteEndereco"> Comprovante de endereço recebido</label>
   `;
   document.getElementById("socios-list").appendChild(wrap);
+  if (nome) wrap.querySelector(".socio-nome").value = nome;
+  if (participacao) wrap.querySelector(".socio-participacao").value = participacao;
 
   wrap.querySelectorAll("input[type=text]").forEach((el) => {
     el.addEventListener("input", updateProcessoPreview);
@@ -359,6 +361,62 @@ function setupPdfImportProcesso() {
       console.error(err);
       status.textContent = "Erro ao ler o PDF. Preencha manualmente.";
       status.className = "pdf-status error";
+    }
+  });
+}
+
+// No modo Abertura, permite "clonar" os dados de um CNPJ já existente (ex:
+// uma empresa parecida, do mesmo grupo) como ponto de partida pra empresa
+// nova — útil porque a empresa sendo aberta ainda não tem CNPJ próprio.
+// Só preenche o que estiver vazio, sem sobrescrever o que já foi digitado,
+// e adiciona os sócios encontrados como linhas novas.
+function setupClonarCnpjAbertura() {
+  const input = document.getElementById("ab-clonar-cnpj-input");
+  const btn = document.getElementById("ab-clonar-cnpj-btn");
+  const status = document.getElementById("ab-clonar-cnpj-status");
+
+  const clonar = async () => {
+    status.textContent = "Consultando a Receita Federal...";
+    status.className = "pdf-status";
+
+    try {
+      const parsed = await fetchCnpjFromApi(input.value);
+
+      const setIfEmpty = (id, value) => {
+        const el = document.getElementById(id);
+        if (value && !el.value) el.value = value;
+      };
+
+      setIfEmpty("ab_razaoSocial", parsed.razaoSocial);
+      const enderecoPartes = [
+        parsed.endereco,
+        parsed.bairro,
+        [parsed.cidade, parsed.estado].filter(Boolean).join("/"),
+        parsed.cep ? "CEP " + parsed.cep : "",
+      ].filter(Boolean).join(", ");
+      setIfEmpty("ab_endereco", enderecoPartes);
+      setIfEmpty("ab_email", parsed.email);
+      setIfEmpty("ab_telefone", parsed.telefone);
+      setIfEmpty("ab_capitalSocial", parsed.valorCapital);
+
+      if (parsed.socio1) addSocioRow(parsed.socio1, parsed.capitalSocio1);
+      if (parsed.socio2) addSocioRow(parsed.socio2, parsed.capitalSocio2);
+
+      updateProcessoPreview();
+      status.textContent = `Dados clonados${parsed.razaoSocial ? " de " + parsed.razaoSocial : ""}. Ajuste a razão social e o que for diferente na empresa nova.`;
+      status.className = "pdf-status ok";
+    } catch (err) {
+      console.error(err);
+      status.textContent = err.message || "Erro ao consultar o CNPJ.";
+      status.className = "pdf-status error";
+    }
+  };
+
+  btn.addEventListener("click", clonar);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      clonar();
     }
   });
 }
@@ -718,6 +776,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupPanelTogglesProcesso();
   setupLiveUpdateProcesso();
   setupPdfImportProcesso();
+  setupClonarCnpjAbertura();
   setupActionsProcesso();
   setupEmpresasProcesso();
   addAlteracaoRow();
