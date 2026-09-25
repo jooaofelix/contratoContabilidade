@@ -94,6 +94,63 @@ function collectGrupoOrc() {
     .filter((g) => g.nome || g.cnpj);
 }
 
+// --- Itens de investimento (múltiplos, opcional) --------------------------
+
+let itensInvestimentoCountOrc = 0;
+
+function addItemInvestimentoRowOrc(item) {
+  item = item || {};
+  const id = itensInvestimentoCountOrc++;
+  const wrap = document.createElement("div");
+  wrap.className = "alteracao-row";
+  wrap.dataset.itemRow = id;
+  wrap.innerHTML = `
+    <button type="button" class="alteracao-remove" data-remove-item-investimento="${id}">Remover ✕</button>
+    <div class="row">
+      <label>Título
+        <input type="text" class="orc-item-titulo" placeholder="ex: Abertura de Empresas">
+      </label>
+      <label>Valor
+        <input type="text" class="orc-item-valor" placeholder="ex: R$ 1.200 ou A definir">
+      </label>
+      <label class="small">Recorrência
+        <select class="orc-item-recorrencia">
+          <option value="Única vez">Única vez</option>
+          <option value="Mensal">Mensal</option>
+          <option value="Anual">Anual</option>
+          <option value="A definir">A definir</option>
+        </select>
+      </label>
+    </div>
+    <label>Descrição (opcional)
+      <input type="text" class="orc-item-descricao" placeholder="ex: Cobrado uma única vez na aprovação">
+    </label>
+  `;
+  document.getElementById("orc-itens-investimento-list").appendChild(wrap);
+  wrap.querySelector(".orc-item-titulo").value = item.titulo || "";
+  wrap.querySelector(".orc-item-valor").value = item.valor || "";
+  wrap.querySelector(".orc-item-recorrencia").value = item.recorrencia || "Única vez";
+  wrap.querySelector(".orc-item-descricao").value = item.descricao || "";
+
+  wrap.querySelectorAll("input, select").forEach((el) => el.addEventListener("input", updateProposalPreview));
+  wrap.querySelectorAll("select").forEach((el) => el.addEventListener("change", updateProposalPreview));
+  wrap.querySelector("[data-remove-item-investimento]").addEventListener("click", () => {
+    wrap.remove();
+    updateProposalPreview();
+  });
+}
+
+function collectItensInvestimentoOrc() {
+  return Array.from(document.querySelectorAll("#orc-itens-investimento-list .alteracao-row"))
+    .map((row) => ({
+      titulo: row.querySelector(".orc-item-titulo").value,
+      valor: row.querySelector(".orc-item-valor").value,
+      recorrencia: row.querySelector(".orc-item-recorrencia").value,
+      descricao: row.querySelector(".orc-item-descricao").value,
+    }))
+    .filter((i) => i.titulo || i.valor);
+}
+
 function collectProposalData() {
   return {
     cliente: {
@@ -123,6 +180,7 @@ function collectProposalData() {
       formaPagamento: getOrc("i_formaPagamento"),
       prazoInicio: getOrc("i_prazoInicio"),
       validade: getOrc("q_validade"),
+      itens: collectItensInvestimentoOrc(),
     },
   };
 }
@@ -247,6 +305,7 @@ function setupActionsOrc() {
     document.getElementById("i_prazoInicio").value = "Após aceite";
     document.getElementById("d_regime").value = "Simples Nacional";
     document.getElementById("orc-grupo-list").innerHTML = "";
+    document.getElementById("orc-itens-investimento-list").innerHTML = "";
     document.querySelectorAll(".orc-servico-check").forEach((c) => { c.checked = false; });
     setupDescontoToggle();
     updateProposalPreview();
@@ -256,6 +315,13 @@ function setupActionsOrc() {
 function setupGrupoEconomicoOrc() {
   document.getElementById("orc-add-grupo").addEventListener("click", () => {
     addGrupoRowOrc();
+    updateProposalPreview();
+  });
+}
+
+function setupItensInvestimentoOrc() {
+  document.getElementById("orc-add-item-investimento").addEventListener("click", () => {
+    addItemInvestimentoRowOrc();
     updateProposalPreview();
   });
 }
@@ -277,6 +343,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupEmpresasOrcamento();
   setupServicosOrc();
   setupGrupoEconomicoOrc();
+  setupItensInvestimentoOrc();
   setupActionsOrc();
   updateProposalPreview();
 });

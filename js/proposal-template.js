@@ -155,7 +155,27 @@ function renderServicosSelecionados(servicos) {
     </div>`;
 }
 
+function renderInvestimentoItens(itens) {
+  if (!itens || itens.length === 0) return "";
+  return `
+    <div class="proposal-investimento-resumo">
+      <h4>RESUMO DE INVESTIMENTO</h4>
+      <div class="proposal-investimento-grid">
+        ${itens.map((item) => `
+          <div class="proposal-investimento-card">
+            <div class="proposal-investimento-valor">${phP(item.valor, "[valor]")}</div>
+            <div class="proposal-investimento-titulo">${escapeHtmlP(item.titulo || "Item")}</div>
+            ${item.recorrencia ? `<div class="proposal-investimento-recorrencia">${escapeHtmlP(item.recorrencia)}</div>` : ""}
+            ${item.descricao ? `<p class="proposal-investimento-desc">${escapeHtmlP(item.descricao)}</p>` : ""}
+          </div>`).join("")}
+      </div>
+    </div>`;
+}
+
 function renderServicosInvestimento(investimento, servicos, pageNumber) {
+  const itens = investimento.itens || [];
+  const temItensMultiplos = itens.length > 0;
+
   const temDesconto = investimento.temDesconto && investimento.valorFinal;
   const desconto = temDesconto
     ? (parseFloat((investimento.valorCheio || "0").replace(/\./g, "").replace(",", ".")) -
@@ -182,7 +202,7 @@ function renderServicosInvestimento(investimento, servicos, pageNumber) {
       <p class="proposal-sub">Serviços que serão prestados</p>
 
       <div class="proposal-columns proposal-columns-services">
-        <div class="proposal-services">
+        <div class="${temItensMultiplos ? "proposal-services proposal-services-full" : "proposal-services"}">
           ${renderServicosSelecionados(servicos)}
           ${SERVICOS_PADRAO.map((s) => `
             <div class="proposal-service-row">
@@ -195,6 +215,7 @@ function renderServicosInvestimento(investimento, servicos, pageNumber) {
             </div>`).join("")}
         </div>
 
+        ${temItensMultiplos ? "" : `
         <div class="proposal-price-box">
           ${precoBoxHtml}
           <div class="proposal-price-divider"></div>
@@ -204,8 +225,16 @@ function renderServicosInvestimento(investimento, servicos, pageNumber) {
           </div>
           <div><span class="fl">Validade da proposta</span><span class="fv">${phP(investimento.validade, "Não informado")}</span></div>
           <p class="proposal-price-fine">Proposta válida mediante conferência das informações cadastrais e confirmação do escopo final.</p>
-        </div>
+        </div>`}
       </div>
+
+      ${renderInvestimentoItens(itens)}
+      ${temItensMultiplos ? `
+      <div class="proposal-investimento-meta">
+        <div><span class="fl">Forma de pagamento</span><span class="fv">${phP(investimento.formaPagamento, "A combinar")}</span></div>
+        <div><span class="fl">Prazo para início</span><span class="fv">${phP(investimento.prazoInicio, "Após aceite")}</span></div>
+        <div><span class="fl">Validade da proposta</span><span class="fv">${phP(investimento.validade, "Não informado")}</span></div>
+      </div>` : ""}
       ${pageFooter(pageNumber)}
     </section>`;
 }

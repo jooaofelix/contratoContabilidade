@@ -414,6 +414,72 @@
   margin-top: 10px;
 }
 
+.proposal-services-full {
+  flex: 1 1 100%;
+}
+
+.proposal-investimento-resumo {
+  margin-top: 24px;
+}
+
+.proposal-investimento-resumo h4 {
+  margin: 0 0 14px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--p-navy);
+  letter-spacing: 0.02em;
+}
+
+.proposal-investimento-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.proposal-investimento-card {
+  background: var(--p-navy);
+  color: #fff;
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+
+.proposal-investimento-valor {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--p-blue-light);
+}
+
+.proposal-investimento-titulo {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.proposal-investimento-recorrencia {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--p-blue-light);
+  margin-top: 4px;
+}
+
+.proposal-investimento-desc {
+  font-size: 0.75rem;
+  opacity: 0.85;
+  margin: 8px 0 0;
+  line-height: 1.4;
+}
+
+.proposal-investimento-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--p-bg);
+}
+
 .proposal-footer {
   position: absolute;
   bottom: 20px;
