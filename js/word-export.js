@@ -6,9 +6,12 @@ function sanitizeWordFilename(name) {
   return (name || "documento").replace(/[\\/:*?"<>|]/g, "-").trim();
 }
 
-function exportElementAsWord(elementId, filename) {
+// Monta o Blob do .doc a partir do que já está renderizado na tela — usado
+// tanto pelo download direto (exportElementAsWord) quanto pelo envio por
+// e-mail, que precisa do Blob pra anexar em vez de baixar.
+function buildWordBlob(elementId, filename) {
   const el = document.getElementById(elementId);
-  if (!el) return;
+  if (!el) return null;
 
   const html = `
     <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
@@ -30,6 +33,14 @@ function exportElementAsWord(elementId, filename) {
         .signatures, .witnesses { margin-top: 30px; }
         .sig-line { text-align: center; margin-bottom: 24px; }
         .sig-line .line { border-top: 1px solid #111827; width: 260px; margin: 0 auto 4px; }
+        .fc-title-box { border: 1px solid #111827; text-align: center; font-weight: bold; padding: 8px; margin-bottom: 10px; }
+        .fc-table { border: 1px solid #111827; }
+        .fc-row { border-top: 1px solid #d1d5db; }
+        .fc-row-name .fc-cell-name { background: #374151; color: #fff; font-weight: bold; padding: 8px 14px; }
+        .fc-section-bar { background: #1b3a5c; color: #fff; font-weight: bold; padding: 8px 14px; }
+        .fc-cell { padding: 6px 14px; }
+        .fc-cell-label { background: #e5e7eb; font-weight: bold; }
+        .fc-cell-long { text-align: justify; }
       </style>
     </head>
     <body>${el.innerHTML}</body>
@@ -37,10 +48,17 @@ function exportElementAsWord(elementId, filename) {
   `;
 
   const blob = new Blob(["﻿", html], { type: "application/msword" });
-  const url = URL.createObjectURL(blob);
+  return { blob, filename: `${sanitizeWordFilename(filename)}.doc` };
+}
+
+function exportElementAsWord(elementId, filename) {
+  const result = buildWordBlob(elementId, filename);
+  if (!result) return;
+
+  const url = URL.createObjectURL(result.blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${sanitizeWordFilename(filename)}.doc`;
+  a.download = result.filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

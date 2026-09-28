@@ -641,6 +641,33 @@ async function setupEmpresasFicha() {
   });
 }
 
+function setupEmailFicha() {
+  document.getElementById("email-ficha-enviar").addEventListener("click", async () => {
+    const status = document.getElementById("email-ficha-status");
+    if (!gmailConfigured()) {
+      status.textContent = "A integração de e-mail ainda não foi configurada.";
+      status.className = "pdf-status error";
+      return;
+    }
+    status.textContent = "Aguardando autorização do Google (confira se abriu um pop-up)...";
+    status.className = "pdf-status";
+    try {
+      const result = await sendFichaPorEmail({
+        destinatariosTexto: document.getElementById("email-ficha-destinatarios").value,
+        empresaNome: getF("f_contratante"),
+        cnpj: getF("f_cnpj"),
+        elementId: "ficha-preview",
+      });
+      status.textContent = `E-mail enviado para: ${result.destinatarios.join(", ")}`;
+      status.className = "pdf-status ok";
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao enviar por e-mail: " + err.message;
+      status.className = "pdf-status error";
+    }
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   setupPanelTogglesFicha();
   setupLiveUpdateFicha();
@@ -648,6 +675,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupPdfImportFicha();
   setupActionsFicha();
   setupEmpresasFicha();
+  setupEmailFicha();
   document.getElementById("gerar-todas-fichas").addEventListener("click", gerarTodasFichas);
   updateFichaPreview();
 });

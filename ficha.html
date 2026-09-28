@@ -53,6 +53,18 @@
     </section>
 
     <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-email-ficha">📧 Enviar Ficha por E-mail ▾</h2>
+      <div id="panel-email-ficha" class="panel-body">
+        <p class="fixed-note">Envia a ficha desta empresa em PDF e Word, com o assunto "Nova ficha cadastrada". Use vírgula, ponto e vírgula ou uma linha por e-mail pra mandar pra mais de um destinatário.</p>
+        <label>Destinatário(s)
+          <textarea id="email-ficha-destinatarios" rows="2" placeholder="ex: joao@aeacontabil.com.br, maria@aeacontabil.com.br"></textarea>
+        </label>
+        <button id="email-ficha-enviar" class="btn-secondary">📧 Enviar por e-mail</button>
+        <div id="email-ficha-status" class="pdf-status"></div>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2>📦 Gerar todas as fichas</h2>
       <div class="panel-body">
         <p class="fixed-note">Gera o PDF da ficha de cada empresa já cadastrada no banco, salva na pasta de Ficha Cadastral no Drive (cria/reaproveita a subpasta de cada cliente) e sincroniza cada uma com a planilha (quando tiver Nº preenchido) — tudo numa única autorização.</p>
@@ -312,8 +324,10 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="js/drive-config.js"></script>
 <script src="js/drive-upload.js"></script>
+<script src="js/word-export.js"></script>
 <script src="js/sheets-config.js"></script>
 <script src="js/sheets-sync.js"></script>
+<script src="js/gmail-send.js"></script>
 <script src="js/app-ficha.js"></script>
 <script src="js/vendas-store.js"></script>
 <script src="js/notas-store.js"></script>
