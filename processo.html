@@ -59,6 +59,18 @@
       </div>
     </section>
 
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-email-processo">📧 Enviar por E-mail ▾</h2>
+      <div id="panel-email-processo" class="panel-body">
+        <p class="fixed-note">Envia o documento desta ficha de processo (e a ficha cadastral atualizada, quando marcada) em PDF e Word. Use vírgula, ponto e vírgula ou uma linha por e-mail pra mandar pra mais de um destinatário.</p>
+        <label>Destinatário(s)
+          <textarea id="email-processo-destinatarios" rows="2" placeholder="ex: joao@aeacontabil.com.br, maria@aeacontabil.com.br"></textarea>
+        </label>
+        <button id="email-processo-enviar" class="btn-secondary">📧 Enviar por e-mail</button>
+        <div id="email-processo-status" class="pdf-status"></div>
+      </div>
+    </section>
+
     <section class="panel" data-mode="alteracao">
       <h2>Importar cartão CNPJ (PDF)</h2>
       <input type="file" id="pdf-input" accept="application/pdf">
@@ -311,9 +323,11 @@
 <script src="js/ficha-template.js"></script>
 <script src="js/processo-template.js"></script>
 <script src="js/vendor/html2pdf.bundle.min.js"></script>
+<script src="js/word-export.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="js/drive-config.js"></script>
 <script src="js/drive-upload.js"></script>
+<script src="js/gmail-send.js"></script>
 <script src="js/app-processo.js"></script>
 <script src="js/vendas-store.js"></script>
 <script src="js/notas-store.js"></script>

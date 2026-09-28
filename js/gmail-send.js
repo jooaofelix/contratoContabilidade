@@ -119,24 +119,31 @@ function wrapBase64Lines(base64) {
   return base64.replace(/(.{76})/g, "$1\r\n");
 }
 
-function buildEmailFichaHtml({ empresaNome, cnpj }) {
+function buildEmailDocumentoHtml({ titulo, empresaNome, cnpj, camposExtras }) {
   const dataHoje = new Date().toLocaleDateString("pt-BR");
+  const linhasExtras = (camposExtras || [])
+    .filter((c) => c.valor)
+    .map((c) => `
+        <div style="font-size: 11px; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;">${escapeHtmlEmail(c.rotulo)}</div>
+        <div style="font-size: 14px; color: #101a35; font-weight: 700; margin: 2px 0 14px;">${escapeHtmlEmail(c.valor)}</div>`)
+    .join("");
+
   return `
   <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden;">
     <div style="background: linear-gradient(135deg, #101a35 0%, #16294f 100%); padding: 28px 24px; text-align: center;">
       <div style="color: #ffffff; font-size: 20px; font-weight: 800;">AEA CONTABILIDADE CONSULTIVA</div>
-      <div style="color: #57b8ff; font-size: 13px; font-weight: 700; margin-top: 8px; letter-spacing: 0.06em;">NOVA FICHA CADASTRADA</div>
+      <div style="color: #57b8ff; font-size: 13px; font-weight: 700; margin-top: 8px; letter-spacing: 0.06em;">${escapeHtmlEmail(titulo)}</div>
     </div>
     <div style="padding: 24px; background: #ffffff;">
       <p style="font-size: 14px; color: #111827; line-height: 1.5; margin: 0 0 16px;">
-        Uma nova ficha cadastral foi criada no sistema interno. Os arquivos em <strong>PDF</strong> e <strong>Word</strong> estão anexados a este e-mail.
+        Um novo documento foi gerado no sistema interno. Os arquivos em <strong>PDF</strong> e <strong>Word</strong> estão anexados a este e-mail.
       </p>
       <div style="background: #eef2f7; border-radius: 8px; padding: 18px 20px;">
         <div style="font-size: 11px; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;">Empresa</div>
         <div style="font-size: 16px; color: #101a35; font-weight: 800; margin: 2px 0 14px;">${escapeHtmlEmail(empresaNome || "—")}</div>
         <div style="font-size: 11px; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;">CNPJ</div>
-        <div style="font-size: 14px; color: #101a35; font-weight: 700; margin: 2px 0 14px;">${escapeHtmlEmail(cnpj || "—")}</div>
-        <div style="font-size: 11px; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;">Data do cadastro</div>
+        <div style="font-size: 14px; color: #101a35; font-weight: 700; margin: 2px 0 14px;">${escapeHtmlEmail(cnpj || "—")}</div>${linhasExtras}
+        <div style="font-size: 11px; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;">Data</div>
         <div style="font-size: 14px; color: #101a35; font-weight: 700; margin: 2px 0 0;">${dataHoje}</div>
       </div>
       <p style="font-size: 12px; color: #9ca3af; margin: 20px 0 0;">E-mail automático gerado pelo sistema interno da AEA Contabilidade Consultiva.</p>
@@ -182,31 +189,41 @@ function parseDestinatarios(texto) {
     .filter(Boolean);
 }
 
-// Gera o PDF e o Word da ficha em tela (elementId) e envia por e-mail pros
-// destinatários informados, com o assunto "Nova ficha cadastrada".
-async function sendFichaPorEmail({ destinatariosTexto, empresaNome, cnpj, elementId }) {
+// Gera o PDF e o Word de cada elemento informado (um por doc-preview em
+// tela) e devolve a lista de anexos pronta pro e-mail.
+async function buildAnexosDosElementos(elementos) {
+  const anexos = [];
+  for (const el of elementos) {
+    const nomeArquivo = sanitizeWordFilename(el.nomeArquivo);
+    const [pdfBlob, wordResult] = await Promise.all([
+      generatePdfBlob(el.elementId),
+      Promise.resolve(buildWordBlob(el.elementId, nomeArquivo)),
+    ]);
+    anexos.push({ blob: pdfBlob, mimeType: "application/pdf", filename: `${nomeArquivo}.pdf` });
+    anexos.push({ blob: wordResult.blob, mimeType: "application/msword", filename: wordResult.filename });
+  }
+  return anexos;
+}
+
+// Orquestrador genérico: valida destinatários, autoriza, gera os anexos
+// (PDF + Word de cada elemento em tela) e envia o e-mail. Usado tanto pela
+// Ficha Cadastral quanto pela Ficha de Processo/Abertura de Empresa.
+async function sendDocumentoPorEmail({ destinatariosTexto, assunto, titulo, empresaNome, cnpj, camposExtras, elementos }) {
   if (!gmailConfigured()) throw new Error("Integração de e-mail ainda não foi configurada.");
 
   const destinatarios = parseDestinatarios(destinatariosTexto);
   if (destinatarios.length === 0) throw new Error("Informe ao menos um e-mail de destino.");
-  if (!empresaNome) throw new Error("Preencha ao menos o Contratante antes de enviar por e-mail.");
+  if (!empresaNome) throw new Error("Preencha ao menos o nome da empresa antes de enviar por e-mail.");
 
   await ensureGmailAccessToken();
 
-  const nomeArquivo = sanitizeWordFilename(`Ficha Cadastral - ${empresaNome}${cnpj ? " - " + cnpj : ""}`);
-  const [pdfBlob, wordResult] = await Promise.all([
-    generatePdfBlob(elementId),
-    Promise.resolve(buildWordBlob(elementId, nomeArquivo)),
-  ]);
+  const anexos = await buildAnexosDosElementos(elementos);
 
   const raw = await buildRawEmail({
     destinatarios,
-    assunto: "Nova ficha cadastrada",
-    corpoHtml: buildEmailFichaHtml({ empresaNome, cnpj }),
-    anexos: [
-      { blob: pdfBlob, mimeType: "application/pdf", filename: `${nomeArquivo}.pdf` },
-      { blob: wordResult.blob, mimeType: "application/msword", filename: wordResult.filename },
-    ],
+    assunto,
+    corpoHtml: buildEmailDocumentoHtml({ titulo, empresaNome, cnpj, camposExtras }),
+    anexos,
   });
 
   await gmailFetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
@@ -215,4 +232,40 @@ async function sendFichaPorEmail({ destinatariosTexto, empresaNome, cnpj, elemen
   });
 
   return { destinatarios };
+}
+
+// Envia a Ficha Cadastral (elementId em tela) por e-mail, com o assunto
+// "Nova ficha cadastrada".
+async function sendFichaPorEmail({ destinatariosTexto, empresaNome, cnpj, elementId }) {
+  return sendDocumentoPorEmail({
+    destinatariosTexto,
+    assunto: "Nova ficha cadastrada",
+    titulo: "NOVA FICHA CADASTRADA",
+    empresaNome,
+    cnpj,
+    elementos: [{ elementId, nomeArquivo: `Ficha Cadastral - ${empresaNome}${cnpj ? " - " + cnpj : ""}` }],
+  });
+}
+
+// Envia a Ficha de Processo (e, se marcado, a Ficha Cadastral já atualizada
+// junto) ou o documento de Abertura de Empresa por e-mail.
+async function sendProcessoPorEmail({ destinatariosTexto, empresaNome, cnpj, tipoProcesso, incluirFichaAtualizada, modoAbertura }) {
+  const sufixo = cnpj ? ` - ${cnpj}` : "";
+  const elementos = [{
+    elementId: "processo-preview",
+    nomeArquivo: modoAbertura ? `Abertura de Empresa - ${empresaNome}` : `Ficha de Processo - ${empresaNome}${sufixo}`,
+  }];
+  if (incluirFichaAtualizada) {
+    elementos.push({ elementId: "ficha-atualizada-preview", nomeArquivo: `Ficha Cadastral Atualizada - ${empresaNome}${sufixo}` });
+  }
+
+  return sendDocumentoPorEmail({
+    destinatariosTexto,
+    assunto: modoAbertura ? "Nova abertura de empresa cadastrada" : "Novo processo cadastrado",
+    titulo: modoAbertura ? "NOVA ABERTURA DE EMPRESA" : "NOVO PROCESSO CADASTRADO",
+    empresaNome,
+    cnpj,
+    camposExtras: tipoProcesso ? [{ rotulo: "Tipo", valor: tipoProcesso }] : [],
+    elementos,
+  });
 }

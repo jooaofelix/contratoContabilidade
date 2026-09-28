@@ -625,6 +625,36 @@ async function saveProcessoPdfToDrive(showBusy) {
   }
 }
 
+function setupEmailProcesso() {
+  document.getElementById("email-processo-enviar").addEventListener("click", async () => {
+    const status = document.getElementById("email-processo-status");
+    if (!gmailConfigured()) {
+      status.textContent = "A integração de e-mail ainda não foi configurada.";
+      status.className = "pdf-status error";
+      return;
+    }
+    status.textContent = "Aguardando autorização do Google (confira se abriu um pop-up)...";
+    status.className = "pdf-status";
+    try {
+      const abertura = isAberturaMode();
+      const result = await sendProcessoPorEmail({
+        destinatariosTexto: document.getElementById("email-processo-destinatarios").value,
+        empresaNome: abertura ? getP("ab_razaoSocial") : getP("f_contratante"),
+        cnpj: abertura ? "" : getP("f_cnpj"),
+        tipoProcesso: abertura ? "" : getP("p_tipo"),
+        incluirFichaAtualizada: !abertura && document.getElementById("p_gerarFicha").checked,
+        modoAbertura: abertura,
+      });
+      status.textContent = `E-mail enviado para: ${result.destinatarios.join(", ")}`;
+      status.className = "pdf-status ok";
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao enviar por e-mail: " + err.message;
+      status.className = "pdf-status error";
+    }
+  });
+}
+
 async function enrichProcessoFromApi(empresaCnpj) {
   const parsed = await fetchCnpjFromApi(empresaCnpj);
   const fillIfEmpty = (id, value) => {
@@ -779,6 +809,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupClonarCnpjAbertura();
   setupActionsProcesso();
   setupEmpresasProcesso();
+  setupEmailProcesso();
   addAlteracaoRow();
   addAlteracaoRow();
   addAlteracaoRow();
