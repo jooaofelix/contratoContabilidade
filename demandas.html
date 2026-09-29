@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demandas</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/vendas.css">
+<link rel="stylesheet" href="css/demandas.css">
+</head>
+<body>
+<header class="app-header">
+  <div class="app-brand">
+    <img src="assets/aea-logo.svg" alt="AEA Contabilidade Consultiva" class="app-logo">
+    <h1>Demandas</h1>
+  </div>
+  <nav class="app-nav">
+    <a href="index.html">Início</a>
+    <a href="contrato.html">Contrato</a>
+    <a href="orcamento.html">Orçamento</a>
+    <a href="ficha.html">Ficha Cadastral</a>
+    <a href="processo.html">Ficha de Processo</a>
+    <a href="vendas.html">Vendas</a>
+    <a href="historico.html">Histórico</a>
+    <a href="demandas.html" class="active">Demandas</a>
+    <a href="instagram.html">Instagram</a>
+  </nav>
+</header>
+
+<div class="app-layout">
+
+  <aside class="sidebar">
+    <section class="panel">
+      <h2>➕ Nova demanda</h2>
+      <div class="panel-body">
+        <label>O que precisa ser feito
+          <textarea id="dm_texto" rows="3" placeholder="ex: Ligar pro cliente X sobre o orçamento"></textarea>
+        </label>
+        <label>Data
+          <input type="date" id="dm_data">
+        </label>
+        <label class="checkbox"><input type="checkbox" id="dm_revisar"> Já marcar como "para revisar"</label>
+        <div class="row">
+          <button id="demanda-salvar" class="btn-primary">Adicionar</button>
+          <button id="demanda-nova" class="btn-secondary">Cancelar edição</button>
+        </div>
+        <div id="demanda-status" class="pdf-status"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>📅 Ver dia</h2>
+      <div class="panel-body">
+        <input type="date" id="dm_ver_data">
+        <div class="row">
+          <button id="dm_dia_anterior" class="btn-secondary">◀ Anterior</button>
+          <button id="dm_dia_hoje" class="btn-secondary">Hoje</button>
+          <button id="dm_dia_proximo" class="btn-secondary">Próximo ▶</button>
+        </div>
+      </div>
+    </section>
+  </aside>
+
+  <main class="preview-wrap">
+
+    <div class="vendas-stats" id="demandas-stats"></div>
+
+    <section class="demandas-secao">
+      <h3 class="demandas-secao-titulo demandas-secao-atrasada">⏰ Atrasadas</h3>
+      <div id="demandas-atrasadas-wrap"></div>
+    </section>
+
+    <section class="demandas-secao">
+      <h3 class="demandas-secao-titulo" id="demandas-dia-titulo">📌 Hoje</h3>
+      <div id="demandas-dia-wrap"></div>
+    </section>
+
+    <section class="demandas-secao">
+      <h3 class="demandas-secao-titulo demandas-secao-revisar">🔁 Para revisar</h3>
+      <div id="demandas-revisar-wrap"></div>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-feitas">✅ Concluídas ▾</h2>
+      <div id="panel-feitas" class="panel-body collapsed">
+        <div id="demandas-feitas-wrap"></div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/demandas-store.js"></script>
+<script src="js/app-demandas.js"></script>
+<script src="js/vendas-store.js"></script>
+<script src="js/notas-store.js"></script>
+<script src="js/demandas-widget.js"></script>
+</body>
+</html>
