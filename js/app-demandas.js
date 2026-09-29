@@ -16,6 +16,98 @@ function formatDataLongaDemanda(iso) {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
+// --- Atividade do sistema inteiro criada hoje -----------------------------
+// Junta tudo que foi cadastrado hoje em qualquer aba (Ficha Cadastral,
+// Vendas, Ficha de Processo, Instagram, Anotações, Contatos) num só feed,
+// só de leitura — pra "cair" automaticamente nas Demandas sem precisar
+// anotar manualmente. Cada loja guarda a data de criação de um jeito
+// (Timestamp do servidor ou um número em ms já resolvido no cliente);
+// timestampParaMs() aceita os dois formatos.
+
+function timestampParaMs(ts) {
+  if (!ts) return null;
+  if (typeof ts.toDate === "function") return ts.toDate().getTime();
+  if (typeof ts === "number") return ts;
+  return null;
+}
+
+function criadoHojeMs(ms) {
+  if (!ms) return false;
+  return new Date(ms).toISOString().slice(0, 10) === hojeISO();
+}
+
+async function carregarAtividadeHoje() {
+  const [empresas, vendas, ideias, notas, contatos, alteracoes] = await Promise.all([
+    typeof getEmpresas === "function" ? getEmpresas().catch(() => []) : [],
+    typeof getVendas === "function" ? getVendas().catch(() => []) : [],
+    typeof getIdeias === "function" ? getIdeias().catch(() => []) : [],
+    typeof getNotas === "function" ? getNotas().catch(() => []) : [],
+    typeof getContatos === "function" ? getContatos().catch(() => []) : [],
+    typeof getAllAlteracoes === "function" ? getAllAlteracoes().catch(() => []) : [],
+  ]);
+
+  const empresaNomePorId = {};
+  empresas.forEach((e) => { empresaNomePorId[e.id] = e.contratante || "(sem nome)"; });
+
+  const eventos = [];
+
+  empresas.forEach((e) => {
+    const ms = timestampParaMs(e.createdAt);
+    if (criadoHojeMs(ms)) eventos.push({ ms, icone: "📋", tipo: "Ficha Cadastral", titulo: e.contratante || "(sem nome)" });
+  });
+
+  vendas.forEach((v) => {
+    const ms = timestampParaMs(v.createdAt);
+    if (criadoHojeMs(ms)) eventos.push({ ms, icone: "💼", tipo: "Venda", titulo: `${v.empresaNome || "(sem nome)"}${v.status ? " — " + v.status : ""}` });
+  });
+
+  ideias.forEach((i) => {
+    const ms = timestampParaMs(i.createdAtMs || i.createdAt);
+    if (criadoHojeMs(ms)) eventos.push({ ms, icone: "📸", tipo: "Ideia de post", titulo: i.titulo || "(sem título)" });
+  });
+
+  notas.forEach((n) => {
+    const ms = timestampParaMs(n.createdAt);
+    if (criadoHojeMs(ms)) eventos.push({ ms, icone: "📝", tipo: "Anotação", titulo: n.titulo || (n.texto || "").slice(0, 60) || "(sem título)" });
+  });
+
+  contatos.forEach((c) => {
+    const ms = timestampParaMs(c.createdAt);
+    if (criadoHojeMs(ms)) eventos.push({ ms, icone: "👤", tipo: "Contato/lead", titulo: (typeof contatoLabel === "function" ? contatoLabel(c) : c.nome || c.empresa || "(sem nome)") });
+  });
+
+  alteracoes.forEach((a) => {
+    const ms = timestampParaMs(a.createdAt);
+    if (criadoHojeMs(ms)) eventos.push({ ms, icone: "🗂️", tipo: "Ficha de Processo", titulo: `${a.tipo || "Alteração"} — ${empresaNomePorId[a.empresaId] || "empresa"}` });
+  });
+
+  eventos.sort((a, b) => (b.ms || 0) - (a.ms || 0));
+  return eventos;
+}
+
+function atividadeRowHtml(ev) {
+  const hora = ev.ms ? new Date(ev.ms).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
+  return `
+    <div class="atividade-row">
+      <span class="atividade-icone">${ev.icone}</span>
+      <div class="atividade-row-body">
+        <span class="atividade-tipo">${ev.tipo}</span>
+        <span class="atividade-titulo">${String(ev.titulo || "").replace(/</g, "&lt;")}</span>
+      </div>
+      <span class="atividade-hora">${hora}</span>
+    </div>
+  `;
+}
+
+function renderAtividadeHoje(eventos) {
+  const wrap = document.getElementById("demandas-atividade-wrap");
+  if (eventos.length === 0) {
+    wrap.innerHTML = `<div class="vendas-empty">Nada foi cadastrado no sistema hoje ainda.</div>`;
+    return;
+  }
+  wrap.innerHTML = eventos.map(atividadeRowHtml).join("");
+}
+
 function collectDemandaForm() {
   return {
     texto: getD("dm_texto"),
@@ -177,8 +269,13 @@ function renderDemandas() {
 }
 
 async function refreshDemandas() {
-  demandasCache = await getDemandasDiarias();
+  const [demandas, atividade] = await Promise.all([
+    getDemandasDiarias(),
+    carregarAtividadeHoje(),
+  ]);
+  demandasCache = demandas;
   renderDemandas();
+  renderAtividadeHoje(atividade);
 }
 
 function irParaDia(iso) {
