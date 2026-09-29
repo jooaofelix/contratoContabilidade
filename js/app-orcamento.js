@@ -11,6 +11,16 @@ function checkedOrc(id) { return document.getElementById(id).checked; }
 
 let produtosCacheOrc = [];
 
+// Serviços agrupados em 3 blocos pra ficar claro na hora de montar a
+// proposta: Honorário (o plano mensal — só faz sentido escolher um, então
+// funciona como rádio), Escritório (serviços de rotina vendidos à parte) e
+// Adicional (o resto do catálogo, avulso).
+const CATEGORIAS_SERVICOS_ORC = [
+  { categoria: "Honorário", titulo: "💼 Honorário (escolha um plano)" },
+  { categoria: "Escritório", titulo: "🏢 Escritório" },
+  { categoria: "Adicional", titulo: "➕ Serviços adicionais" },
+];
+
 function populateServicosChecklistOrc() {
   const wrap = document.getElementById("orc-servicos-checklist");
   const checkedNomes = new Set(
@@ -22,20 +32,53 @@ function populateServicosChecklistOrc() {
     return;
   }
 
-  wrap.innerHTML = produtosCacheOrc.map((p) => `
-    <label class="checkbox">
-      <input type="checkbox" class="orc-servico-check" value="${escapeHtmlP(p.nome)}" ${checkedNomes.has(p.nome) ? "checked" : ""}>
-      ${escapeHtmlP(p.nome)}
-    </label>
-  `).join("");
+  const porCategoria = {};
+  produtosCacheOrc.forEach((p) => {
+    const cat = categoriaDoProduto(p);
+    if (!porCategoria[cat]) porCategoria[cat] = [];
+    porCategoria[cat].push(p);
+  });
+
+  wrap.innerHTML = CATEGORIAS_SERVICOS_ORC
+    .filter((c) => porCategoria[c.categoria] && porCategoria[c.categoria].length > 0)
+    .map((c) => `
+      <div class="orc-servicos-grupo">
+        <div class="orc-servicos-grupo-titulo">${c.titulo}</div>
+        ${porCategoria[c.categoria].map((p) => `
+          <label class="checkbox">
+            <input type="checkbox" class="orc-servico-check" data-categoria="${c.categoria}" value="${escapeHtmlP(p.nome)}" ${checkedNomes.has(p.nome) ? "checked" : ""}>
+            ${escapeHtmlP(p.nome)}
+          </label>
+        `).join("")}
+      </div>
+    `).join("");
 
   wrap.querySelectorAll(".orc-servico-check").forEach((c) => {
-    c.addEventListener("change", updateProposalPreview);
+    c.addEventListener("change", () => {
+      // Dentro de Honorário só faz sentido um plano marcado por vez —
+      // desmarca os outros da mesma categoria ao marcar um novo.
+      if (c.checked && c.dataset.categoria === "Honorário") {
+        wrap.querySelectorAll('.orc-servico-check[data-categoria="Honorário"]').forEach((outro) => {
+          if (outro !== c) outro.checked = false;
+        });
+      }
+      updateProposalPreview();
+    });
   });
 }
 
 function collectServicosSelecionadosOrc() {
   return Array.from(document.querySelectorAll("#orc-servicos-checklist .orc-servico-check:checked")).map((c) => c.value);
+}
+
+// Plano(s) de honorário marcado(s) no checklist — usado pra trocar a lista
+// genérica de etapas (01 a 05) pelo "o que está incluso" do plano escolhido.
+function collectPlanosSelecionadosOrc() {
+  const nomesMarcados = Array.from(document.querySelectorAll('#orc-servicos-checklist .orc-servico-check[data-categoria="Honorário"]:checked')).map((c) => c.value);
+  return nomesMarcados
+    .map((nome) => produtosCacheOrc.find((p) => p.nome === nome))
+    .filter(Boolean)
+    .map((p) => ({ nome: p.nome, detalhes: detalhesDoProduto(p) }));
 }
 
 // --- Grupo Econômico (mais de uma empresa na mesma proposta) -------------
@@ -172,6 +215,7 @@ function collectProposalData() {
       observacoes: getOrc("d_observacoes"),
     },
     servicos: collectServicosSelecionadosOrc(),
+    planosSelecionados: collectPlanosSelecionadosOrc(),
     grupo: collectGrupoOrc(),
     investimento: {
       valorCheio: getOrc("i_valorCheio"),

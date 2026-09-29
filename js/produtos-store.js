@@ -100,7 +100,68 @@ const PRODUTOS_SEED_ADICIONAL = [
     tipo: "Recorrente",
     mensagem: "Olá {{nome}}! Aqui é da AEA Contabilidade Consultiva. Podemos assumir a emissão mensal das notas fiscais de {{empresa}}, sem você precisar se preocupar com isso. Posso te enviar mais detalhes?",
   },
+  {
+    nome: "Contábil",
+    tipo: "Recorrente",
+    mensagem: "Olá {{nome}}! Aqui é da AEA Contabilidade Consultiva. Podemos assumir a rotina contábil completa de {{empresa}} — escrituração, balancetes e obrigações em dia. Posso te enviar mais detalhes?",
+  },
+  {
+    nome: "Fiscal",
+    tipo: "Recorrente",
+    mensagem: "Olá {{nome}}! Aqui é da AEA Contabilidade Consultiva. Podemos assumir a rotina fiscal de {{empresa}} — apuração de impostos e obrigações acessórias sempre em dia. Posso te enviar mais detalhes?",
+  },
 ];
+
+// Categorias usadas no Orçamento pra organizar o checklist de serviços em 3
+// blocos: Honorário (os planos mensais — mutuamente exclusivos), Escritório
+// (serviços de rotina vendidos à parte) e Adicional (tudo o mais do
+// catálogo). Só entram aqui os nomes que já existiam antes desse campo
+// existir — itens novos (Contábil, Fiscal) já nascem com "categoria" no
+// próprio seed acima, sem precisar de fallback.
+const PRODUTOS_CATEGORIA_HONORARIO = new Set(["Plano Digital", "Plano Completo", "Plano Consultiva"]);
+const PRODUTOS_CATEGORIA_ESCRITORIO = new Set([
+  "Departamento Pessoal / Folha de Pagamento", "Contábil", "Fiscal", "Emissão de Notas",
+]);
+
+function categoriaDoProduto(produto) {
+  if (!produto) return "Adicional";
+  if (produto.categoria) return produto.categoria;
+  if (PRODUTOS_CATEGORIA_HONORARIO.has(produto.nome)) return "Honorário";
+  if (PRODUTOS_CATEGORIA_ESCRITORIO.has(produto.nome)) return "Escritório";
+  return "Adicional";
+}
+
+// O que aparece no PDF do orçamento no lugar da lista genérica de etapas
+// quando o cliente escolhe um dos planos de honorário — baseado na página
+// de planos da AEA (aea-contabilidade). Ajustável depois pela tela, se
+// algum dia isso virar um campo editável; por enquanto é só fallback fixo.
+const PRODUTOS_DETALHES_FALLBACK = {
+  "Plano Digital": [
+    "Acesso pelo aplicativo exclusivo AEA",
+    "Obrigações fiscais sempre em dia",
+    "Praticidade e agilidade 100% digital",
+    "Suporte por canais digitais dedicados",
+  ],
+  "Plano Completo": [
+    "Sistema financeiro integrado e implantado",
+    "Enquadramento contábil otimizado",
+    "Dados e relatórios em tempo real",
+    "Gestão completa de obrigações",
+  ],
+  "Plano Consultiva": [
+    "Mentoria direta com o contador responsável",
+    "Precificação e orçamento especializado",
+    "Suporte para acesso a crédito e financiamentos",
+    "Relatórios gerenciais modernos e customizados",
+    "Planejamento tributário estratégico contínuo",
+  ],
+};
+
+function detalhesDoProduto(produto) {
+  if (!produto) return [];
+  if (Array.isArray(produto.detalhes) && produto.detalhes.length > 0) return produto.detalhes;
+  return PRODUTOS_DETALHES_FALLBACK[produto.nome] || [];
+}
 
 // Nomes de itens antigos (semeados antes do campo "tipo" existir) que são
 // recorrentes — usado só como fallback de exibição, nunca escreve no banco.

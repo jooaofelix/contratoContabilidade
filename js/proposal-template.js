@@ -200,7 +200,40 @@ function renderPaginaContinuacaoInvestimento(itensDaPagina, investimento, mostra
     </section>`;
 }
 
-function renderServicosInvestimento(investimento, servicos, pageNumber) {
+// Quando um plano de honorário foi escolhido no checklist, troca a lista
+// genérica de etapas (01 a 05) pelo "o que está incluso" daquele plano
+// especificamente — se mais de um plano vier marcado (não devia acontecer,
+// já que o checklist trata como rádio, mas por segurança), mostra um bloco
+// pra cada. Sem plano nenhum escolhido, cai no fallback de sempre.
+function renderPlanoIncluso(plano) {
+  const detalhes = plano.detalhes || [];
+  if (detalhes.length === 0) return "";
+  return `
+    <div class="proposal-plano-incluso">
+      <h4>O QUE ESTÁ INCLUSO NO ${escapeHtmlP((plano.nome || "").toUpperCase())}</h4>
+      <ul class="proposal-plano-incluso-list">
+        ${detalhes.map((d) => `<li><span class="proposal-plano-incluso-check">✓</span>${escapeHtmlP(d)}</li>`).join("")}
+      </ul>
+    </div>`;
+}
+
+function renderEtapasOuPlanos(planosSelecionados) {
+  const planosComDetalhes = (planosSelecionados || []).filter((p) => p.detalhes && p.detalhes.length > 0);
+  if (planosComDetalhes.length > 0) {
+    return planosComDetalhes.map(renderPlanoIncluso).join("");
+  }
+  return SERVICOS_PADRAO.map((s) => `
+    <div class="proposal-service-row">
+      <span class="service-n">${s.n}</span>
+      <span class="service-code">${s.codigo}</span>
+      <div class="service-text">
+        <strong>${s.titulo}</strong>
+        <span>${s.desc}</span>
+      </div>
+    </div>`).join("");
+}
+
+function renderServicosInvestimento(investimento, servicos, planosSelecionados, pageNumber) {
   const itens = investimento.itens || [];
   const temItensMultiplos = itens.length > 0;
   const itensPaginaPrincipal = itens.slice(0, ITENS_INVESTIMENTO_PAGINA_PRINCIPAL);
@@ -235,15 +268,7 @@ function renderServicosInvestimento(investimento, servicos, pageNumber) {
       <div class="proposal-columns proposal-columns-services">
         <div class="${temItensMultiplos ? "proposal-services proposal-services-full" : "proposal-services"}">
           ${renderServicosSelecionados(servicos)}
-          ${SERVICOS_PADRAO.map((s) => `
-            <div class="proposal-service-row">
-              <span class="service-n">${s.n}</span>
-              <span class="service-code">${s.codigo}</span>
-              <div class="service-text">
-                <strong>${s.titulo}</strong>
-                <span>${s.desc}</span>
-              </div>
-            </div>`).join("")}
+          ${renderEtapasOuPlanos(planosSelecionados)}
         </div>
 
         ${temItensMultiplos ? "" : `
@@ -290,7 +315,7 @@ function renderProposal(data) {
     pagina += 1;
   });
 
-  const investimentoResult = renderServicosInvestimento(data.investimento, data.servicos, pagina);
+  const investimentoResult = renderServicosInvestimento(data.investimento, data.servicos, data.planosSelecionados, pagina);
   html += investimentoResult.html;
   return html;
 }

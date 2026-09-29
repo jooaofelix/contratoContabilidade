@@ -11,6 +11,21 @@
   margin: 0 auto;
 }
 
+/* Checklist de serviços na barra lateral (fora do documento impresso) ---- */
+
+.orc-servicos-grupo + .orc-servicos-grupo {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.orc-servicos-grupo-titulo {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #4b5563;
+  margin-bottom: 6px;
+}
+
 /* Precisa ser um bloco "normal" (nada de flex/grid no container-pai) — o
    Chrome simplesmente ignora page-break-after em filhos de flex/grid na
    hora de imprimir, então cada .proposal-page acabava não indo pra sua
@@ -293,6 +308,57 @@
   gap: 6px;
   font-size: 0.82rem;
   color: #111827;
+}
+
+.proposal-plano-incluso {
+  background: var(--p-bg);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+
+.proposal-plano-incluso + .proposal-plano-incluso {
+  margin-top: 12px;
+}
+
+.proposal-plano-incluso h4 {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--p-navy);
+  letter-spacing: 0.02em;
+}
+
+.proposal-plano-incluso-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.proposal-plano-incluso-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: #111827;
+  line-height: 1.3;
+}
+
+.proposal-plano-incluso-check {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--p-blue);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 
