@@ -26,6 +26,12 @@ function populateServicosChecklistOrc() {
   const checkedNomes = new Set(
     Array.from(wrap.querySelectorAll(".orc-servico-check:checked")).map((c) => c.value)
   );
+  const valoresAntigos = {};
+  Array.from(wrap.querySelectorAll(".orc-servico-linha")).forEach((linha) => {
+    const nome = linha.querySelector(".orc-servico-check").value;
+    const valor = linha.querySelector(".orc-servico-valor").value;
+    if (valor) valoresAntigos[nome] = valor;
+  });
 
   if (produtosCacheOrc.length === 0) {
     wrap.innerHTML = `<p class="fixed-note">Nenhum serviço cadastrado ainda (cadastre em Vendas → Início de Proposta).</p>`;
@@ -45,9 +51,10 @@ function populateServicosChecklistOrc() {
       <div class="orc-servicos-grupo">
         <div class="orc-servicos-grupo-titulo">${c.titulo}</div>
         ${porCategoria[c.categoria].map((p) => `
-          <label class="checkbox">
+          <label class="checkbox orc-servico-linha">
             <input type="checkbox" class="orc-servico-check" data-categoria="${c.categoria}" value="${escapeHtmlP(p.nome)}" ${checkedNomes.has(p.nome) ? "checked" : ""}>
-            ${escapeHtmlP(p.nome)}
+            <span class="orc-servico-nome">${escapeHtmlP(p.nome)}</span>
+            <input type="text" class="orc-servico-valor" value="${valoresAntigos[p.nome] || ""}" placeholder="R$">
           </label>
         `).join("")}
       </div>
@@ -65,10 +72,34 @@ function populateServicosChecklistOrc() {
       updateProposalPreview();
     });
   });
+  wrap.querySelectorAll(".orc-servico-valor").forEach((v) => {
+    v.addEventListener("input", updateProposalPreview);
+  });
 }
 
 function collectServicosSelecionadosOrc() {
   return Array.from(document.querySelectorAll("#orc-servicos-checklist .orc-servico-check:checked")).map((c) => c.value);
+}
+
+// Valor digitado na frente de cada serviço marcado — vira um item de
+// investimento (mesmo formato dos itens manuais) pra entrar na soma do
+// valor total e no card individual do PDF. Serviço marcado sem valor
+// preenchido aparece só na lista "Serviços incluídos", sem card de preço.
+function collectValoresServicosOrc() {
+  return Array.from(document.querySelectorAll("#orc-servicos-checklist .orc-servico-linha"))
+    .map((linha) => {
+      const check = linha.querySelector(".orc-servico-check");
+      const valorInput = linha.querySelector(".orc-servico-valor");
+      if (!check.checked || !valorInput.value.trim()) return null;
+      const produto = produtosCacheOrc.find((p) => p.nome === check.value);
+      return {
+        titulo: check.value,
+        valor: valorInput.value.trim(),
+        recorrencia: produto && tipoDoProduto(produto) === "Recorrente" ? "Mensal" : "Única vez",
+        descricao: "",
+      };
+    })
+    .filter(Boolean);
 }
 
 // Plano(s) de honorário marcado(s) no checklist — usado pra trocar a lista
@@ -224,7 +255,7 @@ function collectProposalData() {
       formaPagamento: getOrc("i_formaPagamento"),
       prazoInicio: getOrc("i_prazoInicio"),
       validade: getOrc("q_validade"),
-      itens: collectItensInvestimentoOrc(),
+      itens: [...collectValoresServicosOrc(), ...collectItensInvestimentoOrc()],
     },
   };
 }

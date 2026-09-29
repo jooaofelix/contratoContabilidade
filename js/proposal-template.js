@@ -13,6 +13,21 @@ function escapeHtmlP(str) {
     .replace(/>/g, "&gt;");
 }
 
+function parseValorP(str) {
+  if (!str) return 0;
+  const cleaned = String(str).replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".");
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+
+function formatarValorP(n) {
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function somaItensP(itens) {
+  return (itens || []).reduce((sum, item) => sum + parseValorP(item.valor), 0);
+}
+
 function formatDateBr(isoDate) {
   if (!isoDate) return "";
   const [year, month, day] = isoDate.split("-");
@@ -155,8 +170,9 @@ function renderServicosSelecionados(servicos) {
     </div>`;
 }
 
-function renderInvestimentoItens(itens) {
+function renderInvestimentoItens(itens, opts) {
   if (!itens || itens.length === 0) return "";
+  opts = opts || {};
   return `
     <div class="proposal-investimento-resumo">
       <h4>RESUMO DE INVESTIMENTO</h4>
@@ -169,6 +185,11 @@ function renderInvestimentoItens(itens) {
             ${item.descricao ? `<p class="proposal-investimento-desc">${escapeHtmlP(item.descricao)}</p>` : ""}
           </div>`).join("")}
       </div>
+      ${opts.total != null ? `
+      <div class="proposal-investimento-total">
+        <span class="proposal-investimento-total-label">VALOR TOTAL</span>
+        <span class="proposal-investimento-total-valor">R$ ${formatarValorP(opts.total)}</span>
+      </div>` : ""}
     </div>`;
 }
 
@@ -188,13 +209,13 @@ function investimentoMetaHtml(investimento) {
     </div>`;
 }
 
-function renderPaginaContinuacaoInvestimento(itensDaPagina, investimento, mostrarMeta, pageNumber) {
+function renderPaginaContinuacaoInvestimento(itensDaPagina, investimento, mostrarMeta, totalGeral, pageNumber) {
   return `
     <section class="proposal-page">
       ${brandBar()}
       <h2 class="proposal-h2">SERVIÇOS E INVESTIMENTO (continuação)</h2>
       <p class="proposal-sub">Itens de investimento</p>
-      ${renderInvestimentoItens(itensDaPagina)}
+      ${renderInvestimentoItens(itensDaPagina, { total: mostrarMeta ? totalGeral : null })}
       ${mostrarMeta ? investimentoMetaHtml(investimento) : ""}
       ${pageFooter(pageNumber)}
     </section>`;
@@ -284,7 +305,7 @@ function renderServicosInvestimento(investimento, servicos, planosSelecionados, 
         </div>`}
       </div>
 
-      ${renderInvestimentoItens(itensPaginaPrincipal)}
+      ${renderInvestimentoItens(itensPaginaPrincipal, { total: cabeMetaNaPrincipal ? somaItensP(itens) : null })}
       ${temItensMultiplos && cabeMetaNaPrincipal ? investimentoMetaHtml(investimento) : ""}
       ${pageFooter(pageNumber)}
     </section>`;
@@ -295,7 +316,7 @@ function renderServicosInvestimento(investimento, servicos, planosSelecionados, 
     pagina += 1;
     const chunk = itensRestantes.slice(i, i + ITENS_INVESTIMENTO_POR_PAGINA_CONTINUACAO);
     const ehUltimaPagina = i + ITENS_INVESTIMENTO_POR_PAGINA_CONTINUACAO >= itensRestantes.length;
-    html += renderPaginaContinuacaoInvestimento(chunk, investimento, ehUltimaPagina, pagina);
+    html += renderPaginaContinuacaoInvestimento(chunk, investimento, ehUltimaPagina, somaItensP(itens), pagina);
   }
 
   return { html, ultimaPagina: pagina };
