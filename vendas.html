@@ -108,6 +108,9 @@
       <label class="vendas-search-label">Buscar por empresa ou pelo nome do contato
         <input type="text" id="vendas-search" placeholder="ex: Padaria do João, ou Maria">
       </label>
+      <label class="vendas-filtro-label" id="vendas-filtro-mes-label">Período
+        <select id="vendas-filtro-mes"></select>
+      </label>
       <label class="vendas-filtro-label" id="vendas-filtro-status-label">Status
         <select id="vendas-filtro-status">
           <option value="">Todos os status</option>
@@ -126,6 +129,8 @@
         <button type="button" class="view-toggle-btn" id="vendas-view-quadro">🗂️ Quadro</button>
       </div>
     </div>
+
+    <p class="vendas-periodo-nota" id="vendas-periodo-nota"></p>
 
     <div id="vendas-table-wrap"></div>
     <div id="vendas-board-wrap" class="hidden"></div>

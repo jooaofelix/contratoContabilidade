@@ -229,15 +229,76 @@ function setupMetaMensal() {
     }
     metaMensalCache = novoValor;
     await setMetaMensal(novoValor);
-    renderVendasStats(vendasCache);
+    renderVendasStats(getVendasNoEscopoMes());
   });
+}
+
+// "Reset" mensal sem apagar nada: como não tem servidor/cron rodando (é um
+// site estático), o "zerar todo dia 1" acontece sozinho pelo simples fato de
+// recalcular o mês atual a cada carregamento da página. Por padrão
+// (filtroMes === ""), a tela só esconde o que já foi RESOLVIDO (fechado ou
+// perdido) em meses anteriores — negociação em aberto continua visível não
+// importa de quando é, porque ainda precisa ser resolvida. Os dados nunca
+// somem de verdade: dá pra escolher um mês específico ou "Todos os meses"
+// no filtro de Período e ver tudo de novo.
+function vendaNoEscopoMes(v, filtroMes) {
+  if (filtroMes === "todos") return true;
+  const mesAlvo = filtroMes || mesAtualISO();
+  if (!filtroMes && !VENDA_STATUS_FINAIS.includes(v.status)) return true;
+  return (v.dataEnvio || "").slice(0, 7) === mesAlvo;
+}
+
+function getVendasNoEscopoMes() {
+  const filtroMes = document.getElementById("vendas-filtro-mes").value;
+  return vendasCache.filter((v) => vendaNoEscopoMes(v, filtroMes));
+}
+
+function formatarMesLabel(mesISO) {
+  if (!mesISO) return "—";
+  const [ano, mes] = mesISO.split("-").map(Number);
+  const nome = new Date(ano, mes - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  return nome.charAt(0).toUpperCase() + nome.slice(1);
+}
+
+// Preenche o filtro de Período com o mês atual (padrão), os outros meses que
+// aparecem nos registros e "Todos os meses" — sem perder a escolha atual do
+// usuário ao recarregar a lista.
+function popularFiltroMes() {
+  const select = document.getElementById("vendas-filtro-mes");
+  const atual = mesAtualISO();
+  const selecaoAnterior = select.value;
+
+  const outrosMeses = Array.from(new Set(vendasCache.map((v) => (v.dataEnvio || "").slice(0, 7)).filter((m) => m && m !== atual)))
+    .sort().reverse();
+
+  select.innerHTML = [
+    `<option value="">📌 Mês atual</option>`,
+    ...outrosMeses.map((m) => `<option value="${m}">${formatarMesLabel(m)}</option>`),
+    `<option value="todos">Todos os meses</option>`,
+  ].join("");
+
+  if (Array.from(select.options).some((o) => o.value === selecaoAnterior)) {
+    select.value = selecaoAnterior;
+  }
+}
+
+function atualizarPeriodoNota() {
+  const filtroMes = document.getElementById("vendas-filtro-mes").value;
+  const nota = document.getElementById("vendas-periodo-nota");
+  if (filtroMes === "todos") {
+    nota.textContent = "Mostrando todo o histórico de vendas.";
+  } else if (filtroMes) {
+    nota.textContent = `Mostrando apenas os registros de ${formatarMesLabel(filtroMes)}.`;
+  } else {
+    nota.textContent = `Mostrando tudo que ainda está em aberto + o que foi fechado ou perdido em ${formatarMesLabel(mesAtualISO())}. Os meses anteriores continuam salvos — use o filtro de Período pra ver.`;
+  }
 }
 
 function getFilteredVendas() {
   const search = document.getElementById("vendas-search").value.trim().toLowerCase();
   const filtroStatus = document.getElementById("vendas-filtro-status").value;
 
-  return vendasCache.filter((v) => {
+  return getVendasNoEscopoMes().filter((v) => {
     const matchStatus = !filtroStatus || v.status === filtroStatus;
     const matchSearch = !search ||
       (v.empresaNome || "").toLowerCase().includes(search) ||
@@ -590,13 +651,19 @@ function setupVendasViewToggle() {
   });
 }
 
-async function refreshVendas() {
-  vendasCache = await getVendas();
-  renderVendasStats(vendasCache);
+function atualizarViewsVendas() {
+  renderVendasStats(getVendasNoEscopoMes());
+  atualizarPeriodoNota();
   renderVendasTable();
   if (!document.getElementById("vendas-board-wrap").classList.contains("hidden")) {
     renderVendasBoard();
   }
+}
+
+async function refreshVendas() {
+  vendasCache = await getVendas();
+  popularFiltroMes();
+  atualizarViewsVendas();
 }
 
 function editVenda(id) {
@@ -1418,6 +1485,7 @@ function setupVendaActions() {
   };
   document.getElementById("vendas-search").addEventListener("input", rerenderVisiveis);
   document.getElementById("vendas-filtro-status").addEventListener("change", rerenderVisiveis);
+  document.getElementById("vendas-filtro-mes").addEventListener("change", atualizarViewsVendas);
 
   document.getElementById("v_status").addEventListener("change", atualizarVisibilidadeHandoff);
 }
