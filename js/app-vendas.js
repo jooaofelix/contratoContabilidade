@@ -29,6 +29,30 @@ function statusClass(status) {
   }
 }
 
+const STATUS_ICONS = {
+  "Aguardando resposta": "📤",
+  "Aguardando reunião": "📅",
+  "Diagnóstico realizado": "🔎",
+  "Em negociação": "🤝",
+  "Analisando proposta": "📄",
+  "Analisando contrato": "✍️",
+  "Fechado/Ganho": "🏆",
+  "Recusado/Perdido": "❌",
+};
+
+// Etapas "vivas" do funil, na ordem em que uma negociação avança — usadas
+// pra montar o gráfico de funil (Recusado/Perdido fica de fora das barras,
+// já que não dá pra saber em qual etapa cada negociação perdida parou).
+const FUNNEL_STAGES = VENDA_STATUS.filter((s) => s !== "Recusado/Perdido");
+
+// Duas letras a partir do nome — pro avatar circular dos cards.
+function iniciais(nome) {
+  const partes = (nome || "").trim().split(/\s+/).filter(Boolean);
+  if (partes.length === 0) return "?";
+  if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
+  return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+}
+
 // Mostra o selo de handoff só quando a venda já fechou — antes disso não faz
 // sentido perguntar se a ficha já foi repassada pro próximo setor.
 function atualizarVisibilidadeHandoff() {
@@ -89,7 +113,8 @@ function renderMetaMensalHtml(vendas) {
   const totalMes = totalFechadoNoMes(vendas);
   const pct = metaMensalCache > 0 ? Math.min(100, Math.round((totalMes / metaMensalCache) * 100)) : 0;
   const batida = totalMes >= metaMensalCache;
-  const nomeMes = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const nomeMesBruto = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const nomeMes = nomeMesBruto.charAt(0).toUpperCase() + nomeMesBruto.slice(1);
 
   return `
     <div class="vendas-meta-card ${batida ? "meta-batida" : ""}">
@@ -101,6 +126,54 @@ function renderMetaMensalHtml(vendas) {
         <div class="vendas-meta-bar-fill" style="width: ${pct}%"></div>
       </div>
       <div class="vendas-meta-sub">${batida ? "🎉 Meta batida este mês!" : `${pct}% da meta — faltam ${formatBRL(Math.max(0, metaMensalCache - totalMes))}`}</div>
+    </div>
+  `;
+}
+
+// Gráfico de funil de verdade: cada barra mostra quantas negociações "vivas"
+// (tudo que não foi perdido) já chegaram naquela etapa OU foram além dela —
+// por isso as barras só encolhem, nunca crescem, formando o funil clássico.
+// Perdidos ficam de fora das barras (não dá pra saber em que etapa cada um
+// parou) e aparecem como um selo à parte.
+function renderFunilVisualHtml(vendas) {
+  const ativos = vendas.filter((v) => v.status !== "Recusado/Perdido" && FUNNEL_STAGES.includes(v.status));
+  const perdidos = vendas.filter((v) => v.status === "Recusado/Perdido");
+
+  const contagem = FUNNEL_STAGES.map(() => 0);
+  ativos.forEach((v) => {
+    const idx = FUNNEL_STAGES.indexOf(v.status);
+    for (let i = 0; i <= idx; i++) contagem[i] += 1;
+  });
+
+  const maxCount = contagem[0] || 0;
+
+  const etapasHtml = FUNNEL_STAGES.map((stage, i) => {
+    const count = contagem[i];
+    const pctLargura = maxCount > 0 ? Math.max(count > 0 ? 10 : 3, Math.round((count / maxCount) * 100)) : 3;
+    const conversao = i > 0 && contagem[i - 1] > 0 ? Math.round((count / contagem[i - 1]) * 100) : null;
+    return `
+      <div class="funil-etapa">
+        <div class="funil-etapa-label">
+          <span class="funil-etapa-dot ${statusClass(stage)}"></span>
+          <span class="funil-etapa-nome">${STATUS_ICONS[stage] || ""} ${stage}</span>
+          ${conversao !== null ? `<span class="funil-etapa-conversao">${conversao}% →</span>` : ""}
+        </div>
+        <div class="funil-etapa-track">
+          <div class="funil-etapa-bar ${statusClass(stage)}" style="width: ${pctLargura}%">
+            <span class="funil-etapa-count">${count}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  return `
+    <div class="funil-visual">
+      <div class="funil-visual-header">
+        <h3>📊 Funil de conversão</h3>
+        ${perdidos.length > 0 ? `<span class="funil-perdidos-badge">✕ ${perdidos.length} perdido${perdidos.length > 1 ? "s" : ""} no período</span>` : ""}
+      </div>
+      <div class="funil-etapas">${etapasHtml}</div>
     </div>
   `;
 }
@@ -119,22 +192,29 @@ function renderVendasStats(vendas) {
     .reduce((sum, s) => sum + porStatus[s].valor, 0);
 
   const cardsHtml = VENDA_STATUS.map((s) => `
-    <div class="vendas-stat-card">
-      <div class="vendas-stat-label">${s}</div>
-      <div class="vendas-stat-value">${porStatus[s].count}</div>
-      <div class="vendas-stat-sub">${formatBRL(porStatus[s].valor)}</div>
+    <div class="vendas-stat-card ${statusClass(s)}">
+      <div class="vendas-stat-icon">${STATUS_ICONS[s] || "📌"}</div>
+      <div class="vendas-stat-body">
+        <div class="vendas-stat-label">${s}</div>
+        <div class="vendas-stat-value">${porStatus[s].count}</div>
+        <div class="vendas-stat-sub">${formatBRL(porStatus[s].valor)}</div>
+      </div>
     </div>
   `).join("");
 
   const emAbertoHtml = `
-    <div class="vendas-stat-card">
-      <div class="vendas-stat-label">Pipeline em aberto</div>
-      <div class="vendas-stat-value">${formatBRL(emAberto)}</div>
-      <div class="vendas-stat-sub">tudo que ainda não fechou nem foi perdido</div>
+    <div class="vendas-stat-card vendas-stat-card-destaque">
+      <div class="vendas-stat-icon">📊</div>
+      <div class="vendas-stat-body">
+        <div class="vendas-stat-label">Pipeline em aberto</div>
+        <div class="vendas-stat-value">${formatBRL(emAberto)}</div>
+        <div class="vendas-stat-sub">tudo que ainda não fechou nem foi perdido</div>
+      </div>
     </div>
   `;
 
-  document.getElementById("vendas-stats").innerHTML = renderMetaMensalHtml(vendas) + cardsHtml + emAbertoHtml;
+  document.getElementById("vendas-stats").innerHTML =
+    renderMetaMensalHtml(vendas) + renderFunilVisualHtml(vendas) + `<div class="vendas-stats-grid">${cardsHtml}${emAbertoHtml}</div>`;
 }
 
 function setupMetaMensal() {
@@ -397,9 +477,14 @@ async function moverVendaStatus(id, novoStatus) {
 
 function vendaCardHtml(v) {
   return `
-    <div class="vendas-card" draggable="true" data-id="${v.id}">
-      <div class="vendas-card-empresa">${v.empresaNome || "(sem nome)"}</div>
-      <div class="vendas-card-contato">${v.contato || "—"}</div>
+    <div class="vendas-card ${statusClass(v.status)}" draggable="true" data-id="${v.id}">
+      <div class="vendas-card-top">
+        <div class="vendas-card-avatar">${iniciais(v.empresaNome)}</div>
+        <div class="vendas-card-heading">
+          <div class="vendas-card-empresa">${v.empresaNome || "(sem nome)"}</div>
+          <div class="vendas-card-contato">${v.contato || "—"}</div>
+        </div>
+      </div>
       ${v.produtoNome ? `<div class="vendas-card-produto">🧾 ${v.produtoNome}</div>` : ""}
       ${v.valor ? `<div class="vendas-card-valor">R$ ${v.valor}</div>` : ""}
       ${v.observacoes ? `<div class="vendas-card-obs">${v.observacoes}</div>` : ""}
@@ -431,9 +516,9 @@ function renderVendasBoard() {
       : `<div class="vendas-board-empty">Nenhum registro aqui.</div>`;
 
     return `
-      <div class="vendas-board-col" data-status="${status}">
+      <div class="vendas-board-col ${statusClass(status)}" data-status="${status}">
         <div class="vendas-board-col-header">
-          <span>${status}</span>
+          <span class="vendas-board-col-title"><span class="funil-etapa-dot ${statusClass(status)}"></span>${STATUS_ICONS[status] || ""} ${status}</span>
           <span class="vendas-board-col-count">${vendasDoStatus.length}</span>
         </div>
         <div class="vendas-board-col-total">${formatBRL(total)}</div>
@@ -1370,15 +1455,28 @@ function historicoEmpresaHtml(empresaId) {
   `).join("");
 }
 
+function statusClienteClass(status) {
+  switch (status) {
+    case "Lead": return "cliente-lead";
+    case "Em negociação": return "cliente-negociacao";
+    case "Cliente Ativo": return "cliente-ativo";
+    case "Inativo/Cancelado": return "cliente-inativo";
+    default: return "cliente-lead";
+  }
+}
+
 function carteiraCardHtml(empresa) {
   const total = totalHistoricoEmpresa(empresa.id);
   const plano = empresa.contabil || "—";
   const statusAtual = empresa.statusCliente || "Lead";
   return `
-    <div class="carteira-card" data-id="${empresa.id}">
+    <div class="carteira-card ${statusClienteClass(statusAtual)}" data-id="${empresa.id}">
       <div class="carteira-card-header">
-        <div class="carteira-card-nome">${empresa.contratante || "(sem nome)"}</div>
-        <div class="carteira-card-cnpj">${empresa.cnpj || "—"}</div>
+        <div class="carteira-card-avatar">${iniciais(empresa.contratante)}</div>
+        <div class="carteira-card-heading">
+          <div class="carteira-card-nome">${empresa.contratante || "(sem nome)"}</div>
+          <div class="carteira-card-cnpj">${empresa.cnpj || "—"}</div>
+        </div>
       </div>
       <div class="carteira-card-body">
         <label class="carteira-status-label">Status

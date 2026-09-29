@@ -1,3 +1,23 @@
+:root {
+  --stage-aguardando: #f59e0b;
+  --stage-reuniao: #8b5cf6;
+  --stage-diagnostico: #6366f1;
+  --stage-negociacao: #3b82f6;
+  --stage-analisando-proposta: #06b6d4;
+  --stage-analisando-contrato: #f97316;
+  --stage-ganho: #22c55e;
+  --stage-perdido: #ef4444;
+}
+
+@keyframes vendasFadeSlideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vendas-card, .carteira-card, .vendas-stat-card { animation: none !important; transition: none !important; }
+}
+
 .vendas-meta-toolbar {
   display: flex;
   justify-content: flex-end;
@@ -28,7 +48,6 @@
 .vendas-meta-label {
   font-weight: 700;
   font-size: 0.9rem;
-  text-transform: capitalize;
 }
 
 .vendas-meta-valores {
@@ -37,21 +56,39 @@
 }
 
 .vendas-meta-bar-track {
+  position: relative;
   background: rgba(255, 255, 255, 0.2);
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0, transparent calc(25% - 1px),
+    rgba(255, 255, 255, 0.35) calc(25% - 1px), rgba(255, 255, 255, 0.35) 25%
+  );
   border-radius: 999px;
   height: 12px;
   overflow: hidden;
 }
 
 .vendas-meta-bar-fill {
-  background: #57b8ff;
+  background: linear-gradient(90deg, #57b8ff, #93d4ff, #57b8ff);
+  background-size: 200% 100%;
+  animation: vendasMetaShimmer 2.5s linear infinite;
   height: 100%;
   border-radius: 999px;
-  transition: width 0.3s ease;
+  transition: width 0.5s ease;
 }
 
 .meta-batida .vendas-meta-bar-fill {
-  background: #bbf7d0;
+  background: linear-gradient(90deg, #bbf7d0, #86efac, #bbf7d0);
+  background-size: 200% 100%;
+}
+
+@keyframes vendasMetaShimmer {
+  from { background-position: 0% 0; }
+  to { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vendas-meta-bar-fill { animation: none; }
 }
 
 .vendas-meta-sub {
@@ -61,18 +98,44 @@
 }
 
 .vendas-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
   margin-bottom: 18px;
+}
+
+.vendas-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
 }
 
 .vendas-stat-card {
   background: #fff;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-left: 4px solid var(--border);
+  border-radius: 10px;
   padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  box-shadow: 0 1px 2px rgba(16, 26, 53, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  animation: vendasFadeSlideIn 0.25s ease both;
 }
+
+.vendas-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 26, 53, 0.1);
+}
+
+.vendas-stat-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.vendas-stat-body { min-width: 0; }
 
 .vendas-stat-label {
   font-size: 0.75rem;
@@ -92,6 +155,114 @@
   color: #9ca3af;
   margin-top: 2px;
 }
+
+.vendas-stat-card.status-aguardando { border-left-color: var(--stage-aguardando); }
+.vendas-stat-card.status-reuniao { border-left-color: var(--stage-reuniao); }
+.vendas-stat-card.status-diagnostico { border-left-color: var(--stage-diagnostico); }
+.vendas-stat-card.status-negociacao { border-left-color: var(--stage-negociacao); }
+.vendas-stat-card.status-analisando-proposta { border-left-color: var(--stage-analisando-proposta); }
+.vendas-stat-card.status-analisando-contrato { border-left-color: var(--stage-analisando-contrato); }
+.vendas-stat-card.status-ganho { border-left-color: var(--stage-ganho); }
+.vendas-stat-card.status-perdido { border-left-color: var(--stage-perdido); }
+.vendas-stat-card-destaque { border-left-color: var(--accent); background: #eff6ff; }
+
+/* Funil de conversão --------------------------------------------------- */
+
+.funil-visual {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 2px rgba(16, 26, 53, 0.04);
+}
+
+.funil-visual-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.funil-visual-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--darker);
+}
+
+.funil-perdidos-badge {
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.funil-etapas {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.funil-etapa-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.funil-etapa-nome { font-weight: 600; }
+
+.funil-etapa-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.funil-etapa-conversao {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.funil-etapa-track {
+  background: var(--bg);
+  border-radius: 6px;
+  height: 26px;
+  overflow: hidden;
+}
+
+.funil-etapa-bar {
+  height: 100%;
+  min-width: 34px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 10px;
+  transition: width 0.4s ease;
+}
+
+.funil-etapa-count {
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+}
+
+.funil-etapa-dot.status-aguardando, .funil-etapa-bar.status-aguardando { background: var(--stage-aguardando); }
+.funil-etapa-dot.status-reuniao, .funil-etapa-bar.status-reuniao { background: var(--stage-reuniao); }
+.funil-etapa-dot.status-diagnostico, .funil-etapa-bar.status-diagnostico { background: var(--stage-diagnostico); }
+.funil-etapa-dot.status-negociacao, .funil-etapa-bar.status-negociacao { background: var(--stage-negociacao); }
+.funil-etapa-dot.status-analisando-proposta, .funil-etapa-bar.status-analisando-proposta { background: var(--stage-analisando-proposta); }
+.funil-etapa-dot.status-analisando-contrato, .funil-etapa-bar.status-analisando-contrato { background: var(--stage-analisando-contrato); }
+.funil-etapa-dot.status-ganho, .funil-etapa-bar.status-ganho { background: var(--stage-ganho); }
 
 .vendas-toolbar {
   display: flex;
@@ -254,10 +425,20 @@
 .vendas-board-col {
   flex: 0 0 270px;
   background: var(--bg);
-  border-radius: 8px;
+  border-radius: 10px;
+  border-top: 3px solid var(--border);
   padding: 10px;
   min-height: 120px;
 }
+
+.vendas-board-col.status-aguardando { border-top-color: var(--stage-aguardando); }
+.vendas-board-col.status-reuniao { border-top-color: var(--stage-reuniao); }
+.vendas-board-col.status-diagnostico { border-top-color: var(--stage-diagnostico); }
+.vendas-board-col.status-negociacao { border-top-color: var(--stage-negociacao); }
+.vendas-board-col.status-analisando-proposta { border-top-color: var(--stage-analisando-proposta); }
+.vendas-board-col.status-analisando-contrato { border-top-color: var(--stage-analisando-contrato); }
+.vendas-board-col.status-ganho { border-top-color: var(--stage-ganho); }
+.vendas-board-col.status-perdido { border-top-color: var(--stage-perdido); }
 
 .vendas-board-col.drag-over {
   outline: 2px dashed var(--accent);
@@ -272,6 +453,12 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+}
+
+.vendas-board-col-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .vendas-board-col-count {
@@ -289,11 +476,20 @@
 .vendas-card {
   background: #fff;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-left: 4px solid var(--border);
+  border-radius: 10px;
   padding: 10px 12px;
   margin-bottom: 8px;
   cursor: grab;
   font-size: 0.78rem;
+  box-shadow: 0 1px 2px rgba(16, 26, 53, 0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  animation: vendasFadeSlideIn 0.2s ease both;
+}
+
+.vendas-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(16, 26, 53, 0.12);
 }
 
 .vendas-card:active {
@@ -301,18 +497,53 @@
 }
 
 .vendas-card.dragging {
-  opacity: 0.4;
+  opacity: 0.5;
+  transform: rotate(1.5deg) scale(1.02);
+  box-shadow: 0 10px 22px rgba(16, 26, 53, 0.2);
 }
+
+.vendas-card.status-aguardando { border-left-color: var(--stage-aguardando); }
+.vendas-card.status-reuniao { border-left-color: var(--stage-reuniao); }
+.vendas-card.status-diagnostico { border-left-color: var(--stage-diagnostico); }
+.vendas-card.status-negociacao { border-left-color: var(--stage-negociacao); }
+.vendas-card.status-analisando-proposta { border-left-color: var(--stage-analisando-proposta); }
+.vendas-card.status-analisando-contrato { border-left-color: var(--stage-analisando-contrato); }
+.vendas-card.status-ganho { border-left-color: var(--stage-ganho); }
+.vendas-card.status-perdido { border-left-color: var(--stage-perdido); }
+
+.vendas-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.vendas-card-avatar {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--darker);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.vendas-card-heading { min-width: 0; }
 
 .vendas-card-empresa {
   font-weight: 700;
   color: var(--darker);
-  margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .vendas-card-contato {
   color: #4b5563;
-  margin-bottom: 4px;
 }
 
 .vendas-card-valor {
@@ -411,26 +642,61 @@
 .carteira-card {
   background: #fff;
   border: 1px solid var(--border);
+  border-top: 4px solid var(--border);
   border-radius: 10px;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  box-shadow: 0 1px 2px rgba(16, 26, 53, 0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  animation: vendasFadeSlideIn 0.25s ease both;
 }
+
+.carteira-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(16, 26, 53, 0.1);
+}
+
+.carteira-card.cliente-lead { border-top-color: #f59e0b; }
+.carteira-card.cliente-negociacao { border-top-color: #3b82f6; }
+.carteira-card.cliente-ativo { border-top-color: #22c55e; }
+.carteira-card.cliente-inativo { border-top-color: #9ca3af; }
 
 .carteira-card-header {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
   border-bottom: 1px solid var(--border);
-  padding-bottom: 8px;
+  padding-bottom: 10px;
+}
+
+.carteira-card-avatar {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--darker);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.carteira-card-heading {
+  min-width: 0;
+  flex: 1;
 }
 
 .carteira-card-nome {
   font-weight: 800;
   color: var(--darker);
   font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .carteira-card-cnpj {
