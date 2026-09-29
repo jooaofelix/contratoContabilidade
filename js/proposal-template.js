@@ -172,9 +172,40 @@ function renderInvestimentoItens(itens) {
     </div>`;
 }
 
+// A grade de itens some no meio de "SERVIÇOS E INVESTIMENTO" assim que
+// passa desse tanto (a página já carrega a lista de serviços padrão em
+// cima) — o resto vira página(s) extra "(continuação)", com o mesmo
+// cabeçalho/rodapé, em vez de estourar a altura da página e cortar feio.
+const ITENS_INVESTIMENTO_PAGINA_PRINCIPAL = 4;
+const ITENS_INVESTIMENTO_POR_PAGINA_CONTINUACAO = 8;
+
+function investimentoMetaHtml(investimento) {
+  return `
+    <div class="proposal-investimento-meta">
+      <div><span class="fl">Forma de pagamento</span><span class="fv">${phP(investimento.formaPagamento, "A combinar")}</span></div>
+      <div><span class="fl">Prazo para início</span><span class="fv">${phP(investimento.prazoInicio, "Após aceite")}</span></div>
+      <div><span class="fl">Validade da proposta</span><span class="fv">${phP(investimento.validade, "Não informado")}</span></div>
+    </div>`;
+}
+
+function renderPaginaContinuacaoInvestimento(itensDaPagina, investimento, mostrarMeta, pageNumber) {
+  return `
+    <section class="proposal-page">
+      ${brandBar()}
+      <h2 class="proposal-h2">SERVIÇOS E INVESTIMENTO (continuação)</h2>
+      <p class="proposal-sub">Itens de investimento</p>
+      ${renderInvestimentoItens(itensDaPagina)}
+      ${mostrarMeta ? investimentoMetaHtml(investimento) : ""}
+      ${pageFooter(pageNumber)}
+    </section>`;
+}
+
 function renderServicosInvestimento(investimento, servicos, pageNumber) {
   const itens = investimento.itens || [];
   const temItensMultiplos = itens.length > 0;
+  const itensPaginaPrincipal = itens.slice(0, ITENS_INVESTIMENTO_PAGINA_PRINCIPAL);
+  const itensRestantes = itens.slice(ITENS_INVESTIMENTO_PAGINA_PRINCIPAL);
+  const cabeMetaNaPrincipal = itensRestantes.length === 0;
 
   const temDesconto = investimento.temDesconto && investimento.valorFinal;
   const desconto = temDesconto
@@ -195,7 +226,7 @@ function renderServicosInvestimento(investimento, servicos, pageNumber) {
       <div class="proposal-price">${investimento.valorCheio ? "R$ " + escapeHtmlP(investimento.valorCheio) : '<span class="placeholder">[valor]</span>'}</div>
     `;
 
-  return `
+  const paginaPrincipal = `
     <section class="proposal-page">
       ${brandBar()}
       <h2 class="proposal-h2">SERVIÇOS E INVESTIMENTO</h2>
@@ -228,15 +259,21 @@ function renderServicosInvestimento(investimento, servicos, pageNumber) {
         </div>`}
       </div>
 
-      ${renderInvestimentoItens(itens)}
-      ${temItensMultiplos ? `
-      <div class="proposal-investimento-meta">
-        <div><span class="fl">Forma de pagamento</span><span class="fv">${phP(investimento.formaPagamento, "A combinar")}</span></div>
-        <div><span class="fl">Prazo para início</span><span class="fv">${phP(investimento.prazoInicio, "Após aceite")}</span></div>
-        <div><span class="fl">Validade da proposta</span><span class="fv">${phP(investimento.validade, "Não informado")}</span></div>
-      </div>` : ""}
+      ${renderInvestimentoItens(itensPaginaPrincipal)}
+      ${temItensMultiplos && cabeMetaNaPrincipal ? investimentoMetaHtml(investimento) : ""}
       ${pageFooter(pageNumber)}
     </section>`;
+
+  let html = paginaPrincipal;
+  let pagina = pageNumber;
+  for (let i = 0; i < itensRestantes.length; i += ITENS_INVESTIMENTO_POR_PAGINA_CONTINUACAO) {
+    pagina += 1;
+    const chunk = itensRestantes.slice(i, i + ITENS_INVESTIMENTO_POR_PAGINA_CONTINUACAO);
+    const ehUltimaPagina = i + ITENS_INVESTIMENTO_POR_PAGINA_CONTINUACAO >= itensRestantes.length;
+    html += renderPaginaContinuacaoInvestimento(chunk, investimento, ehUltimaPagina, pagina);
+  }
+
+  return { html, ultimaPagina: pagina };
 }
 
 function renderProposal(data) {
@@ -253,6 +290,7 @@ function renderProposal(data) {
     pagina += 1;
   });
 
-  html += renderServicosInvestimento(data.investimento, data.servicos, pagina);
+  const investimentoResult = renderServicosInvestimento(data.investimento, data.servicos, pagina);
+  html += investimentoResult.html;
   return html;
 }

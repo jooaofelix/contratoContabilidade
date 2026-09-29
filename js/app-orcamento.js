@@ -106,14 +106,14 @@ function addItemInvestimentoRowOrc(item) {
   wrap.dataset.itemRow = id;
   wrap.innerHTML = `
     <button type="button" class="alteracao-remove" data-remove-item-investimento="${id}">Remover ✕</button>
+    <label>Título
+      <input type="text" class="orc-item-titulo" placeholder="ex: Abertura de Empresas">
+    </label>
     <div class="row">
-      <label>Título
-        <input type="text" class="orc-item-titulo" placeholder="ex: Abertura de Empresas">
-      </label>
       <label>Valor
         <input type="text" class="orc-item-valor" placeholder="ex: R$ 1.200 ou A definir">
       </label>
-      <label class="small">Recorrência
+      <label>Recorrência
         <select class="orc-item-recorrencia">
           <option value="Única vez">Única vez</option>
           <option value="Mensal">Mensal</option>

@@ -173,7 +173,7 @@ textarea {
   gap: 10px;
 }
 
-.row label, .row input { flex: 1; }
+.row label, .row input { flex: 1; min-width: 0; }
 
 .row .small { flex: 0 0 90px; }
 
