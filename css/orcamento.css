@@ -9,11 +9,12 @@
 .proposal-doc {
   max-width: 1000px;
   margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
 }
 
+/* Precisa ser um bloco "normal" (nada de flex/grid no container-pai) — o
+   Chrome simplesmente ignora page-break-after em filhos de flex/grid na
+   hora de imprimir, então cada .proposal-page acabava não indo pra sua
+   própria página e o conteúdo era cortado no meio ao exportar em PDF. */
 .proposal-page {
   position: relative;
   background: #fff;
@@ -22,6 +23,11 @@
   padding: 32px 44px 56px;
   min-height: 560px;
   overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.proposal-page:last-child {
+  margin-bottom: 0;
 }
 
 .proposal-page-dark {
@@ -496,8 +502,20 @@
 @media print {
   .proposal-page {
     page-break-after: always;
+    break-after: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
     box-shadow: none;
     border-radius: 0;
+    margin-bottom: 0;
+  }
+  .proposal-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+  .proposal-investimento-card {
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
   .proposal-doc { max-width: 100%; }
 }
