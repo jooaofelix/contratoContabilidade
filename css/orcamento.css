@@ -612,8 +612,12 @@
   .proposal-page {
     page-break-after: always;
     break-after: page;
-    page-break-inside: avoid;
-    break-inside: avoid;
+    /* NÃO usar break-inside: avoid aqui: o conteúdo de uma página (lista de
+       serviços + bloco do plano + cards de investimento, tudo dinâmico)
+       pode crescer mais do que cabe numa folha. "avoid" combinado com
+       overflow: hidden fazia o excesso ser CORTADO/PERDIDO em vez de
+       continuar na próxima página — pior do que só quebrar no meio. */
+    overflow: visible;
     box-shadow: none;
     border-radius: 0;
     margin-bottom: 0;
