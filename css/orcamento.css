@@ -499,6 +499,11 @@
   font-weight: 400;
 }
 
+@page {
+  size: A4;
+  margin: 10mm;
+}
+
 @media print {
   .proposal-page {
     page-break-after: always;
