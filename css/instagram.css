@@ -1,0 +1,142 @@
+/* Reaproveita boa parte da linguagem visual de vendas.css (cards, quadro
+   kanban, stat pills, toolbar) — aqui só entra o que é específico do
+   Instagram: cores por etapa do funil de conteúdo, temas/pilares e afins. */
+
+:root {
+  --post-ideia: #f59e0b;
+  --post-roteiro: #8b5cf6;
+  --post-producao: #3b82f6;
+  --post-agendado: #6366f1;
+  --post-publicado: #22c55e;
+}
+
+.status-badge.status-post-ideia { background: #fef3c7; color: #92400e; }
+.status-badge.status-post-roteiro { background: #ede9fe; color: #5b21b6; }
+.status-badge.status-post-producao { background: #dbeafe; color: #1e40af; }
+.status-badge.status-post-agendado { background: #e0e7ff; color: #3730a3; }
+.status-badge.status-post-publicado { background: #dcfce7; color: #15803d; }
+
+.vendas-stat-card.status-post-ideia { border-left-color: var(--post-ideia); }
+.vendas-stat-card.status-post-roteiro { border-left-color: var(--post-roteiro); }
+.vendas-stat-card.status-post-producao { border-left-color: var(--post-producao); }
+.vendas-stat-card.status-post-agendado { border-left-color: var(--post-agendado); }
+.vendas-stat-card.status-post-publicado { border-left-color: var(--post-publicado); }
+
+.vendas-card.status-post-ideia { border-left-color: var(--post-ideia); }
+.vendas-card.status-post-roteiro { border-left-color: var(--post-roteiro); }
+.vendas-card.status-post-producao { border-left-color: var(--post-producao); }
+.vendas-card.status-post-agendado { border-left-color: var(--post-agendado); }
+.vendas-card.status-post-publicado { border-left-color: var(--post-publicado); }
+
+.vendas-board-col.status-post-ideia { border-top-color: var(--post-ideia); }
+.vendas-board-col.status-post-roteiro { border-top-color: var(--post-roteiro); }
+.vendas-board-col.status-post-producao { border-top-color: var(--post-producao); }
+.vendas-board-col.status-post-agendado { border-top-color: var(--post-agendado); }
+.vendas-board-col.status-post-publicado { border-top-color: var(--post-publicado); }
+
+.funil-etapa-dot.status-post-ideia { background: var(--post-ideia); }
+.funil-etapa-dot.status-post-roteiro { background: var(--post-roteiro); }
+.funil-etapa-dot.status-post-producao { background: var(--post-producao); }
+.funil-etapa-dot.status-post-agendado { background: var(--post-agendado); }
+.funil-etapa-dot.status-post-publicado { background: var(--post-publicado); }
+
+.tema-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 2px;
+}
+
+/* Temas & Pilares --------------------------------------------------------- */
+
+.tema-cores-sugeridas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: -4px;
+}
+
+.tema-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--border);
+  cursor: pointer;
+  padding: 0;
+}
+
+.tema-swatch:hover {
+  transform: scale(1.1);
+}
+
+.tema-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.tema-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 1px 2px rgba(16, 26, 53, 0.05);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  animation: vendasFadeSlideIn 0.25s ease both;
+}
+
+.tema-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(16, 26, 53, 0.1);
+}
+
+.tema-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tema-card-avatar {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.tema-card-heading { min-width: 0; }
+
+.tema-card-nome {
+  font-weight: 800;
+  color: var(--darker);
+  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tema-card-count {
+  font-size: 0.72rem;
+  color: #6b7280;
+}
+
+.tema-card-desc {
+  font-size: 0.8rem;
+  color: #4b5563;
+  line-height: 1.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tema-card { animation: none !important; transition: none !important; }
+}

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Instagram</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/vendas.css">
+<link rel="stylesheet" href="css/instagram.css">
+</head>
+<body>
+<header class="app-header">
+  <div class="app-brand">
+    <img src="assets/aea-logo.svg" alt="AEA Contabilidade Consultiva" class="app-logo">
+    <h1>Instagram</h1>
+  </div>
+  <nav class="app-nav">
+    <a href="index.html">Início</a>
+    <a href="contrato.html">Contrato</a>
+    <a href="orcamento.html">Orçamento</a>
+    <a href="ficha.html">Ficha Cadastral</a>
+    <a href="processo.html">Ficha de Processo</a>
+    <a href="vendas.html">Vendas</a>
+    <a href="instagram.html" class="active">Instagram</a>
+    <a href="historico.html">Histórico</a>
+    <a href="relatorios.html">Relatórios</a>
+  </nav>
+</header>
+
+<div class="mode-tabs">
+  <button type="button" class="mode-tab active" data-mode-tab="ideias">💡 Ideias de Posts</button>
+  <button type="button" class="mode-tab" data-mode-tab="temas">🎨 Temas &amp; Pilares</button>
+</div>
+
+<div class="app-layout">
+
+  <aside class="sidebar" data-mode="ideias">
+    <section class="panel">
+      <h2>💡 Ideia de post</h2>
+      <div class="panel-body">
+        <label>Título / resumo da ideia
+          <input type="text" id="ig_titulo" placeholder="ex: Bastidores do fechamento mensal">
+        </label>
+        <div class="row">
+          <label>Formato
+            <select id="ig_tipo"></select>
+          </label>
+          <label>Tema/pilar
+            <select id="ig_tema">
+              <option value="">— Sem tema —</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <label>Status
+            <select id="ig_status"></select>
+          </label>
+          <label>Data planejada (opcional)
+            <input type="date" id="ig_data">
+          </label>
+        </div>
+        <label>Legenda / roteiro
+          <textarea id="ig_legenda" rows="5" placeholder="Rascunho da legenda ou do roteiro do vídeo..."></textarea>
+        </label>
+        <label>Hashtags
+          <input type="text" id="ig_hashtags" placeholder="#contabilidade #simplesnacional">
+        </label>
+        <label>Referência (link, opcional)
+          <input type="text" id="ig_referencia" placeholder="Link de inspiração, Drive, Canva...">
+        </label>
+        <label>Observações
+          <textarea id="ig_observacoes" rows="2"></textarea>
+        </label>
+        <div class="row">
+          <button id="ideia-save" class="btn-primary">Salvar</button>
+          <button id="ideia-new" class="btn-secondary">Nova</button>
+        </div>
+        <button id="ideia-delete" class="btn-danger">Excluir esta ideia</button>
+        <div id="ideia-status" class="pdf-status"></div>
+      </div>
+    </section>
+  </aside>
+
+  <main class="preview-wrap" data-mode="ideias">
+
+    <div class="vendas-stats" id="ideias-stats"></div>
+
+    <div class="vendas-toolbar">
+      <label class="vendas-search-label">Buscar por título ou legenda
+        <input type="text" id="ideias-search" placeholder="ex: bastidores, dica de imposto...">
+      </label>
+      <label class="vendas-filtro-label">Tema
+        <select id="ideias-filtro-tema">
+          <option value="">Todos os temas</option>
+        </select>
+      </label>
+      <label class="vendas-filtro-label">Formato
+        <select id="ideias-filtro-tipo">
+          <option value="">Todos os formatos</option>
+        </select>
+      </label>
+      <div class="vendas-view-toggle">
+        <button type="button" class="view-toggle-btn active" id="ideias-view-lista">📋 Lista</button>
+        <button type="button" class="view-toggle-btn" id="ideias-view-quadro">🗂️ Quadro</button>
+      </div>
+    </div>
+
+    <div id="ideias-table-wrap"></div>
+    <div id="ideias-board-wrap" class="hidden"></div>
+
+  </main>
+
+  <aside class="sidebar hidden" data-mode="temas">
+    <section class="panel">
+      <h2>🎨 Tema / pilar de conteúdo</h2>
+      <div class="panel-body">
+        <p class="fixed-note">Pilares agrupam as ideias por assunto (ex: "Dicas de imposto", "Bastidores", "Cases de clientes") — cada um com uma cor pra identificar rápido no quadro de ideias.</p>
+        <label>Nome do tema
+          <input type="text" id="tm_nome" placeholder="ex: Dicas de Simples Nacional">
+        </label>
+        <label>Cor
+          <input type="color" id="tm_cor" value="#2563eb">
+        </label>
+        <div class="tema-cores-sugeridas" id="tema-cores-sugeridas"></div>
+        <label>Descrição
+          <textarea id="tm_descricao" rows="3" placeholder="Do que fala esse pilar, pra quem, com que tom..."></textarea>
+        </label>
+        <div class="row">
+          <button id="tema-save" class="btn-primary">Salvar</button>
+          <button id="tema-new" class="btn-secondary">Novo</button>
+        </div>
+        <div id="tema-status" class="pdf-status"></div>
+      </div>
+    </section>
+  </aside>
+
+  <main class="preview-wrap hidden" data-mode="temas">
+    <div id="temas-wrap"></div>
+  </main>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/instagram-store.js"></script>
+<script src="js/app-instagram.js"></script>
+<script src="js/vendas-store.js"></script>
+<script src="js/notas-store.js"></script>
+<script src="js/demandas-widget.js"></script>
+</body>
+</html>
