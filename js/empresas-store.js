@@ -71,6 +71,13 @@ async function setEmpresaDriveFolder(id, tipoKey, folderId) {
   await db.collection(EMPRESAS_COLLECTION).doc(id).set(update, { merge: true });
 }
 
+// Status "de carteira" (Lead, Em negociação, Cliente Ativo, Inativo/Cancelado)
+// — editado direto na Carteira de Clientes da aba Vendas, sem passar pelo
+// formulário completo da Ficha Cadastral.
+async function setEmpresaStatusCliente(id, statusCliente) {
+  await db.collection(EMPRESAS_COLLECTION).doc(id).set({ statusCliente }, { merge: true });
+}
+
 async function addHistoricoAlteracao(empresaId, evento) {
   const record = Object.assign({}, evento, {
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),

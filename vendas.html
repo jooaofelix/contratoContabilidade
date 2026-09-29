@@ -27,6 +27,7 @@
 
 <div class="mode-tabs">
   <button type="button" class="mode-tab active" data-mode-tab="funil">📈 Funil de Vendas</button>
+  <button type="button" class="mode-tab" data-mode-tab="carteira">👥 Carteira de Clientes</button>
   <button type="button" class="mode-tab" data-mode-tab="importar">📥 Início de Proposta</button>
   <button type="button" class="mode-tab" data-mode-tab="lote">📤 Envio em Lote</button>
   <button type="button" class="mode-tab" data-mode-tab="notas">📝 Anotações</button>
@@ -57,6 +58,11 @@
         <label>Contato (nome / telefone / e-mail)
           <input type="text" id="v_contato" placeholder="ex: Maria - (12) 99999-0000">
         </label>
+        <label>Serviço vendido
+          <select id="v_produto">
+            <option value="">— Selecione (opcional) —</option>
+          </select>
+        </label>
         <div class="row">
           <label>Valor proposto (R$)
             <input type="text" id="v_valor" placeholder="ex: 700,00">
@@ -69,6 +75,7 @@
           <select id="v_status">
             <option value="Aguardando resposta">Aguardando resposta</option>
             <option value="Aguardando reunião">Aguardando reunião</option>
+            <option value="Diagnóstico realizado">Diagnóstico realizado</option>
             <option value="Em negociação">Em negociação</option>
             <option value="Analisando proposta">Analisando proposta</option>
             <option value="Analisando contrato">Analisando contrato</option>
@@ -79,6 +86,7 @@
         <label>Observações
           <textarea id="v_observacoes" rows="3" placeholder="ex: enviou por WhatsApp, aguardando retorno do sócio"></textarea>
         </label>
+        <label id="v_handoffWrap" class="checkbox hidden"><input type="checkbox" id="v_handoffFeito"> 📁 Ficha já enviada pro Drive/e-mail (repassado pro setor de documentação)</label>
         <div class="row">
           <button id="venda-save" class="btn-primary">Salvar</button>
           <button id="venda-new" class="btn-secondary">Nova</button>
@@ -91,6 +99,9 @@
 
   <main class="preview-wrap" data-mode="funil">
 
+    <div class="vendas-meta-toolbar">
+      <button type="button" id="meta-editar-btn" class="btn-secondary">🎯 Editar meta mensal</button>
+    </div>
     <div class="vendas-stats" id="vendas-stats"></div>
 
     <div class="vendas-toolbar">
@@ -102,6 +113,7 @@
           <option value="">Todos os status</option>
           <option value="Aguardando resposta">Aguardando resposta</option>
           <option value="Aguardando reunião">Aguardando reunião</option>
+          <option value="Diagnóstico realizado">Diagnóstico realizado</option>
           <option value="Em negociação">Em negociação</option>
           <option value="Analisando proposta">Analisando proposta</option>
           <option value="Analisando contrato">Analisando contrato</option>
@@ -118,6 +130,27 @@
     <div id="vendas-table-wrap"></div>
     <div id="vendas-board-wrap" class="hidden"></div>
 
+  </main>
+
+  <aside class="sidebar hidden" data-mode="carteira">
+    <section class="panel">
+      <h2>👥 Carteira de Clientes</h2>
+      <div class="panel-body">
+        <p class="fixed-note">Cada card mostra o status do cliente (editável direto aqui), o plano de contabilidade atual (da Ficha Cadastral) e o histórico de vendas fechadas — data, valor e serviço. Só aparecem aqui empresas já cadastradas no sistema.</p>
+        <label>Buscar empresa
+          <input type="text" id="carteira-search" placeholder="Digite o nome ou CNPJ...">
+        </label>
+        <label>Filtrar por status
+          <select id="carteira-filtro-status">
+            <option value="">Todos</option>
+          </select>
+        </label>
+      </div>
+    </section>
+  </aside>
+
+  <main class="preview-wrap hidden" data-mode="carteira">
+    <div id="carteira-wrap"></div>
   </main>
 
   <aside class="sidebar hidden" data-mode="importar">

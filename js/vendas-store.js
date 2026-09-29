@@ -4,16 +4,23 @@
 // upsell/renovação de clientes existentes.
 
 const VENDAS_COLLECTION = "vendas";
+const CONFIG_COLLECTION = "configuracoes";
+const META_MENSAL_PADRAO = 5000;
 
 const VENDA_STATUS = [
   "Aguardando resposta",
   "Aguardando reunião",
+  "Diagnóstico realizado",
   "Em negociação",
   "Analisando proposta",
   "Analisando contrato",
   "Fechado/Ganho",
   "Recusado/Perdido",
 ];
+
+// Status "de carteira" da empresa — independente do status de uma negociação
+// específica no funil, é o retrato geral do relacionamento com o cliente.
+const STATUS_CLIENTE_OPTS = ["Lead", "Em negociação", "Cliente Ativo", "Inativo/Cancelado"];
 
 async function getVendas() {
   const snap = await db.collection(VENDAS_COLLECTION).get();
@@ -47,4 +54,29 @@ async function upsertVenda(data, existingId) {
 
 async function deleteVenda(id) {
   await db.collection(VENDAS_COLLECTION).doc(id).delete();
+}
+
+// Meta de vendas do mês (editável na tela) — guardada num único documento
+// compartilhado, já que o sistema não tem login por usuário.
+async function getMetaMensal() {
+  const doc = await db.collection(CONFIG_COLLECTION).doc("vendas").get();
+  const valor = doc.exists ? doc.data().metaMensal : null;
+  return typeof valor === "number" && valor > 0 ? valor : META_MENSAL_PADRAO;
+}
+
+async function setMetaMensal(valor) {
+  await db.collection(CONFIG_COLLECTION).doc("vendas").set({ metaMensal: valor }, { merge: true });
+}
+
+function mesAtualISO() {
+  return new Date().toISOString().slice(0, 7); // "AAAA-MM"
+}
+
+// Soma o valor de todas as vendas Fechado/Ganho cuja Data de envio caia no
+// mês informado (por padrão, o mês atual) — usada pra bater com a meta.
+function totalFechadoNoMes(vendas, mesISO) {
+  const alvo = mesISO || mesAtualISO();
+  return vendas
+    .filter((v) => v.status === "Fechado/Ganho" && (v.dataEnvio || "").slice(0, 7) === alvo)
+    .reduce((sum, v) => sum + parseValorBR(v.valor), 0);
 }

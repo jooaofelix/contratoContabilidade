@@ -1,3 +1,65 @@
+.vendas-meta-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.vendas-meta-card {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, #101a35 0%, #16294f 100%);
+  border-radius: 10px;
+  padding: 16px 20px;
+  color: #fff;
+}
+
+.vendas-meta-card.meta-batida {
+  background: linear-gradient(135deg, #065f46 0%, #15803d 100%);
+}
+
+.vendas-meta-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.vendas-meta-label {
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: capitalize;
+}
+
+.vendas-meta-valores {
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.vendas-meta-bar-track {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  height: 12px;
+  overflow: hidden;
+}
+
+.vendas-meta-bar-fill {
+  background: #57b8ff;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.meta-batida .vendas-meta-bar-fill {
+  background: #bbf7d0;
+}
+
+.vendas-meta-sub {
+  font-size: 0.75rem;
+  margin-top: 6px;
+  opacity: 0.9;
+}
+
 .vendas-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -126,11 +188,24 @@
 
 .status-badge.status-aguardando { background: #fef3c7; color: #92400e; }
 .status-badge.status-reuniao { background: #ede9fe; color: #5b21b6; }
+.status-badge.status-diagnostico { background: #e0e7ff; color: #3730a3; }
 .status-badge.status-negociacao { background: #dbeafe; color: #1e40af; }
 .status-badge.status-analisando-proposta { background: #cffafe; color: #155e75; }
 .status-badge.status-analisando-contrato { background: #ffedd5; color: #9a3412; }
 .status-badge.status-ganho { background: #dcfce7; color: #15803d; }
 .status-badge.status-perdido { background: #fee2e2; color: #b91c1c; }
+
+.handoff-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.handoff-badge.handoff-ok { background: #dcfce7; color: #15803d; }
+.handoff-badge.handoff-pendente { background: #fef3c7; color: #92400e; }
 
 .vendas-row-actions {
   display: flex;
@@ -254,6 +329,13 @@
   overflow: hidden;
 }
 
+.vendas-card-produto {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
 .vendas-card-actions {
   display: flex;
   gap: 6px;
@@ -318,4 +400,123 @@
 .nota-card-data {
   font-size: 0.7rem;
   color: #92400e;
+}
+
+.carteira-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.carteira-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.carteira-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.carteira-card-nome {
+  font-weight: 800;
+  color: var(--darker);
+  font-size: 1rem;
+}
+
+.carteira-card-cnpj {
+  font-size: 0.72rem;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.carteira-status-label {
+  font-size: 0.75rem;
+  color: #4b5563;
+  font-weight: 600;
+}
+
+.carteira-status-select {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 0.82rem;
+  width: 100%;
+}
+
+.carteira-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.carteira-plano-badge,
+.carteira-total-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--darker);
+}
+
+.carteira-total-badge {
+  color: #15803d;
+}
+
+.carteira-toggle-historico {
+  align-self: flex-start;
+}
+
+.carteira-historico {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.carteira-historico-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 4px 10px;
+  font-size: 0.78rem;
+  background: var(--bg);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.carteira-historico-data {
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.carteira-historico-servico {
+  color: var(--darker);
+  font-weight: 600;
+}
+
+.carteira-historico-valor {
+  color: #15803d;
+  font-weight: 700;
+  text-align: right;
+}
+
+.carteira-historico-motivo {
+  grid-column: 1 / -1;
+  color: #6b7280;
+  font-size: 0.72rem;
+}
+
+.carteira-historico-vazio {
+  color: #9ca3af;
+  font-size: 0.78rem;
+  text-align: center;
+  padding: 10px 0;
 }

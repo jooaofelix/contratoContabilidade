@@ -19,6 +19,7 @@ function statusClass(status) {
   switch (status) {
     case "Aguardando resposta": return "status-aguardando";
     case "Aguardando reunião": return "status-reuniao";
+    case "Diagnóstico realizado": return "status-diagnostico";
     case "Em negociação": return "status-negociacao";
     case "Analisando proposta": return "status-analisando-proposta";
     case "Analisando contrato": return "status-analisando-contrato";
@@ -28,26 +29,41 @@ function statusClass(status) {
   }
 }
 
+// Mostra o selo de handoff só quando a venda já fechou — antes disso não faz
+// sentido perguntar se a ficha já foi repassada pro próximo setor.
+function atualizarVisibilidadeHandoff() {
+  const status = getV("v_status");
+  document.getElementById("v_handoffWrap").classList.toggle("hidden", status !== "Fechado/Ganho");
+}
+
 function collectVendaForm() {
+  const produtoSelect = document.getElementById("v_produto");
+  const produtoOpt = produtoSelect.selectedOptions[0];
   return {
     empresaId: vendaEmpresaId,
     empresaNome: getV("v_empresaNome"),
     contato: getV("v_contato"),
+    produtoId: produtoSelect.value || null,
+    produtoNome: produtoSelect.value ? produtoOpt.textContent : "",
     valor: getV("v_valor"),
     dataEnvio: getV("v_dataEnvio"),
     status: getV("v_status"),
     observacoes: getV("v_observacoes"),
+    handoffFeito: document.getElementById("v_handoffFeito").checked,
   };
 }
 
 function applyVendaToForm(venda) {
   document.getElementById("v_empresaNome").value = venda.empresaNome || "";
   document.getElementById("v_contato").value = venda.contato || "";
+  document.getElementById("v_produto").value = venda.produtoId || "";
   document.getElementById("v_valor").value = venda.valor || "";
   document.getElementById("v_dataEnvio").value = venda.dataEnvio || "";
   document.getElementById("v_status").value = venda.status || "Aguardando resposta";
   document.getElementById("v_observacoes").value = venda.observacoes || "";
+  document.getElementById("v_handoffFeito").checked = !!venda.handoffFeito;
   vendaEmpresaId = venda.empresaId || null;
+  atualizarVisibilidadeHandoff();
 }
 
 function clearVendaForm() {
@@ -55,14 +71,39 @@ function clearVendaForm() {
   vendaEmpresaId = null;
   document.getElementById("v_empresaNome").value = "";
   document.getElementById("v_contato").value = "";
+  document.getElementById("v_produto").value = "";
   document.getElementById("v_valor").value = "";
   document.getElementById("v_dataEnvio").value = "";
   document.getElementById("v_status").value = "Aguardando resposta";
   document.getElementById("v_observacoes").value = "";
+  document.getElementById("v_handoffFeito").checked = false;
   document.getElementById("empresa-select").value = "";
+  atualizarVisibilidadeHandoff();
 }
 
 const VENDA_STATUS_FINAIS = ["Fechado/Ganho", "Recusado/Perdido"];
+
+let metaMensalCache = META_MENSAL_PADRAO;
+
+function renderMetaMensalHtml(vendas) {
+  const totalMes = totalFechadoNoMes(vendas);
+  const pct = metaMensalCache > 0 ? Math.min(100, Math.round((totalMes / metaMensalCache) * 100)) : 0;
+  const batida = totalMes >= metaMensalCache;
+  const nomeMes = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+
+  return `
+    <div class="vendas-meta-card ${batida ? "meta-batida" : ""}">
+      <div class="vendas-meta-header">
+        <span class="vendas-meta-label">🎯 Meta de vendas — ${nomeMes}</span>
+        <span class="vendas-meta-valores">${formatBRL(totalMes)} / ${formatBRL(metaMensalCache)}</span>
+      </div>
+      <div class="vendas-meta-bar-track">
+        <div class="vendas-meta-bar-fill" style="width: ${pct}%"></div>
+      </div>
+      <div class="vendas-meta-sub">${batida ? "🎉 Meta batida este mês!" : `${pct}% da meta — faltam ${formatBRL(Math.max(0, metaMensalCache - totalMes))}`}</div>
+    </div>
+  `;
+}
 
 function renderVendasStats(vendas) {
   const porStatus = {};
@@ -93,7 +134,23 @@ function renderVendasStats(vendas) {
     </div>
   `;
 
-  document.getElementById("vendas-stats").innerHTML = cardsHtml + emAbertoHtml;
+  document.getElementById("vendas-stats").innerHTML = renderMetaMensalHtml(vendas) + cardsHtml + emAbertoHtml;
+}
+
+function setupMetaMensal() {
+  document.getElementById("meta-editar-btn").addEventListener("click", async () => {
+    const atual = metaMensalCache;
+    const novoTexto = prompt("Meta de vendas do mês (R$):", String(atual).replace(".", ","));
+    if (novoTexto === null) return;
+    const novoValor = parseValorBR(novoTexto);
+    if (!novoValor || novoValor <= 0) {
+      alert("Informe um valor de meta válido.");
+      return;
+    }
+    metaMensalCache = novoValor;
+    await setMetaMensal(novoValor);
+    renderVendasStats(vendasCache);
+  });
 }
 
 function getFilteredVendas() {
@@ -123,8 +180,10 @@ function renderVendasTable() {
       <td>${v.dataEnvio ? new Date(v.dataEnvio + "T00:00:00").toLocaleDateString("pt-BR") : "—"}</td>
       <td>${v.empresaNome || "—"}</td>
       <td>${v.contato || "—"}</td>
+      <td>${v.produtoNome || "—"}</td>
       <td>${v.valor ? "R$ " + v.valor : "—"}</td>
       <td><span class="status-badge ${statusClass(v.status)}">${v.status || "—"}</span></td>
+      <td>${v.status === "Fechado/Ganho" ? `<span class="handoff-badge ${v.handoffFeito ? "handoff-ok" : "handoff-pendente"}">${v.handoffFeito ? "✅ Repassado" : "⏳ Pendente"}</span>` : ""}</td>
       <td>${v.observacoes || ""}</td>
       <td class="vendas-row-actions">
         <button type="button" class="btn-secondary venda-followup" data-id="${v.id}" title="Enviar 2ª chamada por WhatsApp">📲 2ª chamada</button>
@@ -143,8 +202,10 @@ function renderVendasTable() {
             <th>Envio</th>
             <th>Empresa / Lead</th>
             <th>Contato</th>
+            <th>Serviço</th>
             <th>Valor</th>
             <th>Status</th>
+            <th>Handoff</th>
             <th>Observações</th>
             <th></th>
           </tr>
@@ -339,8 +400,10 @@ function vendaCardHtml(v) {
     <div class="vendas-card" draggable="true" data-id="${v.id}">
       <div class="vendas-card-empresa">${v.empresaNome || "(sem nome)"}</div>
       <div class="vendas-card-contato">${v.contato || "—"}</div>
+      ${v.produtoNome ? `<div class="vendas-card-produto">🧾 ${v.produtoNome}</div>` : ""}
       ${v.valor ? `<div class="vendas-card-valor">R$ ${v.valor}</div>` : ""}
       ${v.observacoes ? `<div class="vendas-card-obs">${v.observacoes}</div>` : ""}
+      ${v.status === "Fechado/Ganho" ? `<span class="handoff-badge ${v.handoffFeito ? "handoff-ok" : "handoff-pendente"}">${v.handoffFeito ? "✅ Repassado" : "⏳ Repasse pendente"}</span>` : ""}
       <div class="vendas-card-actions">
         <select class="venda-card-status" data-id="${v.id}">
           ${VENDA_STATUS.map((s) => `<option value="${s}" ${s === v.status ? "selected" : ""}>${s}</option>`).join("")}
@@ -478,6 +541,7 @@ function ativarModoVendas(mode) {
   if (!tab) return;
   document.querySelectorAll(".mode-tab").forEach((t) => t.classList.toggle("active", t === tab));
   document.querySelectorAll("[data-mode]").forEach((el) => el.classList.toggle("hidden", el.dataset.mode !== mode));
+  if (mode === "carteira") refreshCarteira();
 }
 
 function setupVendasModeToggle() {
@@ -880,6 +944,12 @@ function renderProdutosManageList() {
       <label>Nome do serviço
         <input type="text" class="produto-nome" value="${(p.nome || "").replace(/"/g, "&quot;")}">
       </label>
+      <label>Tipo
+        <select class="produto-tipo">
+          <option value="Pontual" ${tipoDoProduto(p) === "Pontual" ? "selected" : ""}>Pontual (avulso)</option>
+          <option value="Recorrente" ${tipoDoProduto(p) === "Recorrente" ? "selected" : ""}>Recorrente (mensal)</option>
+        </select>
+      </label>
       <label>Mensagem (use {{nome}} e {{empresa}})
         <textarea class="produto-mensagem" rows="4">${p.mensagem || ""}</textarea>
       </label>
@@ -891,8 +961,9 @@ function renderProdutosManageList() {
     btn.addEventListener("click", async () => {
       const row = btn.closest(".alteracao-row");
       const nome = row.querySelector(".produto-nome").value;
+      const tipo = row.querySelector(".produto-tipo").value;
       const mensagem = row.querySelector(".produto-mensagem").value;
-      await upsertProduto({ nome, mensagem }, btn.dataset.saveProduto);
+      await upsertProduto({ nome, tipo, mensagem }, btn.dataset.saveProduto);
       await refreshProdutos();
     });
   });
@@ -903,6 +974,15 @@ function renderProdutosManageList() {
       await refreshProdutos();
     });
   });
+}
+
+function populateVendaProdutoSelect() {
+  const select = document.getElementById("v_produto");
+  const atual = select.value;
+  select.innerHTML = `<option value="">— Selecione (opcional) —</option>` + produtosCache.map((p) =>
+    `<option value="${p.id}">${p.nome} (${tipoDoProduto(p) === "Recorrente" ? "recorrente" : "pontual"})</option>`
+  ).join("");
+  if (produtosCache.some((p) => p.id === atual)) select.value = atual;
 }
 
 function populateProdutosChecklist() {
@@ -930,6 +1010,7 @@ async function refreshProdutos() {
   populateProdutosChecklist();
   populateLoteProdutosChecklist();
   renderProdutosManageList();
+  populateVendaProdutoSelect();
   atualizarMensagemPreview();
 }
 
@@ -1252,6 +1333,135 @@ function setupVendaActions() {
   };
   document.getElementById("vendas-search").addEventListener("input", rerenderVisiveis);
   document.getElementById("vendas-filtro-status").addEventListener("change", rerenderVisiveis);
+
+  document.getElementById("v_status").addEventListener("change", atualizarVisibilidadeHandoff);
+}
+
+// --- Carteira de Clientes ---------------------------------------------
+// Visão por empresa (não por negociação): status do relacionamento, plano
+// de contabilidade atual (vem da Ficha Cadastral) e o histórico de vendas
+// já fechadas com aquela empresa — reaproveita vendasCache, então só fica
+// em dia depois que o Funil já carregou pelo menos uma vez.
+
+let carteiraEmpresasCache = [];
+
+function totalHistoricoEmpresa(empresaId) {
+  return vendasCache
+    .filter((v) => v.empresaId === empresaId && v.status === "Fechado/Ganho")
+    .reduce((sum, v) => sum + parseValorBR(v.valor), 0);
+}
+
+function historicoEmpresaHtml(empresaId) {
+  const vendasEmpresa = vendasCache
+    .filter((v) => v.empresaId === empresaId && v.status === "Fechado/Ganho")
+    .sort((a, b) => (b.dataEnvio || "").localeCompare(a.dataEnvio || ""));
+
+  if (vendasEmpresa.length === 0) {
+    return `<div class="carteira-historico-vazio">Nenhuma venda fechada registrada ainda.</div>`;
+  }
+
+  return vendasEmpresa.map((v) => `
+    <div class="carteira-historico-item">
+      <span class="carteira-historico-data">${v.dataEnvio ? new Date(v.dataEnvio + "T00:00:00").toLocaleDateString("pt-BR") : "—"}</span>
+      <span class="carteira-historico-servico">${v.produtoNome || "Serviço não especificado"}</span>
+      <span class="carteira-historico-valor">${v.valor ? "R$ " + v.valor : "—"}</span>
+      ${v.observacoes ? `<span class="carteira-historico-motivo">${v.observacoes}</span>` : ""}
+    </div>
+  `).join("");
+}
+
+function carteiraCardHtml(empresa) {
+  const total = totalHistoricoEmpresa(empresa.id);
+  const plano = empresa.contabil || "—";
+  const statusAtual = empresa.statusCliente || "Lead";
+  return `
+    <div class="carteira-card" data-id="${empresa.id}">
+      <div class="carteira-card-header">
+        <div class="carteira-card-nome">${empresa.contratante || "(sem nome)"}</div>
+        <div class="carteira-card-cnpj">${empresa.cnpj || "—"}</div>
+      </div>
+      <div class="carteira-card-body">
+        <label class="carteira-status-label">Status
+          <select class="carteira-status-select" data-id="${empresa.id}">
+            ${STATUS_CLIENTE_OPTS.map((s) => `<option value="${s}" ${s === statusAtual ? "selected" : ""}>${s}</option>`).join("")}
+          </select>
+        </label>
+        <div class="carteira-card-info">
+          <span class="carteira-plano-badge">📋 Plano: ${plano}</span>
+          <span class="carteira-total-badge">💰 Total já vendido: ${formatBRL(total)}</span>
+        </div>
+      </div>
+      <button type="button" class="btn-secondary carteira-toggle-historico" data-id="${empresa.id}">📜 Ver histórico de vendas ▾</button>
+      <div class="carteira-historico hidden" id="carteira-historico-${empresa.id}">
+        ${historicoEmpresaHtml(empresa.id)}
+      </div>
+    </div>
+  `;
+}
+
+function getFilteredCarteira() {
+  const search = document.getElementById("carteira-search").value.trim().toLowerCase();
+  const filtroStatus = document.getElementById("carteira-filtro-status").value;
+  return carteiraEmpresasCache.filter((e) => {
+    const matchStatus = !filtroStatus || (e.statusCliente || "Lead") === filtroStatus;
+    const matchSearch = !search ||
+      (e.contratante || "").toLowerCase().includes(search) ||
+      (e.cnpj || "").toLowerCase().includes(search);
+    return matchStatus && matchSearch;
+  });
+}
+
+function renderCarteira() {
+  const wrap = document.getElementById("carteira-wrap");
+  const filtradas = getFilteredCarteira();
+
+  if (filtradas.length === 0) {
+    wrap.innerHTML = `<div class="vendas-empty">Nenhuma empresa cadastrada encontrada.</div>`;
+    return;
+  }
+
+  const ordenadas = filtradas.slice().sort((a, b) => (a.contratante || "").localeCompare(b.contratante || ""));
+  wrap.innerHTML = `<div class="carteira-grid">${ordenadas.map(carteiraCardHtml).join("")}</div>`;
+
+  wrap.querySelectorAll(".carteira-status-select").forEach((select) => {
+    select.addEventListener("change", async () => {
+      const id = select.dataset.id;
+      try {
+        await setEmpresaStatusCliente(id, select.value);
+        const empresa = carteiraEmpresasCache.find((e) => e.id === id);
+        if (empresa) empresa.statusCliente = select.value;
+      } catch (err) {
+        console.error(err);
+        alert("Erro ao atualizar o status do cliente.");
+      }
+    });
+  });
+
+  wrap.querySelectorAll(".carteira-toggle-historico").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const historico = document.getElementById(`carteira-historico-${btn.dataset.id}`);
+      historico.classList.toggle("hidden");
+      btn.textContent = historico.classList.contains("hidden") ? "📜 Ver histórico de vendas ▾" : "📜 Ocultar histórico ▴";
+    });
+  });
+}
+
+async function refreshCarteira() {
+  carteiraEmpresasCache = await getEmpresas();
+  renderCarteira();
+}
+
+function setupCarteira() {
+  const filtroSelect = document.getElementById("carteira-filtro-status");
+  STATUS_CLIENTE_OPTS.forEach((s) => {
+    const opt = document.createElement("option");
+    opt.value = s;
+    opt.textContent = s;
+    filtroSelect.appendChild(opt);
+  });
+
+  document.getElementById("carteira-search").addEventListener("input", renderCarteira);
+  filtroSelect.addEventListener("change", renderCarteira);
 }
 
 // --- Anotações livres -----------------------------------------------------
@@ -1420,7 +1630,12 @@ document.addEventListener("DOMContentLoaded", () => {
   setupImportacao();
   setupEmpresasVendas();
   setupVendaActions();
-  refreshVendas();
+  setupMetaMensal();
+  setupCarteira();
+  (async () => {
+    metaMensalCache = await getMetaMensal();
+    await refreshVendas();
+  })();
 
   setupEmpresasProposta();
   setupContatosProposta();
