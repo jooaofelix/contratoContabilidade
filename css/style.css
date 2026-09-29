@@ -530,6 +530,11 @@ button {
 .witnesses .sig-line .line { width: 260px; }
 
 @media print {
+  /* Sem isso, o cinza de fundo da tela (usado atrás dos "cartões" brancos
+     de cada página) aparece por baixo do conteúdo impresso sempre que uma
+     página tem menos conteúdo do que a folha inteira — vira uma margem
+     cinza grande embaixo/ao redor do que foi impresso. */
+  body { background: #fff; }
   .sidebar, .app-header, .mode-tabs { display: none; }
   .app-layout { padding: 0; }
   .preview-wrap { width: 100%; }
