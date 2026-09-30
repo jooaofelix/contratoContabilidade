@@ -750,14 +750,14 @@
     padding: 15px 24px 18px;
     margin-bottom: 14px;
   }
-  /* A capa é um design de destaque (fundo navy cheio) — continua isolada na
-     própria folha, não mistura com o conteúdo branco das próximas seções.
-     :not(:last-child) evita uma folha final em branco sobrando depois dela
-     num documento muito curto (capa sozinha, por exemplo). */
-  .proposal-page-dark:not(:last-child) {
-    page-break-after: always;
-    break-after: page;
-  }
+  /* A capa tinha ficado isolada na própria folha com quebra forçada, mas
+     min-height (testado com valor fixo em mm e com 100vh) não faz o motor
+     de paginação do Chromium esticar o fundo navy até o fim da folha — o
+     resultado é uma caixa navy curta seguida de um vazio branco, o mesmo
+     problema de espaço em branco que o resto deste ajuste resolveu. Deixar
+     a capa fluir como as outras seções soluciona isso: sua altura vira só
+     o conteúdo real, e o que vem depois começa colado embaixo dela (na
+     mesma folha, se houver espaço) em vez de sobrar folha em branco. */
   .proposal-page:last-child {
     margin-bottom: 0;
   }
