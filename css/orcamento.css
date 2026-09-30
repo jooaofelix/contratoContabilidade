@@ -6,8 +6,11 @@
   --p-bg: #eef2f7;
 }
 
+/* 718px ≈ 190mm (largura útil de uma folha A4 com a margem de 10mm do
+   @page, mais abaixo) — a pré-visualização na tela usa a mesma largura da
+   folha impressa, pra não ter quebra de linha diferente entre as duas. */
 .proposal-doc {
-  max-width: 1000px;
+  max-width: 718px;
   margin: 0 auto;
 }
 
@@ -42,35 +45,50 @@
   text-align: right;
 }
 
-/* Precisa ser um bloco "normal" (nada de flex/grid no container-pai) — o
-   Chrome simplesmente ignora page-break-after em filhos de flex/grid na
-   hora de imprimir, então cada .proposal-page acabava não indo pra sua
-   própria página e o conteúdo era cortado no meio ao exportar em PDF. */
+/* Cada .proposal-page já chega pronta do JS (ver montarPreviewPaginado em
+   app-orcamento.js) contendo só os blocos que o empacotador mediu e decidiu
+   que cabem juntos numa folha A4 — por isso não precisa de min-height nem
+   de heurística de quebra: o conteúdo real já é do tamanho certo. */
+/* display: block de propósito, não flex — uma .proposal-page é o elemento
+   que recebe a quebra forçada de página na impressão (break-after: always,
+   lá embaixo), e o Chrome historicamente lida mal com fragmentação de
+   impressão quando o próprio contêiner fragmentado é flex (e o efeito
+   aparece de formas enganosas, tipo uma .proposal-columns flex LÁ DENTRO
+   virando empilhada em vez de lado a lado só no PDF). O espaçamento entre
+   os filhos (marca, blocos, rodapé) vem de margin-top em vez de gap. */
 .proposal-page {
   position: relative;
   background: #fff;
   border-radius: 10px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  padding: 32px 44px 56px;
-  min-height: 560px;
-  overflow: hidden;
-  margin-bottom: 24px;
+  padding: 20px 26px;
+  overflow: visible;
+  margin-bottom: 14px;
+}
+
+.proposal-page > * + * {
+  margin-top: 12px;
 }
 
 .proposal-page:last-child {
   margin-bottom: 0;
 }
 
-.proposal-page-dark {
+/* Card de destaque da capa (fundo navy) — antes era a folha inteira que
+   ficava navy; agora é só este bloco, dentro de uma folha branca normal,
+   porque o navegador não estica de forma confiável o fundo de uma seção
+   até o fim físico da página na hora de gerar o PDF (testado). */
+.proposal-capa-bloco {
   background: linear-gradient(135deg, var(--p-navy) 0%, var(--p-navy-2) 100%);
   color: #fff;
+  border-radius: 10px;
+  padding: 28px 32px;
 }
 
 .proposal-brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 30px;
 }
 
 .logo-mark {
@@ -93,10 +111,6 @@
   font-size: 0.55rem;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--p-blue-light);
-}
-
-.proposal-page:not(.proposal-page-dark) .proposal-brand-text span {
   color: var(--p-blue);
 }
 
@@ -105,21 +119,22 @@
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: var(--p-blue-light);
-}
-
-.proposal-page:not(.proposal-page-dark) .proposal-brand-tag {
   color: var(--p-blue);
 }
 
+/* Grid, não flex: uma .proposal-page com quebra de página forçada e um
+   filho flex-row dentro dela faz o Chrome inserir uma quebra indevida NO
+   MEIO da linha (empilhando as duas colunas em folhas separadas) na hora
+   de gerar o PDF — bug reproduzido isoladamente, break-inside: avoid na
+   própria linha não resolve. Grid não tem esse problema. */
 .proposal-capa {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 50px;
-  margin-top: 30px;
 }
 
 .proposal-capa-left {
-  flex: 1;
+  min-width: 0;
 }
 
 .proposal-hello {
@@ -143,7 +158,7 @@
 }
 
 .proposal-capa-right {
-  flex: 1;
+  min-width: 0;
 }
 
 .proposal-capa-right h3 {
@@ -198,14 +213,18 @@
   margin: 0 0 24px;
 }
 
+/* Grid, não flex — mesmo motivo do .proposal-capa acima (ver comentário
+   lá): evita o Chrome inserir uma quebra de página indevida no meio da
+   linha na hora de gerar o PDF. */
 .proposal-columns {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 24px;
-  align-items: flex-start;
+  align-items: start;
 }
 
 .proposal-box {
-  flex: 1;
+  min-width: 0;
   background: var(--p-bg);
   border-radius: 10px;
   padding: 22px 24px;
@@ -292,14 +311,15 @@
 }
 
 .proposal-columns-services {
+  grid-template-columns: 1.3fr 1fr;
   align-items: stretch;
 }
 
 .proposal-services {
-  flex: 1.3;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
 }
 
 .proposal-servicos-extra {
@@ -429,7 +449,7 @@
 }
 
 .proposal-price-box {
-  flex: 1;
+  min-width: 0;
   background: var(--p-navy);
   color: #fff;
   border-radius: 10px;
@@ -503,11 +523,12 @@
 }
 
 .proposal-services-full {
-  flex: 1 1 100%;
+  grid-column: 1 / -1;
 }
 
 .proposal-investimento-resumo {
-  margin-top: 24px;
+  /* Sem margin-top: o espaçamento entre blocos já vem do gap da
+     .proposal-page (ver montarPreviewPaginado em app-orcamento.js). */
 }
 
 .proposal-investimento-resumo h4 {
@@ -653,7 +674,6 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-top: 18px;
   background: linear-gradient(135deg, var(--p-navy), var(--p-navy-2));
   color: #fff;
   border-radius: 12px;
@@ -711,10 +731,12 @@
   border-top: 1px solid var(--p-bg);
 }
 
+/* Sempre no fluxo normal (nunca position: absolute) — cada .proposal-page
+   já vem do JS com só o conteúdo que o empacotador mediu e decidiu que cabe
+   naquela folha, então o rodapé cola natural no fim de cada uma. */
 .proposal-footer {
-  position: absolute;
-  bottom: 20px;
-  left: 44px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
   font-size: 0.68rem;
   opacity: 0.55;
 }
@@ -730,92 +752,38 @@
 }
 
 @media print {
+  /* SEM page-break-after forçado aqui de propósito: testado e reproduzido
+     isoladamente — um .proposal-page com break-after: always faz o Chrome
+     inserir uma quebra de página ESPÚRIA dentro do próprio conteúdo dele na
+     hora de gerar o PDF (quebrando no meio de uma seção mesmo quando ela
+     mede menos de metade da altura útil de uma folha), independente de
+     flex/grid. Sem quebra forçada, o fluxo natural já respeita os grupos
+     que o JS empacotou (cada .proposal-page foi dimensionado pra caber
+     numa folha), e como bônus ainda aproveita o espaço quando duas seções
+     JUNTAS cabem na mesma folha. */
   .proposal-page {
-    /* Cada seção (Dados do Cliente, Empresa extra, Serviços...) já foi um
-       page-break-after: always fixo — isso forçava toda seção pra sua
-       própria folha A4 inteira, mesmo quando o conteúdo real ocupava só um
-       terço da página (ex: "Dados do Cliente — Empresa 2", só uma
-       caixinha). Sem quebra forçada + sem min-height, as seções fluem uma
-       atrás da outra e só pulam de página quando o conteúdo de fato não
-       cabe mais — sem espaço em branco sobrando no meio do documento. */
-    min-height: 0;
-    /* NÃO usar break-inside: avoid aqui: o conteúdo de uma página (lista de
-       serviços + bloco do plano + cards de investimento, tudo dinâmico)
-       pode crescer mais do que cabe numa folha. "avoid" combinado com
-       overflow: hidden fazia o excesso ser CORTADO/PERDIDO em vez de
-       continuar na próxima página — pior do que só quebrar no meio. */
-    overflow: visible;
     box-shadow: none;
     border-radius: 0;
-    padding: 15px 24px 18px;
-    margin-bottom: 14px;
-  }
-  /* A capa tinha ficado isolada na própria folha com quebra forçada, mas
-     min-height (testado com valor fixo em mm e com 100vh) não faz o motor
-     de paginação do Chromium esticar o fundo navy até o fim da folha — o
-     resultado é uma caixa navy curta seguida de um vazio branco, o mesmo
-     problema de espaço em branco que o resto deste ajuste resolveu. Deixar
-     a capa fluir como as outras seções soluciona isso: sua altura vira só
-     o conteúdo real, e o que vem depois começa colado embaixo dela (na
-     mesma folha, se houver espaço) em vez de sobrar folha em branco. */
-  .proposal-page:last-child {
     margin-bottom: 0;
   }
-  /* Cada bloco de conteúdo (caixa de dados, card de item, barra de total)
-     não quebra no meio — se não coube inteiro no resto da página, o navegador
-     empurra ele todo pra próxima, em vez de partir a caixa/tabela ao meio. */
+  /* Rede de segurança: se a medição no navegador diferir um pouco do PDF
+     final, pelo menos esses blocos não quebram no meio. */
   .proposal-box,
   .proposal-plano-incluso,
   .proposal-item-card,
   .proposal-valor-total-bar,
-  .proposal-investimento-meta {
+  .proposal-investimento-meta,
+  .proposal-capa-bloco,
+  .proposal-columns,
+  .proposal-capa {
     page-break-inside: avoid;
     break-inside: avoid;
   }
-  /* Evita um título de seção ficar sozinho no fim de uma página, separado
-     do conteúdo dele que foi pro início da próxima. */
-  .proposal-h2, .proposal-sub, .proposal-brand {
-    page-break-after: avoid;
-    break-after: avoid;
-  }
-  /* Espaçamentos internos mais enxutos só na impressão — cada folga a
-     menos entre blocos é espaço a mais aproveitado antes de precisar
-     pular de página, então sobra menos "resto" sozinho numa folha nova. */
-  .proposal-brand { margin-bottom: 20px; }
-  .proposal-sub { margin-bottom: 14px; }
-  .proposal-services { gap: 12px; }
-  .proposal-box { padding: 16px 20px; }
-  .proposal-box h4 { margin-bottom: 12px; }
-  .proposal-plano-incluso { padding: 12px 16px; }
-  .proposal-plano-incluso-list { gap: 6px; }
-  .proposal-investimento-resumo { margin-top: 16px; }
-  .proposal-investimento-resumo-sub { margin-bottom: 10px; }
-  .proposal-itens-lista { gap: 9px; }
-  .proposal-item-card { padding: 11px 16px; }
-  .proposal-item-grupo { padding: 13px 16px; }
-  .proposal-item-subitens { margin-top: 10px; padding: 2px 12px; }
-  .proposal-subitem { padding: 7px 0; }
-  .proposal-valor-total-bar { margin-top: 14px; padding: 14px 20px; }
-  /* A posição fixa (absolute, colada nos 20px de baixo do card de 560px de
-     altura mínima) só fazia sentido enquanto toda seção virava uma folha
-     A4 inteira. Sem min-height, o rodapé volta a ser só mais um elemento
-     no fim do fluxo normal — senão ele fica sem "chão" embaixo e some por
-     cima do próprio conteúdo da seção. */
-  .proposal-footer {
-    position: static;
-    margin-top: 16px;
-    padding-top: 8px;
-    border-top: 1px solid rgba(0, 0, 0, 0.08);
-  }
-  .proposal-page-dark .proposal-footer {
-    border-top-color: rgba(255, 255, 255, 0.15);
-  }
-  .proposal-doc { max-width: 100%; }
 }
 
 @media (max-width: 900px) {
   .proposal-capa,
   .proposal-columns {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 }

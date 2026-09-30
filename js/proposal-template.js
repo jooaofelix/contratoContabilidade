@@ -53,6 +53,10 @@ function logoMark() {
   return `<img src="assets/aea-logo.svg" alt="" class="logo-mark">`;
 }
 
+// A marca e o rodapé agora aparecem uma vez por FOLHA FÍSICA (não mais uma
+// vez por seção lógica) — quem decide quantas/quais seções cabem em cada
+// folha é o empacotador em app-orcamento.js, depois de medir a altura real
+// de cada bloco no navegador. Ver montarBlocosProposta() mais abaixo.
 function brandBar() {
   return `
     <div class="proposal-brand">
@@ -62,18 +66,15 @@ function brandBar() {
     </div>`;
 }
 
-// Sem o número: como as seções agora fluem e podem dividir a mesma folha
-// física (ver @media print em orcamento.css), o contador de seção do JS
-// deixou de corresponder ao número real da página impressa — mostrar
-// "Página 3" errado é pior do que não mostrar nenhum número.
 function pageFooter() {
   return `<div class="proposal-footer">AEA Contabilidade Consultiva</div>`;
 }
 
-function renderCapa(cliente) {
+// --- Blocos de conteúdo (cada um é uma unidade indivisível de paginação) --
+
+function renderCapaBloco(cliente) {
   return `
-    <section class="proposal-page proposal-page-dark">
-      ${brandBar()}
+    <div class="proposal-capa-bloco">
       <div class="proposal-capa">
         <div class="proposal-capa-left">
           <div class="proposal-hello">OLÁ ${phP(cliente.nomeResponsavel, "[Nome]").toString().toUpperCase()}</div>
@@ -97,14 +98,12 @@ function renderCapa(cliente) {
           </div>
         </div>
       </div>
-      ${pageFooter(1)}
-    </section>`;
+    </div>`;
 }
 
-function renderDadosCliente(cliente, diagnostico, pageNumber) {
+function renderDadosClienteBloco(cliente, diagnostico) {
   return `
-    <section class="proposal-page">
-      ${brandBar()}
+    <div>
       <h2 class="proposal-h2">DADOS DO CLIENTE</h2>
       <p class="proposal-sub">Informações recebidas para composição da proposta comercial.</p>
 
@@ -135,17 +134,15 @@ function renderDadosCliente(cliente, diagnostico, pageNumber) {
           </ul>
         </div>
       </div>
-      ${pageFooter(pageNumber)}
-    </section>`;
+    </div>`;
 }
 
-// Página extra de "Dados do Cliente", uma por empresa do mesmo grupo
-// econômico/dono adicionada na proposta — mesma estrutura da página
-// principal, só que sem o bloco de diagnóstico (esse é único por proposta).
-function renderDadosClienteExtra(empresa, indice, pageNumber) {
+// Bloco extra de "Dados do Cliente", um por empresa do mesmo grupo
+// econômico/dono adicionada na proposta — mesma estrutura do bloco
+// principal, só que sem o diagnóstico (esse é único por proposta).
+function renderDadosClienteExtraBloco(empresa, indice) {
   return `
-    <section class="proposal-page">
-      ${brandBar()}
+    <div>
       <h2 class="proposal-h2">DADOS DO CLIENTE — EMPRESA ${indice}</h2>
       <p class="proposal-sub">Empresa adicional do mesmo grupo econômico/responsável, incluída nesta proposta.</p>
 
@@ -159,8 +156,7 @@ function renderDadosClienteExtra(empresa, indice, pageNumber) {
           <div><span class="fl">E-mail</span><span class="fv">${phP(empresa.email, "[E-mail]")}</span></div>
         </div>
       </div>
-      ${pageFooter(pageNumber)}
-    </section>`;
+    </div>`;
 }
 
 // --- Ícones simples (SVG embutido, sem depender de biblioteca externa) ----
@@ -227,18 +223,6 @@ function agruparItensInvestimento(itens, planosSelecionados) {
   };
 }
 
-// Cada "bloco" do Resumo de Investimento é um card avulso ou um grupo
-// (plano + sub-itens) — tratado como unidade indivisível na paginação, pra
-// nunca deixar os sub-itens de um plano numa página e o cabeçalho dele
-// noutra.
-function construirBlocosInvestimento(itens, planosSelecionados) {
-  const { grupos, soltos } = agruparItensInvestimento(itens, planosSelecionados);
-  return [
-    ...grupos.map((g) => ({ tipo: "grupo", dado: g })),
-    ...soltos.map((s) => ({ tipo: "solto", dado: s })),
-  ];
-}
-
 // Serviço marcado sem valor preenchido é um item legitimamente sem preço
 // próprio (incluso de graça ou cobrado só pelo "valor cheio" geral) — não é
 // um campo obrigatório faltando, então em vez do placeholder cinza padrão
@@ -296,29 +280,6 @@ function renderValorTotalBar(total) {
     </div>`;
 }
 
-function renderInvestimentoItens(blocos, opts) {
-  if (!blocos || blocos.length === 0) return "";
-  opts = opts || {};
-  return `
-    <div class="proposal-investimento-resumo">
-      <h4>SERVIÇOS INCLUÍDOS NESTA PROPOSTA</h4>
-      <p class="proposal-investimento-resumo-sub">Solução contábil completa, com valor detalhado de cada serviço incluído.</p>
-      <div class="proposal-itens-lista">
-        ${blocos.map(renderBlocoInvestimento).join("")}
-      </div>
-      ${opts.total != null ? renderValorTotalBar(opts.total) : ""}
-    </div>`;
-}
-
-// Os blocos somem no meio de "SERVIÇOS E INVESTIMENTO" assim que passa desse
-// tanto (a página já carrega a lista de serviços padrão em cima) — o resto
-// vira página(s) extra "(continuação)", com o mesmo cabeçalho/rodapé, em
-// vez de estourar a altura da página e cortar feio. Números menores que os
-// anteriores porque os cards novos (com legenda e sub-itens) ocupam mais
-// altura que os cartões antigos.
-const ITENS_INVESTIMENTO_PAGINA_PRINCIPAL = 3;
-const ITENS_INVESTIMENTO_POR_PAGINA_CONTINUACAO = 6;
-
 function investimentoMetaHtml(investimento) {
   return `
     <div class="proposal-investimento-meta">
@@ -326,18 +287,6 @@ function investimentoMetaHtml(investimento) {
       <div><span class="fl">Prazo para início</span><span class="fv">${phP(investimento.prazoInicio, "Após aceite")}</span></div>
       <div><span class="fl">Validade da proposta</span><span class="fv">${phP(investimento.validade, "Não informado")}</span></div>
     </div>`;
-}
-
-function renderPaginaContinuacaoInvestimento(blocosDaPagina, investimento, mostrarMeta, totalGeral, pageNumber) {
-  return `
-    <section class="proposal-page">
-      ${brandBar()}
-      <h2 class="proposal-h2">SERVIÇOS E INVESTIMENTO (continuação)</h2>
-      <p class="proposal-sub">Itens de investimento</p>
-      ${renderInvestimentoItens(blocosDaPagina, { total: mostrarMeta ? totalGeral : null })}
-      ${mostrarMeta ? investimentoMetaHtml(investimento) : ""}
-      ${pageFooter(pageNumber)}
-    </section>`;
 }
 
 // Quando um plano de honorário foi escolhido no checklist, troca a lista
@@ -373,14 +322,10 @@ function renderEtapasOuPlanos(planosSelecionados) {
     </div>`).join("");
 }
 
-function renderServicosInvestimento(investimento, servicos, planosSelecionados, pageNumber) {
-  const itens = investimento.itens || [];
-  const temItensMultiplos = itens.length > 0;
-  const blocos = construirBlocosInvestimento(itens, planosSelecionados);
-  const blocosPaginaPrincipal = blocos.slice(0, ITENS_INVESTIMENTO_PAGINA_PRINCIPAL);
-  const blocosRestantes = blocos.slice(ITENS_INVESTIMENTO_PAGINA_PRINCIPAL);
-  const cabeMetaNaPrincipal = blocosRestantes.length === 0;
-
+// Bloco de abertura de "Serviços e Investimento": título + (o que está
+// incluso no plano, ou a lista padrão de etapas) + a caixa de preço único
+// ao lado, quando a proposta não usa múltiplos itens de investimento.
+function renderServicosIntroBloco(investimento, planosSelecionados, temItensMultiplos) {
   const temDesconto = investimento.temDesconto && investimento.valorFinal;
   const desconto = temDesconto
     ? (parseFloat((investimento.valorCheio || "0").replace(/\./g, "").replace(",", ".")) -
@@ -400,9 +345,8 @@ function renderServicosInvestimento(investimento, servicos, planosSelecionados, 
       <div class="proposal-price">${investimento.valorCheio ? "R$ " + escapeHtmlP(investimento.valorCheio) : '<span class="placeholder">[valor]</span>'}</div>
     `;
 
-  const paginaPrincipal = `
-    <section class="proposal-page">
-      ${brandBar()}
+  return `
+    <div>
       <h2 class="proposal-h2">SERVIÇOS E INVESTIMENTO</h2>
       <p class="proposal-sub">Serviços que serão prestados</p>
 
@@ -423,39 +367,67 @@ function renderServicosInvestimento(investimento, servicos, planosSelecionados, 
           <p class="proposal-price-fine">Proposta válida mediante conferência das informações cadastrais e confirmação do escopo final.</p>
         </div>`}
       </div>
-
-      ${renderInvestimentoItens(blocosPaginaPrincipal, { total: cabeMetaNaPrincipal ? somaItensP(itens) : null })}
-      ${temItensMultiplos && cabeMetaNaPrincipal ? investimentoMetaHtml(investimento) : ""}
-      ${pageFooter(pageNumber)}
-    </section>`;
-
-  let html = paginaPrincipal;
-  let pagina = pageNumber;
-  for (let i = 0; i < blocosRestantes.length; i += ITENS_INVESTIMENTO_POR_PAGINA_CONTINUACAO) {
-    pagina += 1;
-    const chunk = blocosRestantes.slice(i, i + ITENS_INVESTIMENTO_POR_PAGINA_CONTINUACAO);
-    const ehUltimaPagina = i + ITENS_INVESTIMENTO_POR_PAGINA_CONTINUACAO >= blocosRestantes.length;
-    html += renderPaginaContinuacaoInvestimento(chunk, investimento, ehUltimaPagina, somaItensP(itens), pagina);
-  }
-
-  return { html, ultimaPagina: pagina };
+    </div>`;
 }
 
-function renderProposal(data) {
+// Cabeçalho "SERVIÇOS INCLUÍDOS NESTA PROPOSTA" + o primeiro card — sempre
+// juntos no mesmo bloco, pra nunca deixar o título sozinho numa folha
+// separada do primeiro item que ele apresenta.
+function renderResumoInvestimentoHeaderBloco(primeiroBlocoHtml) {
+  return `
+    <div class="proposal-investimento-resumo">
+      <h4>SERVIÇOS INCLUÍDOS NESTA PROPOSTA</h4>
+      <p class="proposal-investimento-resumo-sub">Solução contábil completa, com valor detalhado de cada serviço incluído.</p>
+      <div class="proposal-itens-lista">${primeiroBlocoHtml}</div>
+    </div>`;
+}
+
+function renderItemBlocoAvulso(blocoHtml) {
+  return `<div class="proposal-itens-lista">${blocoHtml}</div>`;
+}
+
+function renderValorTotalBloco(investimento, total) {
+  return `
+    <div>
+      ${renderValorTotalBar(total)}
+      ${investimentoMetaHtml(investimento)}
+    </div>`;
+}
+
+// Decompõe a proposta inteira numa lista plana de blocos (cada um uma
+// unidade indivisível) — quem decide quais blocos caem em qual folha física
+// é montarPreviewPaginado(), em app-orcamento.js, depois de medir a altura
+// real de cada um no navegador (só assim dá pra aproveitar o espaço da
+// folha sem cortar texto/tabela no meio, sem depender de heurísticas fixas
+// de quantos itens "normalmente" cabem por página).
+function montarBlocosProposta(data) {
   const grupo = data.grupo || [];
-  let pagina = 1;
+  const itens = data.investimento.itens || [];
+  const temItensMultiplos = itens.length > 0;
+  const blocos = [];
 
-  let html = renderCapa(data.cliente);
-  pagina += 1;
-  html += renderDadosCliente(data.cliente, data.diagnostico, pagina);
-  pagina += 1;
-
+  blocos.push({ html: renderCapaBloco(data.cliente) });
+  blocos.push({ html: renderDadosClienteBloco(data.cliente, data.diagnostico) });
   grupo.forEach((empresa, i) => {
-    html += renderDadosClienteExtra(empresa, i + 2, pagina);
-    pagina += 1;
+    blocos.push({ html: renderDadosClienteExtraBloco(empresa, i + 2) });
   });
 
-  const investimentoResult = renderServicosInvestimento(data.investimento, data.servicos, data.planosSelecionados, pagina);
-  html += investimentoResult.html;
-  return html;
+  blocos.push({ html: renderServicosIntroBloco(data.investimento, data.planosSelecionados, temItensMultiplos) });
+
+  if (temItensMultiplos) {
+    const { grupos, soltos } = agruparItensInvestimento(itens, data.planosSelecionados);
+    const itensDecompostos = [
+      ...grupos.map((g) => ({ tipo: "grupo", dado: g })),
+      ...soltos.map((s) => ({ tipo: "solto", dado: s })),
+    ];
+    itensDecompostos.forEach((bloco, i) => {
+      const html = renderBlocoInvestimento(bloco);
+      blocos.push({
+        html: i === 0 ? renderResumoInvestimentoHeaderBloco(html) : renderItemBlocoAvulso(html),
+      });
+    });
+    blocos.push({ html: renderValorTotalBloco(data.investimento, somaItensP(itens)) });
+  }
+
+  return blocos;
 }

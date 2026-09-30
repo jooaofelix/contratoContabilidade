@@ -261,9 +261,104 @@ function collectProposalData() {
   };
 }
 
+// --- Paginação por medição real no navegador -----------------------------
+//
+// Antes disso, quem decidia onde cada seção da proposta terminava era o
+// próprio motor de impressão do Chrome (CSS page-break-*) — só que ele não
+// tem como saber, sem renderizar de verdade, quanto de cada bloco cabe
+// numa folha A4, e às vezes simplesmente não estica um fundo colorido até
+// o fim físico da folha (bug observado e reproduzido isoladamente). Aqui
+// cada bloco da proposta (ver montarBlocosProposta em proposal-template.js)
+// é renderizado escondido, medido de verdade (getBoundingClientRect) e só
+// depois agrupado em folhas — o resultado é pré-paginado: cada
+// .proposal-page final já sabe que cabe inteira numa folha A4, então vira
+// sua própria página impressa sem depender de heurística nenhuma do
+// navegador. A mesma função gera tanto a pré-visualização na tela quanto o
+// que sai no Imprimir/Exportar PDF — os dois são sempre idênticos.
+
+// 277mm (folha A4 menos os 10mm de margem de cada lado do @page) a 96dpi.
+const PAGINA_ALTURA_UTIL_PX = 1046;
+// Padding vertical de .proposal-page (20px em cima + 20px embaixo).
+const PAGINA_PADDING_VERTICAL_PX = 40;
+// Precisa bater com o gap: 12px da regra .proposal-page no CSS — é o
+// espaço entre marca/blocos/rodapé dentro de cada folha.
+const BLOCO_GAP_PX = 12;
+
+function medirBlocosOrc(blocosHtml) {
+  const medidorDoc = document.createElement("div");
+  medidorDoc.className = "proposal-doc";
+  medidorDoc.style.cssText = "position:absolute; visibility:hidden; left:-9999px; top:0; width:718px;";
+
+  const medidorPagina = document.createElement("div");
+  medidorPagina.className = "proposal-page";
+  medidorDoc.appendChild(medidorPagina);
+
+  const wrappers = blocosHtml.map((html) => {
+    const w = document.createElement("div");
+    w.innerHTML = html;
+    medidorPagina.appendChild(w);
+    return w;
+  });
+  const brandWrapper = document.createElement("div");
+  brandWrapper.innerHTML = brandBar();
+  medidorPagina.appendChild(brandWrapper);
+  const footerWrapper = document.createElement("div");
+  footerWrapper.innerHTML = pageFooter();
+  medidorPagina.appendChild(footerWrapper);
+
+  document.body.appendChild(medidorDoc);
+  const alturas = wrappers.map((w) => w.getBoundingClientRect().height);
+  const alturaBrand = brandWrapper.getBoundingClientRect().height;
+  const alturaFooter = footerWrapper.getBoundingClientRect().height;
+  document.body.removeChild(medidorDoc);
+
+  return { alturas, alturaBrand, alturaFooter };
+}
+
+// Empacota os blocos em folhas por altura real: acumula um bloco por vez
+// na folha atual enquanto couber no orçamento de altura útil; quando o
+// próximo bloco não cabe mais, fecha a folha e começa uma nova. Cada bloco
+// é indivisível (nunca é cortado ao meio entre duas folhas).
+function paginarBlocosOrc(blocos) {
+  if (blocos.length === 0) return [];
+  const { alturas, alturaBrand, alturaFooter } = medirBlocosOrc(blocos.map((b) => b.html));
+  const orcamentoUtil = PAGINA_ALTURA_UTIL_PX - PAGINA_PADDING_VERTICAL_PX - alturaBrand - alturaFooter - BLOCO_GAP_PX * 2;
+
+  const paginas = [];
+  let paginaAtual = [];
+  let alturaAtual = 0;
+
+  blocos.forEach((bloco, i) => {
+    const alturaBloco = alturas[i];
+    const gap = paginaAtual.length > 0 ? BLOCO_GAP_PX : 0;
+    if (paginaAtual.length > 0 && alturaAtual + gap + alturaBloco > orcamentoUtil) {
+      paginas.push(paginaAtual);
+      paginaAtual = [];
+      alturaAtual = 0;
+    }
+    paginaAtual.push(bloco);
+    alturaAtual += (paginaAtual.length > 1 ? BLOCO_GAP_PX : 0) + alturaBloco;
+  });
+  if (paginaAtual.length > 0) paginas.push(paginaAtual);
+  return paginas;
+}
+
+function montarPreviewPaginadoOrc(data) {
+  const blocos = montarBlocosProposta(data);
+  const paginas = paginarBlocosOrc(blocos);
+  return paginas
+    .map((paginaBlocos) => `
+      <section class="proposal-page">
+        ${brandBar()}
+        ${paginaBlocos.map((b) => b.html).join("")}
+        ${pageFooter()}
+      </section>`)
+    .join("");
+}
+
 function updateProposalPreview() {
   const data = collectProposalData();
-  document.getElementById("proposal-preview").innerHTML = renderProposal(data);
+  document.getElementById("proposal-preview").innerHTML = montarPreviewPaginadoOrc(data);
 }
 
 function setupLiveUpdateOrc() {
