@@ -35,6 +35,15 @@ async function getVenda(id) {
   return doc.exists ? Object.assign({ id: doc.id }, doc.data()) : null;
 }
 
+// O Firestore recusa a escrita inteira (lança exceção) se QUALQUER campo do
+// objeto for undefined — troca por null antes de gravar, senão um valor
+// undefined em qualquer campo faz o registro inteiro falhar em silêncio.
+function semUndefined(obj) {
+  const limpo = {};
+  Object.keys(obj).forEach((k) => { limpo[k] = obj[k] === undefined ? null : obj[k]; });
+  return limpo;
+}
+
 async function upsertVenda(data, existingId) {
   const id = existingId || db.collection(VENDAS_COLLECTION).doc().id;
   const docRef = db.collection(VENDAS_COLLECTION).doc(id);
@@ -44,7 +53,7 @@ async function upsertVenda(data, existingId) {
     ? existingSnap.data().createdAt
     : firebase.firestore.FieldValue.serverTimestamp();
 
-  const record = Object.assign({}, data, {
+  const record = Object.assign({}, semUndefined(data), {
     createdAt,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
   });

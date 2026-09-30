@@ -68,7 +68,7 @@ function collectVendaForm() {
     empresaNome: getV("v_empresaNome"),
     contato: getV("v_contato"),
     produtoId: produtoSelect.value || null,
-    produtoNome: produtoSelect.value ? produtoOpt.textContent : "",
+    produtoNome: produtoSelect.value && produtoOpt ? produtoOpt.textContent : "",
     valor: getV("v_valor"),
     dataEnvio: getV("v_dataEnvio"),
     status: getV("v_status"),
@@ -1450,16 +1450,16 @@ async function setupEmpresasVendas() {
 
 function setupVendaActions() {
   document.getElementById("venda-save").addEventListener("click", async () => {
-    const data = collectVendaForm();
     const status = document.getElementById("venda-status");
-    if (!data.empresaNome) {
-      status.textContent = "Informe ao menos o nome da empresa/lead.";
-      status.className = "pdf-status error";
-      return;
-    }
-    status.textContent = "Salvando...";
-    status.className = "pdf-status";
     try {
+      const data = collectVendaForm();
+      if (!data.empresaNome) {
+        status.textContent = "Informe ao menos o nome da empresa/lead.";
+        status.className = "pdf-status error";
+        return;
+      }
+      status.textContent = "Salvando...";
+      status.className = "pdf-status";
       await upsertVenda(data, vendaEditId);
       status.textContent = "Registro salvo.";
       status.className = "pdf-status ok";
@@ -1467,7 +1467,7 @@ function setupVendaActions() {
       await refreshVendas();
     } catch (err) {
       console.error(err);
-      status.textContent = "Erro ao salvar o registro.";
+      status.textContent = "Erro ao salvar o registro: " + (err && err.message ? err.message : "erro desconhecido. Confira sua conexão e tente de novo.");
       status.className = "pdf-status error";
     }
   });
