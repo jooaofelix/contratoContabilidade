@@ -747,8 +747,8 @@
     overflow: visible;
     box-shadow: none;
     border-radius: 0;
-    padding: 18px 28px 22px;
-    margin-bottom: 16px;
+    padding: 15px 24px 18px;
+    margin-bottom: 14px;
   }
   /* A capa é um design de destaque (fundo navy cheio) — continua isolada na
      própria folha, não mistura com o conteúdo branco das próximas seções.
@@ -778,6 +778,24 @@
     page-break-after: avoid;
     break-after: avoid;
   }
+  /* Espaçamentos internos mais enxutos só na impressão — cada folga a
+     menos entre blocos é espaço a mais aproveitado antes de precisar
+     pular de página, então sobra menos "resto" sozinho numa folha nova. */
+  .proposal-brand { margin-bottom: 20px; }
+  .proposal-sub { margin-bottom: 14px; }
+  .proposal-services { gap: 12px; }
+  .proposal-box { padding: 16px 20px; }
+  .proposal-box h4 { margin-bottom: 12px; }
+  .proposal-plano-incluso { padding: 12px 16px; }
+  .proposal-plano-incluso-list { gap: 6px; }
+  .proposal-investimento-resumo { margin-top: 16px; }
+  .proposal-investimento-resumo-sub { margin-bottom: 10px; }
+  .proposal-itens-lista { gap: 9px; }
+  .proposal-item-card { padding: 11px 16px; }
+  .proposal-item-grupo { padding: 13px 16px; }
+  .proposal-item-subitens { margin-top: 10px; padding: 2px 12px; }
+  .proposal-subitem { padding: 7px 0; }
+  .proposal-valor-total-bar { margin-top: 14px; padding: 14px 20px; }
   /* A posição fixa (absolute, colada nos 20px de baixo do card de 560px de
      altura mínima) só fazia sentido enquanto toda seção virava uma folha
      A4 inteira. Sem min-height, o rodapé volta a ser só mais um elemento

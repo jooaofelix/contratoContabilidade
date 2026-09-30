@@ -62,8 +62,12 @@ function brandBar() {
     </div>`;
 }
 
-function pageFooter(n) {
-  return `<div class="proposal-footer">Página ${n} | AEA Contabilidade Consultiva</div>`;
+// Sem o número: como as seções agora fluem e podem dividir a mesma folha
+// física (ver @media print em orcamento.css), o contador de seção do JS
+// deixou de corresponder ao número real da página impressa — mostrar
+// "Página 3" errado é pior do que não mostrar nenhum número.
+function pageFooter() {
+  return `<div class="proposal-footer">AEA Contabilidade Consultiva</div>`;
 }
 
 function renderCapa(cliente) {
