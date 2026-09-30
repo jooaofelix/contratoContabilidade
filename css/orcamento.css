@@ -731,8 +731,14 @@
 
 @media print {
   .proposal-page {
-    page-break-after: always;
-    break-after: page;
+    /* Cada seção (Dados do Cliente, Empresa extra, Serviços...) já foi um
+       page-break-after: always fixo — isso forçava toda seção pra sua
+       própria folha A4 inteira, mesmo quando o conteúdo real ocupava só um
+       terço da página (ex: "Dados do Cliente — Empresa 2", só uma
+       caixinha). Sem quebra forçada + sem min-height, as seções fluem uma
+       atrás da outra e só pulam de página quando o conteúdo de fato não
+       cabe mais — sem espaço em branco sobrando no meio do documento. */
+    min-height: 0;
     /* NÃO usar break-inside: avoid aqui: o conteúdo de uma página (lista de
        serviços + bloco do plano + cards de investimento, tudo dinâmico)
        pode crescer mais do que cabe numa folha. "avoid" combinado com
@@ -741,16 +747,50 @@
     overflow: visible;
     box-shadow: none;
     border-radius: 0;
-    margin-bottom: 0;
+    padding: 18px 28px 22px;
+    margin-bottom: 16px;
+  }
+  /* A capa é um design de destaque (fundo navy cheio) — continua isolada na
+     própria folha, não mistura com o conteúdo branco das próximas seções.
+     :not(:last-child) evita uma folha final em branco sobrando depois dela
+     num documento muito curto (capa sozinha, por exemplo). */
+  .proposal-page-dark:not(:last-child) {
+    page-break-after: always;
+    break-after: page;
   }
   .proposal-page:last-child {
-    page-break-after: auto;
-    break-after: auto;
+    margin-bottom: 0;
   }
+  /* Cada bloco de conteúdo (caixa de dados, card de item, barra de total)
+     não quebra no meio — se não coube inteiro no resto da página, o navegador
+     empurra ele todo pra próxima, em vez de partir a caixa/tabela ao meio. */
+  .proposal-box,
+  .proposal-plano-incluso,
   .proposal-item-card,
-  .proposal-valor-total-bar {
+  .proposal-valor-total-bar,
+  .proposal-investimento-meta {
     page-break-inside: avoid;
     break-inside: avoid;
+  }
+  /* Evita um título de seção ficar sozinho no fim de uma página, separado
+     do conteúdo dele que foi pro início da próxima. */
+  .proposal-h2, .proposal-sub, .proposal-brand {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+  /* A posição fixa (absolute, colada nos 20px de baixo do card de 560px de
+     altura mínima) só fazia sentido enquanto toda seção virava uma folha
+     A4 inteira. Sem min-height, o rodapé volta a ser só mais um elemento
+     no fim do fluxo normal — senão ele fica sem "chão" embaixo e some por
+     cima do próprio conteúdo da seção. */
+  .proposal-footer {
+    position: static;
+    margin-top: 16px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  .proposal-page-dark .proposal-footer {
+    border-top-color: rgba(255, 255, 255, 0.15);
   }
   .proposal-doc { max-width: 100%; }
 }
