@@ -161,8 +161,18 @@ function renderDadosClienteExtraBloco(empresa, indice) {
 
 // --- Ícones simples (SVG embutido, sem depender de biblioteca externa) ----
 
+// Cor fixa (em vez de currentColor) e width/height explícitos no próprio
+// <svg> (em vez de só no viewBox + CSS) de propósito: o html2canvas usado
+// na exportação de PDF (ver btn-print em app-orcamento.js) não resolve
+// currentColor nem o tamanho intrínseco via CSS de forma confiável quando
+// captura uma única .proposal-page isolada — sem os dois, o ícone sai em
+// branco (círculo vazio), mesmo que na tela apareça normal. Testado e
+// reproduzido isoladamente. Como o ícone só aparece dentro de
+// .proposal-item-icon/.proposal-valor-total-icon (sempre --p-blue-light,
+// #57b8ff) e o CSS continua sobrepondo o width/height na tela, fixar os
+// dois aqui não muda nada visualmente e elimina as duas dependências frágeis.
 function svgIconP(paths, viewBox) {
-  return `<svg viewBox="${viewBox || "0 0 24 24"}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+  return `<svg width="24" height="24" viewBox="${viewBox || "0 0 24 24"}" fill="none" stroke="#57b8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths.replace(/currentColor/g, "#57b8ff")}</svg>`;
 }
 
 const ICONES_SERVICO_P = {

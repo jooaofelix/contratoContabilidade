@@ -766,16 +766,17 @@
     border-radius: 0;
     margin-bottom: 0;
   }
-  /* Rede de segurança: se a medição no navegador diferir um pouco do PDF
-     final, pelo menos esses blocos não quebram no meio. */
-  .proposal-box,
-  .proposal-plano-incluso,
-  .proposal-item-card,
-  .proposal-valor-total-bar,
-  .proposal-investimento-meta,
-  .proposal-capa-bloco,
-  .proposal-columns,
-  .proposal-capa {
+  /* Cada .proposal-bloco é uma unidade indivisível pro empacotador (ver
+     montarBlocosProposta/montarPreviewPaginadoOrc) — sem isso, nada impede
+     o navegador de inserir uma quebra de página natural NO MEIO de um
+     bloco (ex: separar o título "DADOS DO CLIENTE" da caixa dele) sempre
+     que ele não couber inteiro no resto da folha atual; com isso, o bloco
+     inteiro pula pra próxima folha junto. De propósito SÓ no wrapper mais
+     externo: marcar um elemento E os filhos dele (ex: .proposal-capa-bloco
+     E .proposal-capa) como break-inside: avoid ao mesmo tempo, os dois,
+     testado, faz o Chrome se confundir e inserir uma quebra espúria mesmo
+     assim — proteger só o nível de fora já é suficiente. */
+  .proposal-bloco {
     page-break-inside: avoid;
     break-inside: avoid;
   }

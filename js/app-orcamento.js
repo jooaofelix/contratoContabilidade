@@ -277,7 +277,11 @@ function collectProposalData() {
 // que sai no Imprimir/Exportar PDF — os dois são sempre idênticos.
 
 // 277mm (folha A4 menos os 10mm de margem de cada lado do @page) a 96dpi.
-const PAGINA_ALTURA_UTIL_PX = 1046;
+// Cada .proposal-page vira sua própria página no PDF exportado via canvas
+// (ver btn-print em setupActionsOrc), uma de cada vez — não depende mais da
+// fragmentação de impressão do navegador pra decidir onde cortar, então o
+// valor aqui pode usar o espaço físico da folha inteiro.
+const PAGINA_ALTURA_UTIL_PX = 1047;
 // Padding vertical de .proposal-page (20px em cima + 20px embaixo).
 const PAGINA_PADDING_VERTICAL_PX = 40;
 // Precisa bater com o gap: 12px da regra .proposal-page no CSS — é o
@@ -350,7 +354,7 @@ function montarPreviewPaginadoOrc(data) {
     .map((paginaBlocos) => `
       <section class="proposal-page">
         ${brandBar()}
-        ${paginaBlocos.map((b) => b.html).join("")}
+        ${paginaBlocos.map((b) => `<div class="proposal-bloco">${b.html}</div>`).join("")}
         ${pageFooter()}
       </section>`)
     .join("");
@@ -459,9 +463,66 @@ async function setupEmpresasOrcamento() {
   });
 }
 
+// Cada .proposal-page é capturada em canvas SEPARADAMENTE (uma de cada vez)
+// e colada como página inteira num PDF montado manualmente — em vez de
+// pedir pro html2pdf capturar o documento inteiro de uma vez e cortar em
+// páginas sozinho (pagebreak.mode:['css']). As duas abordagens de
+// fragmentação automática (a impressão nativa do Chrome via window.print(),
+// e o modo pagebreak do html2pdf) têm bugs reproduzidos nesse projeto:
+// inserem quebra de página espúria ou embaralham a ordem das páginas mesmo
+// quando cada .proposal-page mede menos que a folha inteira. Capturando
+// cada uma isoladamente como sua própria imagem elimina esse problema por
+// completo — não tem fragmentação nenhuma pra dar errado.
+async function paginaParaCanvasOrc(pageEl) {
+  // Precisa estar com y>=0 na viewport antes de capturar: testado e
+  // reproduzido — o html2canvas usado pelo html2pdf sai em branco (mede o
+  // tamanho certo mas não desenha nada) quando o elemento alvo está
+  // rolado PARA CIMA do topo da viewport (y negativo).
+  window.scrollTo(0, 0);
+  pageEl.scrollIntoView();
+  window.scrollTo(0, 0);
+  return html2pdf().set({ html2canvas: { scale: 2 } }).from(pageEl).toCanvas().get("canvas");
+}
+
+async function gerarPdfOrc(empresa) {
+  // Só usado pra conseguir uma instância jsPDF já pronta (o jsPDF interno
+  // do html2pdf não é exposto como global) — a página 1 dela é descartada
+  // e recriada manualmente pra cada .proposal-page real logo abaixo.
+  const dummy = document.createElement("div");
+  dummy.textContent = "x";
+  document.body.appendChild(dummy);
+  const pdf = await html2pdf().set({ jsPDF: { unit: "mm", format: "a4", orientation: "portrait" } }).from(dummy).toPdf().get("pdf");
+  document.body.removeChild(dummy);
+  pdf.deletePage(1);
+
+  const pageEls = Array.from(document.querySelectorAll("#proposal-preview .proposal-page"));
+  for (const pageEl of pageEls) {
+    const canvas = await paginaParaCanvasOrc(pageEl);
+    const imgData = canvas.toDataURL("image/jpeg", 0.98);
+    const imgWmm = 190; // largura útil da folha A4 (210mm - 10mm de margem de cada lado)
+    const imgHmm = (canvas.height / canvas.width) * imgWmm;
+    pdf.addPage();
+    pdf.addImage(imgData, "JPEG", 10, 10, imgWmm, imgHmm);
+  }
+  pdf.save(`Proposta - ${empresa || "AEA"}.pdf`);
+}
+
 function setupActionsOrc() {
-  document.getElementById("btn-print").addEventListener("click", () => {
-    window.print();
+  document.getElementById("btn-print").addEventListener("click", async () => {
+    const btn = document.getElementById("btn-print");
+    const empresa = (getOrc("q_empresa") || "Proposta").trim();
+    const textoOriginal = btn.textContent;
+    btn.textContent = "Gerando PDF...";
+    btn.disabled = true;
+    try {
+      await gerarPdfOrc(empresa);
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível gerar o PDF: " + (err && err.message ? err.message : "erro desconhecido."));
+    } finally {
+      btn.textContent = textoOriginal;
+      btn.disabled = false;
+    }
   });
 
   document.getElementById("btn-clear").addEventListener("click", () => {
