@@ -81,22 +81,23 @@ function collectServicosSelecionadosOrc() {
   return Array.from(document.querySelectorAll("#orc-servicos-checklist .orc-servico-check:checked")).map((c) => c.value);
 }
 
-// Valor digitado na frente de cada serviço marcado — vira um item de
-// investimento (mesmo formato dos itens manuais) pra entrar na soma do
-// valor total e no card individual do PDF. Serviço marcado sem valor
-// preenchido aparece só na lista "Serviços incluídos", sem card de preço.
+// Todo serviço marcado no checklist vira um card no "Serviços incluídos
+// nesta proposta" do PDF — com valor (se foi preenchido o campo "R$" ao
+// lado) ou sem valor (card só com título/descrição, pra serviços incluídos
+// sem cobrança destacada). É essa lista que entra na soma do Valor Total.
 function collectValoresServicosOrc() {
   return Array.from(document.querySelectorAll("#orc-servicos-checklist .orc-servico-linha"))
     .map((linha) => {
       const check = linha.querySelector(".orc-servico-check");
+      if (!check.checked) return null;
       const valorInput = linha.querySelector(".orc-servico-valor");
-      if (!check.checked || !valorInput.value.trim()) return null;
       const produto = produtosCacheOrc.find((p) => p.nome === check.value);
       return {
         titulo: check.value,
         valor: valorInput.value.trim(),
         recorrencia: produto && tipoDoProduto(produto) === "Recorrente" ? "Mensal" : "Única vez",
-        descricao: "",
+        descricao: descricaoDoProduto(produto),
+        categoria: categoriaDoProduto(produto),
       };
     })
     .filter(Boolean);
@@ -109,7 +110,7 @@ function collectPlanosSelecionadosOrc() {
   return nomesMarcados
     .map((nome) => produtosCacheOrc.find((p) => p.nome === nome))
     .filter(Boolean)
-    .map((p) => ({ nome: p.nome, detalhes: detalhesDoProduto(p) }));
+    .map((p) => ({ nome: p.nome, detalhes: detalhesDoProduto(p), descricao: descricaoDoProduto(p) }));
 }
 
 // --- Grupo Econômico (mais de uma empresa na mesma proposta) -------------

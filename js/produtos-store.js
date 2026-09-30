@@ -163,6 +163,27 @@ function detalhesDoProduto(produto) {
   return PRODUTOS_DETALHES_FALLBACK[produto.nome] || [];
 }
 
+// Frase curta (1 linha) usada como legenda de cada card no "Resumo de
+// Investimento" do PDF — diferente de PRODUTOS_DETALHES_FALLBACK (lista
+// longa de bullets). Mesma lógica de fallback: um campo "descricaoCurta"
+// salvo no produto sempre vence; sem isso, cai no texto fixo abaixo; sem
+// nenhum dos dois, o card sai só com título e valor (sem legenda).
+const PRODUTOS_DESCRICAO_FALLBACK = {
+  "Plano Digital": "Contabilidade 100% digital, com agilidade e suporte online.",
+  "Plano Completo": "Contábil, fiscal e departamento pessoal integrados em um único plano.",
+  "Plano Consultiva": "Acompanhamento estratégico completo, com mentoria e planejamento tributário.",
+  "Departamento Pessoal / Folha de Pagamento": "Folha de pagamento, admissões, rescisões e obrigações trabalhistas em dia.",
+  "Contábil": "Escrituração contábil completa e balancetes sempre atualizados.",
+  "Fiscal": "Apuração de impostos e obrigações acessórias em dia.",
+  "Emissão de Notas": "Emissão mensal das notas fiscais, sem complicação.",
+};
+
+function descricaoDoProduto(produto) {
+  if (!produto) return "";
+  if (produto.descricaoCurta) return produto.descricaoCurta;
+  return PRODUTOS_DESCRICAO_FALLBACK[produto.nome] || "";
+}
+
 // Nomes de itens antigos (semeados antes do campo "tipo" existir) que são
 // recorrentes — usado só como fallback de exibição, nunca escreve no banco.
 const PRODUTOS_TIPO_RECORRENTE_FALLBACK = new Set(

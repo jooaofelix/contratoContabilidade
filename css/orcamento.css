@@ -511,74 +511,195 @@
 }
 
 .proposal-investimento-resumo h4 {
-  margin: 0 0 14px;
+  margin: 0 0 4px;
   font-size: 0.82rem;
   font-weight: 800;
   color: var(--p-navy);
   letter-spacing: 0.02em;
 }
 
-.proposal-investimento-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 14px;
+.proposal-investimento-resumo-sub {
+  margin: 0 0 14px;
+  font-size: 0.72rem;
+  color: #6b7280;
 }
 
-.proposal-investimento-total {
+.proposal-itens-lista {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 2px solid var(--p-navy);
+  flex-direction: column;
+  gap: 12px;
 }
 
-.proposal-investimento-total-label {
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: var(--p-navy);
-  letter-spacing: 0.02em;
-}
-
-.proposal-investimento-total-valor {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--p-navy);
-}
-
-.proposal-investimento-card {
-  background: var(--p-navy);
-  color: #fff;
+/* Card avulso: ícone + título/descrição à esquerda, valor alinhado à
+   direita numa única linha — usado pra qualquer item que não esteja
+   agrupado dentro de um plano (adicionais, itens manuais, ou um plano
+   marcado sozinho, sem nenhum serviço de Escritório junto). */
+.proposal-item-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--p-bg);
   border-radius: 10px;
-  padding: 18px 20px;
+  padding: 14px 18px;
+  break-inside: avoid;
 }
 
-.proposal-investimento-valor {
-  font-size: 1.5rem;
-  font-weight: 800;
+.proposal-item-icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--p-navy);
   color: var(--p-blue-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.proposal-investimento-titulo {
+.proposal-item-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.proposal-item-headtext {
+  flex: 1;
+  min-width: 0;
+}
+
+.proposal-item-titulo {
   font-size: 0.85rem;
-  font-weight: 700;
-  margin-top: 4px;
+  font-weight: 800;
+  color: var(--p-navy);
 }
 
-.proposal-investimento-recorrencia {
+.proposal-item-desc {
+  font-size: 0.72rem;
+  color: #5b6577;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.proposal-item-valor-solo {
+  flex-shrink: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--p-navy);
+  white-space: nowrap;
+}
+
+.proposal-item-incluso {
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: var(--p-blue-light);
-  margin-top: 4px;
+  color: #8a94a6;
 }
 
-.proposal-investimento-desc {
-  font-size: 0.75rem;
-  opacity: 0.85;
-  margin: 8px 0 0;
-  line-height: 1.4;
+/* Card de grupo (plano com serviços de Escritório escolhidos dentro dele):
+   cabeçalho sem preço próprio + caixa interna com os sub-itens, cada um com
+   seu valor — a soma deles é o "preço" do plano, mostrado só na barra de
+   total no fim da página. */
+.proposal-item-grupo {
+  flex-direction: column;
+  align-items: stretch;
+  background: #e9f2fc;
+  border: 1px solid #cfe3f7;
+  gap: 0;
+  padding: 16px 18px;
+}
+
+.proposal-item-grupo-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.proposal-item-subitens {
+  margin-top: 14px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 4px 14px;
+}
+
+.proposal-subitem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--p-bg);
+}
+
+.proposal-subitem:first-child {
+  border-top: none;
+}
+
+.proposal-subitem-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.proposal-subitem-valor {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--p-navy);
+  white-space: nowrap;
+}
+
+/* Barra de valor total: substitui o antigo "resumo" com quadros azuis —
+   vai direto pro número final, grande, na paleta da marca. */
+.proposal-valor-total-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 18px;
+  background: linear-gradient(135deg, var(--p-navy), var(--p-navy-2));
+  color: #fff;
+  border-radius: 12px;
+  padding: 18px 24px;
+}
+
+.proposal-valor-total-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--p-blue-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.proposal-valor-total-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.proposal-valor-total-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.proposal-valor-total-label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.proposal-valor-total-sub {
+  font-size: 0.7rem;
+  opacity: 0.75;
+  margin-top: 2px;
+}
+
+.proposal-valor-total-valor {
+  flex-shrink: 0;
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: var(--p-blue-light);
+  white-space: nowrap;
 }
 
 .proposal-investimento-meta {
@@ -626,7 +747,8 @@
     page-break-after: auto;
     break-after: auto;
   }
-  .proposal-investimento-card {
+  .proposal-item-card,
+  .proposal-valor-total-bar {
     page-break-inside: avoid;
     break-inside: avoid;
   }

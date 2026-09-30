@@ -159,46 +159,161 @@ function renderDadosClienteExtra(empresa, indice, pageNumber) {
     </section>`;
 }
 
-function renderServicosSelecionados(servicos) {
-  if (!servicos || servicos.length === 0) return "";
+// --- Ícones simples (SVG embutido, sem depender de biblioteca externa) ----
+
+function svgIconP(paths, viewBox) {
+  return `<svg viewBox="${viewBox || "0 0 24 24"}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+}
+
+const ICONES_SERVICO_P = {
+  contabil: svgIconP('<rect x="3" y="11" width="4" height="10" rx="1"></rect><rect x="10" y="6" width="4" height="15" rx="1"></rect><rect x="17" y="2" width="4" height="19" rx="1"></rect>'),
+  fiscal: svgIconP('<rect x="4" y="2.5" width="16" height="19" rx="2"></rect><line x1="7.5" y1="8" x2="16.5" y2="8"></line><line x1="7.5" y1="12" x2="16.5" y2="12"></line><line x1="7.5" y1="16" x2="13" y2="16"></line>'),
+  pessoal: svgIconP('<circle cx="9" cy="8" r="3.2"></circle><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"></path><circle cx="18" cy="9" r="2.4"></circle><path d="M15.3 14.2c2.7.5 4.5 2.4 4.7 5.3"></path>'),
+  financeiro: svgIconP('<polyline points="3 16 9 10 13 14 21 5"></polyline><polyline points="15 5 21 5 21 11"></polyline>'),
+  digital: svgIconP('<rect x="3" y="4" width="18" height="12.5" rx="2"></rect><line x1="8" y1="20.5" x2="16" y2="20.5"></line><line x1="12" y1="16.5" x2="12" y2="20.5"></line>'),
+  notas: svgIconP('<path d="M6 2.5h12v18l-3-2-3 2-3-2-3 2v-18z"></path><line x1="9" y1="8" x2="15" y2="8"></line><line x1="9" y1="11.5" x2="15" y2="11.5"></line>'),
+  plano: svgIconP('<rect x="3.5" y="2.5" width="17" height="19" rx="2"></rect><path d="M8 8h8M8 12h8M8 16h5"></path>'),
+  generico: svgIconP('<rect x="4" y="3" width="16" height="18" rx="2"></rect><polyline points="8 12.5 11 15.5 16 9"></polyline>'),
+  calculadora: svgIconP('<rect x="5" y="2" width="14" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><circle cx="8.3" cy="10.5" r="0.9" fill="currentColor" stroke="none"></circle><circle cx="12" cy="10.5" r="0.9" fill="currentColor" stroke="none"></circle><circle cx="15.7" cy="10.5" r="0.9" fill="currentColor" stroke="none"></circle><circle cx="8.3" cy="14" r="0.9" fill="currentColor" stroke="none"></circle><circle cx="12" cy="14" r="0.9" fill="currentColor" stroke="none"></circle><circle cx="8.3" cy="17.5" r="0.9" fill="currentColor" stroke="none"></circle><circle cx="12" cy="17.5" r="0.9" fill="currentColor" stroke="none"></circle><line x1="15.7" y1="12.7" x2="15.7" y2="18.3"></line>'),
+};
+
+function iconeServicoP(titulo) {
+  const t = (titulo || "").toLowerCase();
+  if (t.includes("plano")) return ICONES_SERVICO_P.plano;
+  if (t.includes("contáb") || t.includes("contab")) return ICONES_SERVICO_P.contabil;
+  if (t.includes("fiscal")) return ICONES_SERVICO_P.fiscal;
+  if (t.includes("pessoal") || t.includes("folha")) return ICONES_SERVICO_P.pessoal;
+  if (t.includes("financeiro") || t.includes("bpo")) return ICONES_SERVICO_P.financeiro;
+  if (t.includes("digital")) return ICONES_SERVICO_P.digital;
+  if (t.includes("nota")) return ICONES_SERVICO_P.notas;
+  return ICONES_SERVICO_P.generico;
+}
+
+// Agrupa os itens precificados do checklist num formato pronto pra exibição:
+// quando exatamente 1 plano de Honorário está marcado (independente de ele
+// próprio ter valor digitado) e há pelo menos 1 serviço de Escritório com
+// valor, o plano vira um card "grupo" (título + descrição, sem preço
+// próprio na linha do cabeçalho) com os serviços de Escritório aninhados
+// como sub-itens, cada um com seu valor — exatamente o padrão pedido:
+// "posso escolher o que vou incluir em cada plano". planosSelecionados vem
+// do checklist (todo plano marcado, com ou sem valor) — é a fonte da
+// verdade de "qual plano está selecionado", já que um plano sem valor
+// próprio não aparece em `itens` (que só lista o que tem preço). Fora desse
+// caso (nenhum plano marcado, ou plano marcado sem nenhum serviço de
+// Escritório junto) cada item vira um card avulso normal, com
+// título/descrição à esquerda e valor à direita — é o que acontece, por
+// exemplo, quando só o Plano Digital é marcado sozinho, com valor próprio.
+function agruparItensInvestimento(itens, planosSelecionados) {
+  planosSelecionados = planosSelecionados || [];
+  const planosComValor = itens.filter((i) => i.categoria === "Honorário");
+  const escritorio = itens.filter((i) => i.categoria === "Escritório");
+  const outros = itens.filter((i) => i.categoria !== "Honorário" && i.categoria !== "Escritório");
+
+  if (planosSelecionados.length !== 1 || escritorio.length === 0) {
+    return { grupos: [], soltos: [...planosComValor, ...escritorio, ...outros] };
+  }
+
+  const plano = planosSelecionados[0];
+  const itemPlano = planosComValor.find((i) => i.titulo === plano.nome && i.valor);
+  const subItens = itemPlano ? [{ titulo: itemPlano.titulo, valor: itemPlano.valor }, ...escritorio] : escritorio;
+
+  return {
+    grupos: [{ titulo: plano.nome, descricao: plano.descricao, subItens }],
+    soltos: outros,
+  };
+}
+
+// Cada "bloco" do Resumo de Investimento é um card avulso ou um grupo
+// (plano + sub-itens) — tratado como unidade indivisível na paginação, pra
+// nunca deixar os sub-itens de um plano numa página e o cabeçalho dele
+// noutra.
+function construirBlocosInvestimento(itens, planosSelecionados) {
+  const { grupos, soltos } = agruparItensInvestimento(itens, planosSelecionados);
+  return [
+    ...grupos.map((g) => ({ tipo: "grupo", dado: g })),
+    ...soltos.map((s) => ({ tipo: "solto", dado: s })),
+  ];
+}
+
+// Serviço marcado sem valor preenchido é um item legitimamente sem preço
+// próprio (incluso de graça ou cobrado só pelo "valor cheio" geral) — não é
+// um campo obrigatório faltando, então em vez do placeholder cinza padrão
+// (usado nos campos que ainda precisam ser preenchidos) mostra "Incluso".
+function valorOuInclusoP(valor) {
+  const v = (valor || "").toString().trim();
+  return v ? `R$ ${escapeHtmlP(v)}` : `<span class="proposal-item-incluso">Incluso</span>`;
+}
+
+function renderItemCardSolto(item) {
   return `
-    <div class="proposal-servicos-extra">
-      <h4>SERVIÇOS INCLUÍDOS NESTA PROPOSTA</h4>
-      <ul class="proposal-servicos-extra-list">
-        ${servicos.map((s) => `<li>${escapeHtmlP(s)}</li>`).join("")}
-      </ul>
+    <div class="proposal-item-card">
+      <div class="proposal-item-icon">${iconeServicoP(item.titulo)}</div>
+      <div class="proposal-item-headtext">
+        <div class="proposal-item-titulo">${escapeHtmlP(item.titulo || "Item")}</div>
+        ${item.descricao ? `<div class="proposal-item-desc">${escapeHtmlP(item.descricao)}</div>` : ""}
+      </div>
+      <div class="proposal-item-valor-solo">${valorOuInclusoP(item.valor)}</div>
     </div>`;
 }
 
-function renderInvestimentoItens(itens, opts) {
-  if (!itens || itens.length === 0) return "";
+function renderItemGrupo(grupo) {
+  return `
+    <div class="proposal-item-card proposal-item-grupo">
+      <div class="proposal-item-grupo-header">
+        <div class="proposal-item-icon">${iconeServicoP(grupo.titulo)}</div>
+        <div class="proposal-item-headtext">
+          <div class="proposal-item-titulo">${escapeHtmlP(grupo.titulo)}</div>
+          ${grupo.descricao ? `<div class="proposal-item-desc">${escapeHtmlP(grupo.descricao)}</div>` : ""}
+        </div>
+      </div>
+      <div class="proposal-item-subitens">
+        ${grupo.subItens.map((s) => `
+          <div class="proposal-subitem">
+            <span class="proposal-subitem-label">${escapeHtmlP(s.titulo)}</span>
+            <span class="proposal-subitem-valor">${valorOuInclusoP(s.valor)}</span>
+          </div>`).join("")}
+      </div>
+    </div>`;
+}
+
+function renderBlocoInvestimento(bloco) {
+  return bloco.tipo === "grupo" ? renderItemGrupo(bloco.dado) : renderItemCardSolto(bloco.dado);
+}
+
+function renderValorTotalBar(total) {
+  return `
+    <div class="proposal-valor-total-bar">
+      <div class="proposal-valor-total-icon">${ICONES_SERVICO_P.calculadora}</div>
+      <div class="proposal-valor-total-text">
+        <div class="proposal-valor-total-label">VALOR TOTAL</div>
+        <div class="proposal-valor-total-sub">Soma de todos os serviços incluídos nesta proposta.</div>
+      </div>
+      <div class="proposal-valor-total-valor">R$ ${formatarValorP(total)}</div>
+    </div>`;
+}
+
+function renderInvestimentoItens(blocos, opts) {
+  if (!blocos || blocos.length === 0) return "";
   opts = opts || {};
   return `
     <div class="proposal-investimento-resumo">
-      <h4>RESUMO DE INVESTIMENTO</h4>
-      <div class="proposal-investimento-grid">
-        ${itens.map((item) => `
-          <div class="proposal-investimento-card">
-            <div class="proposal-investimento-valor">${phP(item.valor, "[valor]")}</div>
-            <div class="proposal-investimento-titulo">${escapeHtmlP(item.titulo || "Item")}</div>
-            ${item.recorrencia ? `<div class="proposal-investimento-recorrencia">${escapeHtmlP(item.recorrencia)}</div>` : ""}
-            ${item.descricao ? `<p class="proposal-investimento-desc">${escapeHtmlP(item.descricao)}</p>` : ""}
-          </div>`).join("")}
+      <h4>SERVIÇOS INCLUÍDOS NESTA PROPOSTA</h4>
+      <p class="proposal-investimento-resumo-sub">Solução contábil completa, com valor detalhado de cada serviço incluído.</p>
+      <div class="proposal-itens-lista">
+        ${blocos.map(renderBlocoInvestimento).join("")}
       </div>
-      ${opts.total != null ? `
-      <div class="proposal-investimento-total">
-        <span class="proposal-investimento-total-label">VALOR TOTAL</span>
-        <span class="proposal-investimento-total-valor">R$ ${formatarValorP(opts.total)}</span>
-      </div>` : ""}
+      ${opts.total != null ? renderValorTotalBar(opts.total) : ""}
     </div>`;
 }
 
-// A grade de itens some no meio de "SERVIÇOS E INVESTIMENTO" assim que
-// passa desse tanto (a página já carrega a lista de serviços padrão em
-// cima) — o resto vira página(s) extra "(continuação)", com o mesmo
-// cabeçalho/rodapé, em vez de estourar a altura da página e cortar feio.
-const ITENS_INVESTIMENTO_PAGINA_PRINCIPAL = 4;
-const ITENS_INVESTIMENTO_POR_PAGINA_CONTINUACAO = 8;
+// Os blocos somem no meio de "SERVIÇOS E INVESTIMENTO" assim que passa desse
+// tanto (a página já carrega a lista de serviços padrão em cima) — o resto
+// vira página(s) extra "(continuação)", com o mesmo cabeçalho/rodapé, em
+// vez de estourar a altura da página e cortar feio. Números menores que os
+// anteriores porque os cards novos (com legenda e sub-itens) ocupam mais
+// altura que os cartões antigos.
+const ITENS_INVESTIMENTO_PAGINA_PRINCIPAL = 3;
+const ITENS_INVESTIMENTO_POR_PAGINA_CONTINUACAO = 6;
 
 function investimentoMetaHtml(investimento) {
   return `
@@ -209,13 +324,13 @@ function investimentoMetaHtml(investimento) {
     </div>`;
 }
 
-function renderPaginaContinuacaoInvestimento(itensDaPagina, investimento, mostrarMeta, totalGeral, pageNumber) {
+function renderPaginaContinuacaoInvestimento(blocosDaPagina, investimento, mostrarMeta, totalGeral, pageNumber) {
   return `
     <section class="proposal-page">
       ${brandBar()}
       <h2 class="proposal-h2">SERVIÇOS E INVESTIMENTO (continuação)</h2>
       <p class="proposal-sub">Itens de investimento</p>
-      ${renderInvestimentoItens(itensDaPagina, { total: mostrarMeta ? totalGeral : null })}
+      ${renderInvestimentoItens(blocosDaPagina, { total: mostrarMeta ? totalGeral : null })}
       ${mostrarMeta ? investimentoMetaHtml(investimento) : ""}
       ${pageFooter(pageNumber)}
     </section>`;
@@ -257,9 +372,10 @@ function renderEtapasOuPlanos(planosSelecionados) {
 function renderServicosInvestimento(investimento, servicos, planosSelecionados, pageNumber) {
   const itens = investimento.itens || [];
   const temItensMultiplos = itens.length > 0;
-  const itensPaginaPrincipal = itens.slice(0, ITENS_INVESTIMENTO_PAGINA_PRINCIPAL);
-  const itensRestantes = itens.slice(ITENS_INVESTIMENTO_PAGINA_PRINCIPAL);
-  const cabeMetaNaPrincipal = itensRestantes.length === 0;
+  const blocos = construirBlocosInvestimento(itens, planosSelecionados);
+  const blocosPaginaPrincipal = blocos.slice(0, ITENS_INVESTIMENTO_PAGINA_PRINCIPAL);
+  const blocosRestantes = blocos.slice(ITENS_INVESTIMENTO_PAGINA_PRINCIPAL);
+  const cabeMetaNaPrincipal = blocosRestantes.length === 0;
 
   const temDesconto = investimento.temDesconto && investimento.valorFinal;
   const desconto = temDesconto
@@ -288,7 +404,6 @@ function renderServicosInvestimento(investimento, servicos, planosSelecionados, 
 
       <div class="proposal-columns proposal-columns-services">
         <div class="${temItensMultiplos ? "proposal-services proposal-services-full" : "proposal-services"}">
-          ${renderServicosSelecionados(servicos)}
           ${renderEtapasOuPlanos(planosSelecionados)}
         </div>
 
@@ -305,17 +420,17 @@ function renderServicosInvestimento(investimento, servicos, planosSelecionados, 
         </div>`}
       </div>
 
-      ${renderInvestimentoItens(itensPaginaPrincipal, { total: cabeMetaNaPrincipal ? somaItensP(itens) : null })}
+      ${renderInvestimentoItens(blocosPaginaPrincipal, { total: cabeMetaNaPrincipal ? somaItensP(itens) : null })}
       ${temItensMultiplos && cabeMetaNaPrincipal ? investimentoMetaHtml(investimento) : ""}
       ${pageFooter(pageNumber)}
     </section>`;
 
   let html = paginaPrincipal;
   let pagina = pageNumber;
-  for (let i = 0; i < itensRestantes.length; i += ITENS_INVESTIMENTO_POR_PAGINA_CONTINUACAO) {
+  for (let i = 0; i < blocosRestantes.length; i += ITENS_INVESTIMENTO_POR_PAGINA_CONTINUACAO) {
     pagina += 1;
-    const chunk = itensRestantes.slice(i, i + ITENS_INVESTIMENTO_POR_PAGINA_CONTINUACAO);
-    const ehUltimaPagina = i + ITENS_INVESTIMENTO_POR_PAGINA_CONTINUACAO >= itensRestantes.length;
+    const chunk = blocosRestantes.slice(i, i + ITENS_INVESTIMENTO_POR_PAGINA_CONTINUACAO);
+    const ehUltimaPagina = i + ITENS_INVESTIMENTO_POR_PAGINA_CONTINUACAO >= blocosRestantes.length;
     html += renderPaginaContinuacaoInvestimento(chunk, investimento, ehUltimaPagina, somaItensP(itens), pagina);
   }
 
