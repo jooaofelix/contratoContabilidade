@@ -484,7 +484,7 @@ async function paginaParaCanvasOrc(pageEl) {
   return html2pdf().set({ html2canvas: { scale: 2 } }).from(pageEl).toCanvas().get("canvas");
 }
 
-async function gerarPdfOrc(empresa) {
+async function montarPdfOrc() {
   // Só usado pra conseguir uma instância jsPDF já pronta (o jsPDF interno
   // do html2pdf não é exposto como global) — a página 1 dela é descartada
   // e recriada manualmente pra cada .proposal-page real logo abaixo.
@@ -504,10 +504,53 @@ async function gerarPdfOrc(empresa) {
     pdf.addPage();
     pdf.addImage(imgData, "JPEG", 10, 10, imgWmm, imgHmm);
   }
+  return pdf;
+}
+
+async function gerarPdfOrc(empresa) {
+  const pdf = await montarPdfOrc();
   pdf.save(`Proposta - ${empresa || "AEA"}.pdf`);
 }
 
+// Abre o PDF (já paginado igual à pré-visualização, sem corte) numa aba nova
+// e aciona o diálogo de impressão do navegador ali — em vez de reativar o
+// window.print() na tela ao vivo, que tem o bug de quebra espúria que o
+// restante deste arquivo evita (ver paginaParaCanvasOrc/montarPdfOrc acima).
+// Assim dá pra mandar direto pra impressora sem precisar baixar o arquivo
+// e abrir de novo manualmente.
+async function imprimirDiretoOrc() {
+  const pdf = await montarPdfOrc();
+  const url = pdf.output("bloburl");
+  const janela = window.open(url, "_blank");
+  if (!janela) {
+    throw new Error("O navegador bloqueou a aba de impressão. Permita pop-ups pra este site e tente de novo.");
+  }
+  setTimeout(() => {
+    try {
+      janela.print();
+    } catch (err) {
+      console.error(err);
+    }
+  }, 600);
+}
+
 function setupActionsOrc() {
+  document.getElementById("btn-imprimir").addEventListener("click", async () => {
+    const btn = document.getElementById("btn-imprimir");
+    const textoOriginal = btn.textContent;
+    btn.textContent = "Preparando...";
+    btn.disabled = true;
+    try {
+      await imprimirDiretoOrc();
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível abrir a impressão: " + (err && err.message ? err.message : "erro desconhecido."));
+    } finally {
+      btn.textContent = textoOriginal;
+      btn.disabled = false;
+    }
+  });
+
   document.getElementById("btn-print").addEventListener("click", async () => {
     const btn = document.getElementById("btn-print");
     const empresa = (getOrc("q_empresa") || "Proposta").trim();
