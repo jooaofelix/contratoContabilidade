@@ -49,13 +49,6 @@
    app-orcamento.js) contendo só os blocos que o empacotador mediu e decidiu
    que cabem juntos numa folha A4 — por isso não precisa de min-height nem
    de heurística de quebra: o conteúdo real já é do tamanho certo. */
-/* display: block de propósito, não flex — uma .proposal-page é o elemento
-   que recebe a quebra forçada de página na impressão (break-after: always,
-   lá embaixo), e o Chrome historicamente lida mal com fragmentação de
-   impressão quando o próprio contêiner fragmentado é flex (e o efeito
-   aparece de formas enganosas, tipo uma .proposal-columns flex LÁ DENTRO
-   virando empilhada em vez de lado a lado só no PDF). O espaçamento entre
-   os filhos (marca, blocos, rodapé) vem de margin-top em vez de gap. */
 .proposal-page {
   position: relative;
   background: #fff;
@@ -72,17 +65,6 @@
 
 .proposal-page:last-child {
   margin-bottom: 0;
-}
-
-/* Card de destaque da capa (fundo navy) — antes era a folha inteira que
-   ficava navy; agora é só este bloco, dentro de uma folha branca normal,
-   porque o navegador não estica de forma confiável o fundo de uma seção
-   até o fim físico da página na hora de gerar o PDF (testado). */
-.proposal-capa-bloco {
-  background: linear-gradient(135deg, var(--p-navy) 0%, var(--p-navy-2) 100%);
-  color: #fff;
-  border-radius: 10px;
-  padding: 28px 32px;
 }
 
 .proposal-brand {
@@ -122,82 +104,47 @@
   color: var(--p-blue);
 }
 
-/* Grid, não flex: uma .proposal-page com quebra de página forçada e um
-   filho flex-row dentro dela faz o Chrome inserir uma quebra indevida NO
-   MEIO da linha (empilhando as duas colunas em folhas separadas) na hora
-   de gerar o PDF — bug reproduzido isoladamente, break-inside: avoid na
-   própria linha não resolve. Grid não tem esse problema. */
-.proposal-capa {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 50px;
+/* --- Abertura: saudação + título + quadro "Sobre a AEA" ------------------ */
+
+.proposal-hero-hello {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #6b7280;
+  text-transform: uppercase;
 }
 
-.proposal-capa-left {
-  min-width: 0;
-}
-
-.proposal-hello {
-  font-size: 1.3rem;
-  opacity: 0.9;
-  margin-bottom: 6px;
-}
-
-.proposal-title {
-  font-size: 1.5rem;
+.proposal-hero-title {
+  font-size: 1.7rem;
   font-weight: 800;
-  color: var(--p-blue-light);
-  margin-bottom: 16px;
+  color: var(--p-navy);
+  margin: 2px 0 8px;
 }
 
-.proposal-lead {
+.proposal-hero-lead {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #374151;
+  margin: 0;
+}
+
+.proposal-sobre-aea {
+  background: var(--p-navy);
+  color: #fff;
+  border-radius: 10px;
+  padding: 18px 22px;
+}
+
+.proposal-sobre-aea h3 {
+  margin: 0 0 8px;
   font-size: 0.95rem;
-  line-height: 1.6;
-  max-width: 380px;
-  opacity: 0.92;
 }
 
-.proposal-capa-right {
-  min-width: 0;
-}
-
-.proposal-capa-right h3 {
-  margin: 0 0 10px;
-  font-size: 1.1rem;
-}
-
-.proposal-capa-right p {
-  font-size: 0.85rem;
-  line-height: 1.6;
+.proposal-sobre-aea p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
   opacity: 0.9;
-  margin: 0 0 20px;
-}
-
-.proposal-cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
-.proposal-card {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
-  padding: 14px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.proposal-card-n {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: var(--p-blue-light);
-}
-
-.proposal-card-t {
-  font-size: 0.78rem;
-  font-weight: 600;
 }
 
 .proposal-h2 {
@@ -211,16 +158,6 @@
   font-size: 0.85rem;
   color: #6b7280;
   margin: 0 0 24px;
-}
-
-/* Grid, não flex — mesmo motivo do .proposal-capa acima (ver comentário
-   lá): evita o Chrome inserir uma quebra de página indevida no meio da
-   linha na hora de gerar o PDF. */
-.proposal-columns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  align-items: start;
 }
 
 .proposal-box {
@@ -244,6 +181,10 @@
   gap: 14px 18px;
 }
 
+.proposal-fieldgrid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 .fl {
   display: block;
   font-size: 0.68rem;
@@ -263,87 +204,6 @@
 .fv-lg {
   font-size: 0.95rem;
   font-weight: 700;
-}
-
-.proposal-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.proposal-list li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.li-n {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--p-blue);
-  color: #fff;
-  font-size: 0.7rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.li-l {
-  flex: 1;
-  font-size: 0.78rem;
-  color: #4b5563;
-}
-
-.li-v {
-  font-size: 0.85rem;
-  color: #111827;
-  text-align: right;
-}
-
-.li-strong {
-  font-weight: 700;
-}
-
-.proposal-columns-services {
-  grid-template-columns: 1.3fr 1fr;
-  align-items: stretch;
-}
-
-.proposal-services {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-
-.proposal-servicos-extra {
-  background: var(--p-bg);
-  border-radius: 10px;
-  padding: 16px 18px;
-}
-
-.proposal-servicos-extra h4 {
-  margin: 0 0 10px;
-  font-size: 0.78rem;
-  font-weight: 800;
-  color: var(--p-navy);
-  letter-spacing: 0.02em;
-}
-
-.proposal-servicos-extra-list {
-  margin: 0;
-  padding: 0 0 0 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.82rem;
-  color: #111827;
 }
 
 .proposal-plano-incluso {
@@ -397,6 +257,11 @@
   justify-content: center;
 }
 
+.proposal-escopo-etapas {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
 .proposal-service-row {
   display: flex;
@@ -448,161 +313,49 @@
   color: #6b7280;
 }
 
-.proposal-price-box {
-  min-width: 0;
-  background: var(--p-navy);
-  color: #fff;
-  border-radius: 10px;
-  padding: 24px;
+/* --- "ESCOPO E INVESTIMENTO": lista de linhas (plano/grupo ou item avulso) */
+
+.proposal-escopo-lista {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 2px;
 }
 
-.proposal-price-label {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  opacity: 0.8;
-}
-
-.proposal-discount-badge {
-  align-self: flex-start;
-  background: var(--p-blue-light);
-  color: var(--p-navy);
-  font-size: 0.65rem;
-  font-weight: 800;
-  padding: 3px 8px;
-  border-radius: 4px;
-}
-
-.proposal-price-old {
-  font-size: 0.9rem;
-  text-decoration: line-through;
-  opacity: 0.6;
-}
-
-.proposal-price {
-  font-size: 2.2rem;
-  font-weight: 800;
-  color: var(--p-blue-light);
-}
-
-.proposal-price-note {
-  font-size: 0.75rem;
-  opacity: 0.85;
-  margin: 0;
-}
-
-.proposal-price-divider {
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-  margin: 8px 0;
-}
-
-.proposal-price-meta {
+.proposal-escopo-item {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 10px;
-}
-
-.proposal-price-meta .fl,
-.proposal-price-box > div > .fl {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.proposal-price-meta .fv,
-.proposal-price-box > div > .fv {
-  color: #fff;
-  font-weight: 700;
-}
-
-.proposal-price-fine {
-  font-size: 0.7rem;
-  opacity: 0.7;
-  margin-top: 10px;
-}
-
-.proposal-services-full {
-  grid-column: 1 / -1;
-}
-
-.proposal-investimento-resumo {
-  /* Sem margin-top: o espaçamento entre blocos já vem do gap da
-     .proposal-page (ver montarPreviewPaginado em app-orcamento.js). */
-}
-
-.proposal-investimento-resumo h4 {
-  margin: 0 0 4px;
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: var(--p-navy);
-  letter-spacing: 0.02em;
-}
-
-.proposal-investimento-resumo-sub {
-  margin: 0 0 14px;
-  font-size: 0.72rem;
-  color: #6b7280;
-}
-
-.proposal-itens-lista {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* Card avulso: ícone + título/descrição à esquerda, valor alinhado à
-   direita numa única linha — usado pra qualquer item que não esteja
-   agrupado dentro de um plano (adicionais, itens manuais, ou um plano
-   marcado sozinho, sem nenhum serviço de Escritório junto). */
-.proposal-item-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+  gap: 16px;
   background: var(--p-bg);
-  border-radius: 10px;
-  padding: 14px 18px;
-  break-inside: avoid;
+  border-radius: 8px;
+  padding: 12px 16px;
 }
 
-.proposal-item-icon {
-  flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--p-navy);
-  color: var(--p-blue-light);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.proposal-escopo-item + .proposal-escopo-item {
+  margin-top: 8px;
 }
 
-.proposal-item-icon svg {
-  width: 19px;
-  height: 19px;
-}
-
-.proposal-item-headtext {
+.proposal-escopo-item-texto {
   flex: 1;
   min-width: 0;
 }
 
-.proposal-item-titulo {
+.proposal-escopo-item-titulo {
   font-size: 0.85rem;
   font-weight: 800;
   color: var(--p-navy);
 }
 
-.proposal-item-desc {
-  font-size: 0.72rem;
+.proposal-escopo-item-desc {
+  font-size: 0.74rem;
   color: #5b6577;
   margin-top: 2px;
   line-height: 1.4;
 }
 
-.proposal-item-valor-solo {
+.proposal-escopo-item-valor {
   flex-shrink: 0;
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 800;
   color: var(--p-navy);
   white-space: nowrap;
@@ -616,60 +369,83 @@
   color: #8a94a6;
 }
 
-/* Card de grupo (plano com serviços de Escritório escolhidos dentro dele):
-   cabeçalho sem preço próprio + caixa interna com os sub-itens, cada um com
-   seu valor — a soma deles é o "preço" do plano, mostrado só na barra de
-   total no fim da página. */
-.proposal-item-grupo {
-  flex-direction: column;
-  align-items: stretch;
-  background: #e9f2fc;
-  border: 1px solid #cfe3f7;
-  gap: 0;
-  padding: 16px 18px;
+.proposal-inclui-nota {
+  font-size: 0.76rem;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 10px 0 0;
 }
 
-.proposal-item-grupo-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.proposal-item-subitens {
-  margin-top: 14px;
-  background: #fff;
-  border-radius: 8px;
-  padding: 4px 14px;
-}
-
-.proposal-subitem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 0;
-  border-top: 1px solid var(--p-bg);
-}
-
-.proposal-subitem:first-child {
-  border-top: none;
-}
-
-.proposal-subitem-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #374151;
-}
-
-.proposal-subitem-valor {
-  font-size: 0.82rem;
+.proposal-total-linha {
+  font-size: 0.95rem;
   font-weight: 800;
   color: var(--p-navy);
-  white-space: nowrap;
+  margin: 4px 0 0;
 }
 
-/* Barra de valor total: substitui o antigo "resumo" com quadros azuis —
-   vai direto pro número final, grande, na paleta da marca. */
+.proposal-total-linha-riscado {
+  text-decoration: line-through;
+  opacity: 0.6;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+/* --- "DETALHAMENTO DOS SERVIÇOS": tabela por grupo + linhas avulsas ------ */
+
+.proposal-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.proposal-tabela th {
+  background: var(--p-navy);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 10px 16px;
+}
+
+.proposal-tabela th.num,
+.proposal-tabela td.num {
+  text-align: right;
+}
+
+.proposal-tabela td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--p-bg);
+  color: #111827;
+}
+
+.proposal-tabela tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.proposal-tabela tr.is-subtotal td {
+  background: var(--p-bg);
+  font-weight: 800;
+  color: var(--p-navy);
+}
+
+.proposal-detalhamento-solto {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--p-bg);
+  font-weight: 800;
+  color: var(--p-navy);
+  font-size: 0.82rem;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 14px;
+}
+
+/* Barra de valor total: vai direto pro número final, grande, na paleta da
+   marca — sem ícone, só o essencial. */
 .proposal-valor-total-bar {
   display: flex;
   align-items: center;
@@ -678,23 +454,6 @@
   color: #fff;
   border-radius: 12px;
   padding: 18px 24px;
-}
-
-.proposal-valor-total-icon {
-  flex-shrink: 0;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  color: var(--p-blue-light);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.proposal-valor-total-icon svg {
-  width: 22px;
-  height: 22px;
 }
 
 .proposal-valor-total-text {
@@ -731,6 +490,12 @@
   border-top: 1px solid var(--p-bg);
 }
 
+.proposal-agradecimento {
+  font-size: 0.82rem;
+  color: #374151;
+  margin: 14px 0 0;
+}
+
 /* Sempre no fluxo normal (nunca position: absolute) — cada .proposal-page
    já vem do JS com só o conteúdo que o empacotador mediu e decidiu que cabe
    naquela folha, então o rodapé cola natural no fim de cada uma. */
@@ -752,15 +517,6 @@
 }
 
 @media print {
-  /* SEM page-break-after forçado aqui de propósito: testado e reproduzido
-     isoladamente — um .proposal-page com break-after: always faz o Chrome
-     inserir uma quebra de página ESPÚRIA dentro do próprio conteúdo dele na
-     hora de gerar o PDF (quebrando no meio de uma seção mesmo quando ela
-     mede menos de metade da altura útil de uma folha), independente de
-     flex/grid. Sem quebra forçada, o fluxo natural já respeita os grupos
-     que o JS empacotou (cada .proposal-page foi dimensionado pra caber
-     numa folha), e como bônus ainda aproveita o espaço quando duas seções
-     JUNTAS cabem na mesma folha. */
   .proposal-page {
     box-shadow: none;
     border-radius: 0;
@@ -771,20 +527,9 @@
      o navegador de inserir uma quebra de página natural NO MEIO de um
      bloco (ex: separar o título "DADOS DO CLIENTE" da caixa dele) sempre
      que ele não couber inteiro no resto da folha atual; com isso, o bloco
-     inteiro pula pra próxima folha junto. De propósito SÓ no wrapper mais
-     externo: marcar um elemento E os filhos dele (ex: .proposal-capa-bloco
-     E .proposal-capa) como break-inside: avoid ao mesmo tempo, os dois,
-     testado, faz o Chrome se confundir e inserir uma quebra espúria mesmo
-     assim — proteger só o nível de fora já é suficiente. */
+     inteiro pula pra próxima folha junto. */
   .proposal-bloco {
     page-break-inside: avoid;
     break-inside: avoid;
-  }
-}
-
-@media (max-width: 900px) {
-  .proposal-capa,
-  .proposal-columns {
-    grid-template-columns: 1fr;
   }
 }

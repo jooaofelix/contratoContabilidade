@@ -28,18 +28,24 @@ function somaItensP(itens) {
   return (itens || []).reduce((sum, item) => sum + parseValorP(item.valor), 0);
 }
 
+function somaSubItensP(subItens) {
+  return (subItens || []).reduce((sum, item) => sum + parseValorP(item.valor), 0);
+}
+
 function formatDateBr(isoDate) {
   if (!isoDate) return "";
   const [year, month, day] = isoDate.split("-");
   return `${day}/${month}/${year}`;
 }
 
-const SOBRE_AEA_ITENS = [
-  { n: 1, titulo: "Atendimento consultivo" },
-  { n: 2, titulo: "Organização e conformidade" },
-  { n: 3, titulo: "Suporte estratégico" },
-  { n: 4, titulo: "Relacionamento próximo" },
-];
+// Deixa só a primeira letra minúscula — usado pra encaixar um "detalhe" de
+// produto (frase que começa maiúscula, pensada pra lista com marcador) numa
+// frase corrida tipo "O Plano Completo inclui: sistema financeiro... •
+// enquadramento...".
+function lowerFirstP(str) {
+  const s = (str || "").toString();
+  return s ? s.charAt(0).toLowerCase() + s.slice(1) : s;
+}
 
 const SERVICOS_PADRAO = [
   { n: "01", codigo: "AI", titulo: "Análise inicial", desc: "Levantamento das informações e diagnóstico contábil e fiscal da empresa." },
@@ -72,31 +78,20 @@ function pageFooter() {
 
 // --- Blocos de conteúdo (cada um é uma unidade indivisível de paginação) --
 
-function renderCapaBloco(cliente) {
+// Cabeçalho (saudação + título + texto de abertura) e o quadro "Sobre a
+// AEA" sempre juntos no mesmo bloco — pra nunca deixar o título sozinho
+// numa folha separada do quadro que vem logo abaixo dele.
+function renderHeroBloco(cliente) {
   return `
-    <div class="proposal-capa-bloco">
-      <div class="proposal-capa">
-        <div class="proposal-capa-left">
-          <div class="proposal-hello">OLÁ ${phP(cliente.nomeResponsavel, "[Nome]").toString().toUpperCase()}</div>
-          <div class="proposal-title">PROPOSTA COMERCIAL</div>
-          <p class="proposal-lead">
-            Contabilidade consultiva para empresas que querem crescer com organização, segurança fiscal e proximidade no atendimento.
-          </p>
-        </div>
-        <div class="proposal-capa-right">
-          <h3>Sobre a AEA</h3>
-          <p>
-            A AEA Contabilidade Consultiva transforma a contabilidade em informação estratégica para tomada de decisão.
-            Unimos tecnologia, experiência e acompanhamento próximo para apoiar a rotina e o crescimento do negócio.
-          </p>
-          <div class="proposal-cards">
-            ${SOBRE_AEA_ITENS.map((i) => `
-              <div class="proposal-card">
-                <span class="proposal-card-n">${i.n}</span>
-                <span class="proposal-card-t">${escapeHtmlP(i.titulo)}</span>
-              </div>`).join("")}
-          </div>
-        </div>
+    <div>
+      <div class="proposal-hero">
+        <div class="proposal-hero-hello">OLÁ, ${phP(cliente.nomeResponsavel, "[Nome]")}</div>
+        <h1 class="proposal-hero-title">PROPOSTA COMERCIAL</h1>
+        <p class="proposal-hero-lead">Contabilidade consultiva para empresas que querem crescer com organização, segurança fiscal e proximidade no atendimento.</p>
+      </div>
+      <div class="proposal-sobre-aea">
+        <h3>Sobre a AEA</h3>
+        <p>Transformamos a contabilidade em informação estratégica para tomada de decisão. Unimos tecnologia, experiência e acompanhamento próximo para apoiar a rotina e o crescimento do negócio.</p>
       </div>
     </div>`;
 }
@@ -106,113 +101,57 @@ function renderDadosClienteBloco(cliente, diagnostico) {
     <div>
       <h2 class="proposal-h2">DADOS DO CLIENTE</h2>
       <p class="proposal-sub">Informações recebidas para composição da proposta comercial.</p>
-
-      <div class="proposal-columns">
-        <div class="proposal-box">
-          <h4>1. DADOS DO CLIENTE</h4>
-          <div class="proposal-fieldgrid">
-            <div><span class="fl">Cliente</span><span class="fv">${phP(cliente.empresa, "[Empresa]")}</span></div>
-            <div><span class="fl">Empresa</span><span class="fv">${phP(cliente.empresa, "[Empresa]")}</span></div>
-            <div><span class="fl">CPF/CNPJ</span><span class="fv fv-lg">${phP(cliente.cnpj, "[CNPJ]")}</span></div>
-            <div><span class="fl">Responsável</span><span class="fv fv-lg">${phP(cliente.responsavel, "[Responsável]")}</span></div>
-            <div><span class="fl">Telefone</span><span class="fv fv-lg">${phP(cliente.telefone, "[Telefone]")}</span></div>
-            <div><span class="fl">E-mail</span><span class="fv">${phP(cliente.email, "[E-mail]")}</span></div>
-            <div><span class="fl">Data da proposta</span><span class="fv fv-lg">${phP(formatDateBr(cliente.dataProposta), "[data]")}</span></div>
-            <div><span class="fl">Validade</span><span class="fv fv-lg">${phP(cliente.validade, "Não informado")}</span></div>
-          </div>
-        </div>
-
-        <div class="proposal-box">
-          <h4>2. O QUE FOI ENVIADO</h4>
-          <ul class="proposal-list">
-            <li><span class="li-n">1</span><span class="li-l">Quantidade de notas por mês</span><span class="li-v">${phP(diagnostico.notasMes, "0")}</span></li>
-            <li><span class="li-n">2</span><span class="li-l">Quantidade de funcionários</span><span class="li-v">${phP(diagnostico.funcionarios, "0")}</span></li>
-            <li><span class="li-n">3</span><span class="li-l">Faturamento mensal</span><span class="li-v">${diagnostico.faturamento ? "R$ " + escapeHtmlP(diagnostico.faturamento) : '<span class="placeholder">R$ 0,00</span>'}</span></li>
-            <li><span class="li-n">4</span><span class="li-l">Regime tributário</span><span class="li-v li-strong">${phP(diagnostico.regime, "—")}</span></li>
-            <li><span class="li-n">5</span><span class="li-l">Segmento da empresa</span><span class="li-v">${phP(diagnostico.segmento, "—")}</span></li>
-            <li><span class="li-n">6</span><span class="li-l">Observações adicionais</span><span class="li-v">${phP(diagnostico.observacoes, "—")}</span></li>
-          </ul>
+      <div class="proposal-box">
+        <div class="proposal-fieldgrid proposal-fieldgrid-3">
+          <div><span class="fl">Cliente / Empresa</span><span class="fv fv-lg">${phP(cliente.empresa, "[Empresa]")}</span></div>
+          <div><span class="fl">Responsável</span><span class="fv fv-lg">${phP(cliente.responsavel, "[Responsável]")}</span></div>
+          <div><span class="fl">CPF/CNPJ</span><span class="fv fv-lg">${phP(cliente.cnpj, "[CNPJ]")}</span></div>
+          <div><span class="fl">Regime tributário</span><span class="fv fv-lg">${phP(diagnostico.regime, "—")}</span></div>
+          <div><span class="fl">Segmento</span><span class="fv fv-lg">${phP(diagnostico.segmento, "—")}</span></div>
+          <div><span class="fl">Data da proposta</span><span class="fv fv-lg">${phP(formatDateBr(cliente.dataProposta), "[data]")}</span></div>
         </div>
       </div>
     </div>`;
+}
+
+function telefoneEmailCombinadoP(telefone, email) {
+  const partes = [telefone, email].map((v) => (v || "").toString().trim()).filter(Boolean);
+  return partes.length ? escapeHtmlP(partes.join(" — ")) : "A combinar";
 }
 
 // Bloco extra de "Dados do Cliente", um por empresa do mesmo grupo
-// econômico/dono adicionada na proposta — mesma estrutura do bloco
-// principal, só que sem o diagnóstico (esse é único por proposta).
-function renderDadosClienteExtraBloco(empresa, indice) {
+// econômico/dono adicionada na proposta — mesma ideia do bloco principal,
+// num quadro só, identificado pelo nome da empresa (não por número de
+// sequência).
+function renderDadosClienteExtraBloco(empresa) {
   return `
     <div>
-      <h2 class="proposal-h2">DADOS DO CLIENTE — EMPRESA ${indice}</h2>
+      <h2 class="proposal-h2">EMPRESA ADICIONAL — ${escapeHtmlP((empresa.nome || "[Empresa]").toUpperCase())}</h2>
       <p class="proposal-sub">Empresa adicional do mesmo grupo econômico/responsável, incluída nesta proposta.</p>
-
       <div class="proposal-box">
-        <h4>DADOS DA EMPRESA</h4>
-        <div class="proposal-fieldgrid">
-          <div><span class="fl">Empresa</span><span class="fv">${phP(empresa.nome, "[Empresa]")}</span></div>
-          <div><span class="fl">CPF/CNPJ</span><span class="fv fv-lg">${phP(empresa.cnpj, "[CNPJ]")}</span></div>
+        <div class="proposal-fieldgrid proposal-fieldgrid-3">
+          <div><span class="fl">CNPJ</span><span class="fv fv-lg">${phP(empresa.cnpj, "[CNPJ]")}</span></div>
           <div><span class="fl">Responsável</span><span class="fv fv-lg">${phP(empresa.responsavel, "[Responsável]")}</span></div>
-          <div><span class="fl">Telefone</span><span class="fv fv-lg">${phP(empresa.telefone, "[Telefone]")}</span></div>
-          <div><span class="fl">E-mail</span><span class="fv">${phP(empresa.email, "[E-mail]")}</span></div>
+          <div><span class="fl">Telefone / E-mail</span><span class="fv fv-lg">${telefoneEmailCombinadoP(empresa.telefone, empresa.email)}</span></div>
         </div>
       </div>
     </div>`;
-}
-
-// --- Ícones simples (SVG embutido, sem depender de biblioteca externa) ----
-
-// Cor fixa (em vez de currentColor) e width/height explícitos no próprio
-// <svg> (em vez de só no viewBox + CSS) de propósito: o html2canvas usado
-// na exportação de PDF (ver btn-print em app-orcamento.js) não resolve
-// currentColor nem o tamanho intrínseco via CSS de forma confiável quando
-// captura uma única .proposal-page isolada — sem os dois, o ícone sai em
-// branco (círculo vazio), mesmo que na tela apareça normal. Testado e
-// reproduzido isoladamente. Como o ícone só aparece dentro de
-// .proposal-item-icon/.proposal-valor-total-icon (sempre --p-blue-light,
-// #57b8ff) e o CSS continua sobrepondo o width/height na tela, fixar os
-// dois aqui não muda nada visualmente e elimina as duas dependências frágeis.
-function svgIconP(paths, viewBox) {
-  return `<svg width="24" height="24" viewBox="${viewBox || "0 0 24 24"}" fill="none" stroke="#57b8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths.replace(/currentColor/g, "#57b8ff")}</svg>`;
-}
-
-const ICONES_SERVICO_P = {
-  contabil: svgIconP('<rect x="3" y="11" width="4" height="10" rx="1"></rect><rect x="10" y="6" width="4" height="15" rx="1"></rect><rect x="17" y="2" width="4" height="19" rx="1"></rect>'),
-  fiscal: svgIconP('<rect x="4" y="2.5" width="16" height="19" rx="2"></rect><line x1="7.5" y1="8" x2="16.5" y2="8"></line><line x1="7.5" y1="12" x2="16.5" y2="12"></line><line x1="7.5" y1="16" x2="13" y2="16"></line>'),
-  pessoal: svgIconP('<circle cx="9" cy="8" r="3.2"></circle><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"></path><circle cx="18" cy="9" r="2.4"></circle><path d="M15.3 14.2c2.7.5 4.5 2.4 4.7 5.3"></path>'),
-  financeiro: svgIconP('<polyline points="3 16 9 10 13 14 21 5"></polyline><polyline points="15 5 21 5 21 11"></polyline>'),
-  digital: svgIconP('<rect x="3" y="4" width="18" height="12.5" rx="2"></rect><line x1="8" y1="20.5" x2="16" y2="20.5"></line><line x1="12" y1="16.5" x2="12" y2="20.5"></line>'),
-  notas: svgIconP('<path d="M6 2.5h12v18l-3-2-3 2-3-2-3 2v-18z"></path><line x1="9" y1="8" x2="15" y2="8"></line><line x1="9" y1="11.5" x2="15" y2="11.5"></line>'),
-  plano: svgIconP('<rect x="3.5" y="2.5" width="17" height="19" rx="2"></rect><path d="M8 8h8M8 12h8M8 16h5"></path>'),
-  generico: svgIconP('<rect x="4" y="3" width="16" height="18" rx="2"></rect><polyline points="8 12.5 11 15.5 16 9"></polyline>'),
-  calculadora: svgIconP('<rect x="5" y="2" width="14" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><circle cx="8.3" cy="10.5" r="0.9" fill="currentColor" stroke="none"></circle><circle cx="12" cy="10.5" r="0.9" fill="currentColor" stroke="none"></circle><circle cx="15.7" cy="10.5" r="0.9" fill="currentColor" stroke="none"></circle><circle cx="8.3" cy="14" r="0.9" fill="currentColor" stroke="none"></circle><circle cx="12" cy="14" r="0.9" fill="currentColor" stroke="none"></circle><circle cx="8.3" cy="17.5" r="0.9" fill="currentColor" stroke="none"></circle><circle cx="12" cy="17.5" r="0.9" fill="currentColor" stroke="none"></circle><line x1="15.7" y1="12.7" x2="15.7" y2="18.3"></line>'),
-};
-
-function iconeServicoP(titulo) {
-  const t = (titulo || "").toLowerCase();
-  if (t.includes("plano")) return ICONES_SERVICO_P.plano;
-  if (t.includes("contáb") || t.includes("contab")) return ICONES_SERVICO_P.contabil;
-  if (t.includes("fiscal")) return ICONES_SERVICO_P.fiscal;
-  if (t.includes("pessoal") || t.includes("folha")) return ICONES_SERVICO_P.pessoal;
-  if (t.includes("financeiro") || t.includes("bpo")) return ICONES_SERVICO_P.financeiro;
-  if (t.includes("digital")) return ICONES_SERVICO_P.digital;
-  if (t.includes("nota")) return ICONES_SERVICO_P.notas;
-  return ICONES_SERVICO_P.generico;
 }
 
 // Agrupa os itens precificados do checklist num formato pronto pra exibição:
 // quando exatamente 1 plano de Honorário está marcado (independente de ele
 // próprio ter valor digitado) e há pelo menos 1 serviço de Escritório com
-// valor, o plano vira um card "grupo" (título + descrição, sem preço
-// próprio na linha do cabeçalho) com os serviços de Escritório aninhados
-// como sub-itens, cada um com seu valor — exatamente o padrão pedido:
-// "posso escolher o que vou incluir em cada plano". planosSelecionados vem
-// do checklist (todo plano marcado, com ou sem valor) — é a fonte da
-// verdade de "qual plano está selecionado", já que um plano sem valor
-// próprio não aparece em `itens` (que só lista o que tem preço). Fora desse
-// caso (nenhum plano marcado, ou plano marcado sem nenhum serviço de
-// Escritório junto) cada item vira um card avulso normal, com
-// título/descrição à esquerda e valor à direita — é o que acontece, por
-// exemplo, quando só o Plano Digital é marcado sozinho, com valor próprio.
+// valor, o plano vira um grupo (título + descrição, valor = soma dos
+// serviços de Escritório) com os serviços de Escritório aninhados como
+// sub-itens — exatamente o padrão pedido: "posso escolher o que vou incluir
+// em cada plano". planosSelecionados vem do checklist (todo plano marcado,
+// com ou sem valor) — é a fonte da verdade de "qual plano está
+// selecionado", já que um plano sem valor próprio não aparece em `itens`
+// (que só lista o que tem preço). Fora desse caso (nenhum plano marcado, ou
+// plano marcado sem nenhum serviço de Escritório junto) cada item vira uma
+// linha avulsa normal, com título/descrição à esquerda e valor à direita —
+// é o que acontece, por exemplo, quando só o Plano Digital é marcado
+// sozinho, com valor próprio.
 function agruparItensInvestimento(itens, planosSelecionados) {
   planosSelecionados = planosSelecionados || [];
   const planosComValor = itens.filter((i) => i.categoria === "Honorário");
@@ -239,63 +178,72 @@ function agruparItensInvestimento(itens, planosSelecionados) {
 // (usado nos campos que ainda precisam ser preenchidos) mostra "Incluso".
 function valorOuInclusoP(valor) {
   const v = (valor || "").toString().trim();
-  return v ? `R$ ${escapeHtmlP(v)}` : `<span class="proposal-item-incluso">Incluso</span>`;
+  return v ? `R$ ${formatarValorP(parseValorP(v))}` : `<span class="proposal-item-incluso">Incluso</span>`;
 }
 
-function renderItemCardSolto(item) {
+// --- "ESCOPO E INVESTIMENTO" (página de abertura, resumo) -----------------
+
+function renderEscopoItemLinha(item) {
   return `
-    <div class="proposal-item-card">
-      <div class="proposal-item-icon">${iconeServicoP(item.titulo)}</div>
-      <div class="proposal-item-headtext">
-        <div class="proposal-item-titulo">${escapeHtmlP(item.titulo || "Item")}</div>
-        ${item.descricao ? `<div class="proposal-item-desc">${escapeHtmlP(item.descricao)}</div>` : ""}
+    <div class="proposal-escopo-item">
+      <div class="proposal-escopo-item-texto">
+        <div class="proposal-escopo-item-titulo">${escapeHtmlP(item.titulo || "Item")}</div>
+        ${item.descricao ? `<div class="proposal-escopo-item-desc">${escapeHtmlP(item.descricao)}</div>` : ""}
       </div>
-      <div class="proposal-item-valor-solo">${valorOuInclusoP(item.valor)}</div>
+      <div class="proposal-escopo-item-valor">${valorOuInclusoP(item.valor)}</div>
     </div>`;
 }
 
-function renderItemGrupo(grupo) {
+// Um grupo (plano + serviços de Escritório) vira UMA linha de resumo aqui —
+// título + empresa, descrição do plano, e o valor somado dos sub-itens (o
+// detalhamento item a item fica pra seção "DETALHAMENTO DOS SERVIÇOS").
+function renderEscopoGrupoLinha(grupo, empresa) {
+  const total = somaSubItensP(grupo.subItens);
   return `
-    <div class="proposal-item-card proposal-item-grupo">
-      <div class="proposal-item-grupo-header">
-        <div class="proposal-item-icon">${iconeServicoP(grupo.titulo)}</div>
-        <div class="proposal-item-headtext">
-          <div class="proposal-item-titulo">${escapeHtmlP(grupo.titulo)}</div>
-          ${grupo.descricao ? `<div class="proposal-item-desc">${escapeHtmlP(grupo.descricao)}</div>` : ""}
-        </div>
+    <div class="proposal-escopo-item">
+      <div class="proposal-escopo-item-texto">
+        <div class="proposal-escopo-item-titulo">${escapeHtmlP((grupo.titulo || "").toUpperCase())} — ${escapeHtmlP(empresa || "")}</div>
+        ${grupo.descricao ? `<div class="proposal-escopo-item-desc">${escapeHtmlP(grupo.descricao)}</div>` : ""}
       </div>
-      <div class="proposal-item-subitens">
-        ${grupo.subItens.map((s) => `
-          <div class="proposal-subitem">
-            <span class="proposal-subitem-label">${escapeHtmlP(s.titulo)}</span>
-            <span class="proposal-subitem-valor">${valorOuInclusoP(s.valor)}</span>
-          </div>`).join("")}
-      </div>
+      <div class="proposal-escopo-item-valor">R$ ${formatarValorP(total)}</div>
     </div>`;
 }
 
-function renderBlocoInvestimento(bloco) {
-  return bloco.tipo === "grupo" ? renderItemGrupo(bloco.dado) : renderItemCardSolto(bloco.dado);
-}
-
-function renderValorTotalBar(total) {
+// Cabeçalho "ESCOPO E INVESTIMENTO" + a primeira linha — sempre juntos no
+// mesmo bloco, pra nunca deixar o título sozinho numa folha separada do
+// primeiro item que ele apresenta.
+function renderEscopoIntroBloco(primeiraLinhaHtml) {
   return `
-    <div class="proposal-valor-total-bar">
-      <div class="proposal-valor-total-icon">${ICONES_SERVICO_P.calculadora}</div>
-      <div class="proposal-valor-total-text">
-        <div class="proposal-valor-total-label">VALOR TOTAL</div>
-        <div class="proposal-valor-total-sub">Soma de todos os serviços incluídos nesta proposta.</div>
-      </div>
-      <div class="proposal-valor-total-valor">R$ ${formatarValorP(total)}</div>
+    <div>
+      <h2 class="proposal-h2">ESCOPO E INVESTIMENTO</h2>
+      <p class="proposal-sub">Serviços que serão prestados</p>
+      <div class="proposal-escopo-lista">${primeiraLinhaHtml}</div>
     </div>`;
 }
 
-function investimentoMetaHtml(investimento) {
+function renderEscopoLinhaBlocoAvulso(linhaHtml) {
+  return `<div class="proposal-escopo-lista">${linhaHtml}</div>`;
+}
+
+// "O Plano Completo inclui: item • item • item." — mesma lista de detalhes
+// do produto que antes virava um checklist com marcadores redondos, agora
+// como frase corrida (a lista com marcador fica pro escopo mais detalhado
+// não existir mais nessa página).
+function renderInclusoNotasHtml(planosSelecionados) {
+  const planosComDetalhes = (planosSelecionados || []).filter((p) => p.detalhes && p.detalhes.length > 0);
+  return planosComDetalhes
+    .map((p) => {
+      const itens = p.detalhes.map((d) => escapeHtmlP(lowerFirstP(d))).join(" • ");
+      return `<p class="proposal-inclui-nota">O ${escapeHtmlP(p.nome)} inclui: ${itens}.</p>`;
+    })
+    .join("");
+}
+
+function renderEscopoFechamentoBloco(planosSelecionados, total) {
   return `
-    <div class="proposal-investimento-meta">
-      <div><span class="fl">Forma de pagamento</span><span class="fv">${phP(investimento.formaPagamento, "A combinar")}</span></div>
-      <div><span class="fl">Prazo para início</span><span class="fv">${phP(investimento.prazoInicio, "Após aceite")}</span></div>
-      <div><span class="fl">Validade da proposta</span><span class="fv">${phP(investimento.validade, "Não informado")}</span></div>
+    <div>
+      ${renderInclusoNotasHtml(planosSelecionados)}
+      <p class="proposal-total-linha">VALOR TOTAL MENSAL: R$ ${formatarValorP(total)}</p>
     </div>`;
 }
 
@@ -332,75 +280,98 @@ function renderEtapasOuPlanos(planosSelecionados) {
     </div>`).join("");
 }
 
-// Bloco de abertura de "Serviços e Investimento": título + (o que está
-// incluso no plano, ou a lista padrão de etapas) + a caixa de preço único
-// ao lado, quando a proposta não usa múltiplos itens de investimento.
-function renderServicosIntroBloco(investimento, planosSelecionados, temItensMultiplos) {
+function investimentoMetaHtml(investimento) {
+  return `
+    <div class="proposal-investimento-meta">
+      <div><span class="fl">Forma de pagamento</span><span class="fv">${phP(investimento.formaPagamento, "A combinar")}</span></div>
+      <div><span class="fl">Prazo para início</span><span class="fv">${phP(investimento.prazoInicio, "Após aceite")}</span></div>
+      <div><span class="fl">Validade da proposta</span><span class="fv">${phP(investimento.validade, "Não informado")}</span></div>
+    </div>`;
+}
+
+// Proposta sem itens de investimento/checklist precificado nenhum: mostra a
+// lista de etapas (ou "o que está incluso" do plano, se algum foi marcado
+// sem valor) e um valor único de investimento, sem a lista/tabela de
+// escopo detalhado (não tem o que detalhar).
+function renderEscopoSemItensBloco(investimento, planosSelecionados) {
   const temDesconto = investimento.temDesconto && investimento.valorFinal;
-  const desconto = temDesconto
-    ? (parseFloat((investimento.valorCheio || "0").replace(/\./g, "").replace(",", ".")) -
-       parseFloat((investimento.valorFinal || "0").replace(/\./g, "").replace(",", "."))).toFixed(2).replace(".", ",")
-    : null;
-
-  const precoBoxHtml = temDesconto
-    ? `
-      <div class="proposal-price-label">VALOR FINAL COM DESCONTO</div>
-      <div class="proposal-discount-badge">DESCONTO APLICADO</div>
-      <div class="proposal-price-old">R$ ${escapeHtmlP(investimento.valorCheio)}</div>
-      <div class="proposal-price">R$ ${escapeHtmlP(investimento.valorFinal)}</div>
-      <p class="proposal-price-note">De R$ ${escapeHtmlP(investimento.valorCheio)} por R$ ${escapeHtmlP(investimento.valorFinal)} — desconto comercial de R$ ${desconto} aplicado.</p>
-    `
-    : `
-      <div class="proposal-price-label">VALOR DO INVESTIMENTO</div>
-      <div class="proposal-price">${investimento.valorCheio ? "R$ " + escapeHtmlP(investimento.valorCheio) : '<span class="placeholder">[valor]</span>'}</div>
-    `;
-
+  const linhaValor = temDesconto
+    ? `<p class="proposal-total-linha">VALOR DO INVESTIMENTO: <span class="proposal-total-linha-riscado">R$ ${formatarValorP(parseValorP(investimento.valorCheio))}</span> R$ ${formatarValorP(parseValorP(investimento.valorFinal))}</p>`
+    : `<p class="proposal-total-linha">VALOR DO INVESTIMENTO: ${investimento.valorCheio ? "R$ " + formatarValorP(parseValorP(investimento.valorCheio)) : '<span class="placeholder">[valor]</span>'}</p>`;
   return `
     <div>
-      <h2 class="proposal-h2">SERVIÇOS E INVESTIMENTO</h2>
+      <h2 class="proposal-h2">ESCOPO E INVESTIMENTO</h2>
       <p class="proposal-sub">Serviços que serão prestados</p>
-
-      <div class="proposal-columns proposal-columns-services">
-        <div class="${temItensMultiplos ? "proposal-services proposal-services-full" : "proposal-services"}">
-          ${renderEtapasOuPlanos(planosSelecionados)}
-        </div>
-
-        ${temItensMultiplos ? "" : `
-        <div class="proposal-price-box">
-          ${precoBoxHtml}
-          <div class="proposal-price-divider"></div>
-          <div class="proposal-price-meta">
-            <div><span class="fl">Forma de pagamento</span><span class="fv">${phP(investimento.formaPagamento, "A combinar")}</span></div>
-            <div><span class="fl">Prazo para início</span><span class="fv">${phP(investimento.prazoInicio, "Após aceite")}</span></div>
-          </div>
-          <div><span class="fl">Validade da proposta</span><span class="fv">${phP(investimento.validade, "Não informado")}</span></div>
-          <p class="proposal-price-fine">Proposta válida mediante conferência das informações cadastrais e confirmação do escopo final.</p>
-        </div>`}
-      </div>
+      <div class="proposal-escopo-etapas">${renderEtapasOuPlanos(planosSelecionados)}</div>
+      ${linhaValor}
+      ${investimentoMetaHtml(investimento)}
     </div>`;
 }
 
-// Cabeçalho "SERVIÇOS INCLUÍDOS NESTA PROPOSTA" + o primeiro card — sempre
-// juntos no mesmo bloco, pra nunca deixar o título sozinho numa folha
-// separada do primeiro item que ele apresenta.
-function renderResumoInvestimentoHeaderBloco(primeiroBlocoHtml) {
+// --- "DETALHAMENTO DOS SERVIÇOS" (página de fechamento) -------------------
+
+function renderTabelaGrupoHtml(grupo) {
+  const total = somaSubItensP(grupo.subItens);
   return `
-    <div class="proposal-investimento-resumo">
-      <h4>SERVIÇOS INCLUÍDOS NESTA PROPOSTA</h4>
-      <p class="proposal-investimento-resumo-sub">Solução contábil completa, com valor detalhado de cada serviço incluído.</p>
-      <div class="proposal-itens-lista">${primeiroBlocoHtml}</div>
+    <table class="proposal-tabela">
+      <thead><tr><th>SERVIÇO</th><th class="num">VALOR</th></tr></thead>
+      <tbody>
+        ${grupo.subItens.map((s) => `<tr><td>${escapeHtmlP(s.titulo)}</td><td class="num">${valorOuInclusoP(s.valor)}</td></tr>`).join("")}
+        <tr class="is-subtotal"><td>Subtotal — ${escapeHtmlP(grupo.empresa || "")}</td><td class="num">R$ ${formatarValorP(total)}</td></tr>
+      </tbody>
+    </table>`;
+}
+
+function renderDetalhamentoSoltoLinha(item) {
+  return `
+    <div class="proposal-detalhamento-solto">
+      <span>${escapeHtmlP((item.titulo || "").toUpperCase())}</span>
+      <span>${valorOuInclusoP(item.valor)}</span>
     </div>`;
 }
 
-function renderItemBlocoAvulso(blocoHtml) {
-  return `<div class="proposal-itens-lista">${blocoHtml}</div>`;
+// Decompõe grupos/soltos (mesma decomposição do ESCOPO) numa lista plana de
+// itens de detalhamento: cada grupo vira uma tabela (com o subtítulo
+// "Composição de ... — empresa" junto), cada solto vira uma linha simples.
+function montarItensDetalhamento(grupos, soltos, empresa) {
+  const itens = [];
+  grupos.forEach((g) => {
+    const subTxt = `Composição do ${g.titulo} — ${empresa || ""}`;
+    itens.push({ sub: `<p class="proposal-sub">${escapeHtmlP(subTxt)}</p>`, html: renderTabelaGrupoHtml(Object.assign({ empresa }, g)) });
+  });
+  soltos.forEach((s) => {
+    itens.push({ sub: "", html: renderDetalhamentoSoltoLinha(s) });
+  });
+  return itens;
 }
 
-function renderValorTotalBloco(investimento, total) {
+// Cabeçalho "DETALHAMENTO DOS SERVIÇOS" + o primeiro item (tabela ou linha)
+// — sempre juntos, mesmo motivo dos outros cabeçalhos desse arquivo.
+function renderDetalhamentoHeaderBloco(primeiroItem) {
   return `
     <div>
-      ${renderValorTotalBar(total)}
+      <h2 class="proposal-h2">DETALHAMENTO DOS SERVIÇOS</h2>
+      ${primeiroItem.sub}
+      ${primeiroItem.html}
+    </div>`;
+}
+
+function renderDetalhamentoItemBlocoAvulso(item) {
+  return item.sub ? `<div>${item.sub}${item.html}</div>` : item.html;
+}
+
+function renderValorTotalMensalBloco(investimento, total, subtitulo) {
+  return `
+    <div>
+      <div class="proposal-valor-total-bar">
+        <div class="proposal-valor-total-text">
+          <div class="proposal-valor-total-label">VALOR TOTAL MENSAL</div>
+          <div class="proposal-valor-total-sub">${escapeHtmlP(subtitulo)}</div>
+        </div>
+        <div class="proposal-valor-total-valor">R$ ${formatarValorP(total)}</div>
+      </div>
       ${investimentoMetaHtml(investimento)}
+      <p class="proposal-agradecimento">A AEA Contabilidade Consultiva agradece a oportunidade e permanece à disposição para o início da parceria.</p>
     </div>`;
 }
 
@@ -411,32 +382,40 @@ function renderValorTotalBloco(investimento, total) {
 // folha sem cortar texto/tabela no meio, sem depender de heurísticas fixas
 // de quantos itens "normalmente" cabem por página).
 function montarBlocosProposta(data) {
-  const grupo = data.grupo || [];
+  const grupoEmpresas = data.grupo || [];
   const itens = data.investimento.itens || [];
   const temItensMultiplos = itens.length > 0;
   const blocos = [];
 
-  blocos.push({ html: renderCapaBloco(data.cliente) });
+  blocos.push({ html: renderHeroBloco(data.cliente) });
   blocos.push({ html: renderDadosClienteBloco(data.cliente, data.diagnostico) });
-  grupo.forEach((empresa, i) => {
-    blocos.push({ html: renderDadosClienteExtraBloco(empresa, i + 2) });
+  grupoEmpresas.forEach((empresa) => {
+    blocos.push({ html: renderDadosClienteExtraBloco(empresa) });
   });
-
-  blocos.push({ html: renderServicosIntroBloco(data.investimento, data.planosSelecionados, temItensMultiplos) });
 
   if (temItensMultiplos) {
     const { grupos, soltos } = agruparItensInvestimento(itens, data.planosSelecionados);
-    const itensDecompostos = [
+    const linhasEscopo = [
       ...grupos.map((g) => ({ tipo: "grupo", dado: g })),
       ...soltos.map((s) => ({ tipo: "solto", dado: s })),
     ];
-    itensDecompostos.forEach((bloco, i) => {
-      const html = renderBlocoInvestimento(bloco);
-      blocos.push({
-        html: i === 0 ? renderResumoInvestimentoHeaderBloco(html) : renderItemBlocoAvulso(html),
-      });
+    linhasEscopo.forEach((linha, i) => {
+      const html = linha.tipo === "grupo"
+        ? renderEscopoGrupoLinha(linha.dado, data.cliente.empresa)
+        : renderEscopoItemLinha(linha.dado);
+      blocos.push({ html: i === 0 ? renderEscopoIntroBloco(html) : renderEscopoLinhaBlocoAvulso(html) });
     });
-    blocos.push({ html: renderValorTotalBloco(data.investimento, somaItensP(itens)) });
+    blocos.push({ html: renderEscopoFechamentoBloco(data.planosSelecionados, somaItensP(itens)) });
+
+    const itensDetalhamento = montarItensDetalhamento(grupos, soltos, data.cliente.empresa);
+    itensDetalhamento.forEach((item, i) => {
+      blocos.push({ html: i === 0 ? renderDetalhamentoHeaderBloco(item) : renderDetalhamentoItemBlocoAvulso(item) });
+    });
+
+    const nomesEmpresas = [data.cliente.empresa, ...grupoEmpresas.map((e) => e.nome)].filter(Boolean).join(" + ");
+    blocos.push({ html: renderValorTotalMensalBloco(data.investimento, somaItensP(itens), nomesEmpresas) });
+  } else {
+    blocos.push({ html: renderEscopoSemItensBloco(data.investimento, data.planosSelecionados) });
   }
 
   return blocos;
