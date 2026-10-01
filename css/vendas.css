@@ -298,6 +298,13 @@
   flex: 0 0 170px;
 }
 
+.vendas-arquivadas-toggle {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  align-self: flex-end;
+  margin-bottom: 1px;
+}
+
 .vendas-periodo-nota {
   font-size: 0.75rem;
   color: #6b7280;
@@ -390,6 +397,22 @@
 
 .handoff-badge.handoff-ok { background: #dcfce7; color: #15803d; }
 .handoff-badge.handoff-pendente { background: #fef3c7; color: #92400e; }
+
+.arquivada-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: #e5e7eb;
+  color: #4b5563;
+  white-space: nowrap;
+}
+
+.venda-row-arquivada,
+.venda-card-arquivada {
+  opacity: 0.6;
+}
 
 .vendas-row-actions {
   display: flex;

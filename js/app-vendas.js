@@ -229,7 +229,7 @@ function setupMetaMensal() {
     }
     metaMensalCache = novoValor;
     await setMetaMensal(novoValor);
-    renderVendasStats(getVendasNoEscopoMes());
+    renderVendasStats(getVendasNoEscopoMes().filter((v) => !v.arquivada));
   });
 }
 
@@ -297,14 +297,31 @@ function atualizarPeriodoNota() {
 function getFilteredVendas() {
   const search = document.getElementById("vendas-search").value.trim().toLowerCase();
   const filtroStatus = document.getElementById("vendas-filtro-status").value;
+  const mostrarArquivadas = document.getElementById("vendas-mostrar-arquivadas").checked;
 
   return getVendasNoEscopoMes().filter((v) => {
+    if (!mostrarArquivadas && v.arquivada) return false;
     const matchStatus = !filtroStatus || v.status === filtroStatus;
     const matchSearch = !search ||
       (v.empresaNome || "").toLowerCase().includes(search) ||
       (v.contato || "").toLowerCase().includes(search);
     return matchStatus && matchSearch;
   });
+}
+
+// Arquivar não apaga nada — só marca o registro pra sumir da lista por
+// padrão (ver getFilteredVendas), continuando disponível em "Mostrar
+// arquivadas" e totalmente reversível pelo mesmo botão.
+async function toggleArquivarVenda(id) {
+  const venda = vendasCache.find((v) => v.id === id);
+  if (!venda) return;
+  try {
+    await upsertVenda(Object.assign({}, venda, { arquivada: !venda.arquivada }), id);
+    await refreshVendas();
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao arquivar/desarquivar o registro.");
+  }
 }
 
 function renderVendasTable() {
@@ -317,9 +334,9 @@ function renderVendasTable() {
   }
 
   const rows = filtradas.map((v) => `
-    <tr data-id="${v.id}">
+    <tr data-id="${v.id}" class="${v.arquivada ? "venda-row-arquivada" : ""}">
       <td>${v.dataEnvio ? new Date(v.dataEnvio + "T00:00:00").toLocaleDateString("pt-BR") : "—"}</td>
-      <td>${v.empresaNome || "—"}</td>
+      <td>${v.empresaNome || "—"}${v.arquivada ? ' <span class="arquivada-badge">Arquivada</span>' : ""}</td>
       <td>${v.contato || "—"}</td>
       <td>${v.produtoNome || "—"}</td>
       <td>${v.valor ? "R$ " + v.valor : "—"}</td>
@@ -330,6 +347,7 @@ function renderVendasTable() {
         <button type="button" class="btn-secondary venda-followup" data-id="${v.id}" title="Enviar 2ª chamada por WhatsApp">📲 2ª chamada</button>
         <button type="button" class="btn-secondary venda-reuniao" data-id="${v.id}" title="Marcar reunião no Google Calendar">📅 Reunião</button>
         <button type="button" class="btn-secondary venda-edit" data-id="${v.id}">Editar</button>
+        <button type="button" class="btn-secondary venda-arquivar" data-id="${v.id}">${v.arquivada ? "📤 Desarquivar" : "📦 Arquivar"}</button>
         <button type="button" class="btn-danger venda-delete" data-id="${v.id}">Excluir</button>
       </td>
     </tr>
@@ -361,6 +379,9 @@ function renderVendasTable() {
   });
   wrap.querySelectorAll(".venda-delete").forEach((btn) => {
     btn.addEventListener("click", () => removeVenda(btn.dataset.id));
+  });
+  wrap.querySelectorAll(".venda-arquivar").forEach((btn) => {
+    btn.addEventListener("click", () => toggleArquivarVenda(btn.dataset.id));
   });
   wrap.querySelectorAll(".venda-followup").forEach((btn) => {
     btn.addEventListener("click", () => enviarSegundaChamada(btn.dataset.id));
@@ -538,11 +559,11 @@ async function moverVendaStatus(id, novoStatus) {
 
 function vendaCardHtml(v) {
   return `
-    <div class="vendas-card ${statusClass(v.status)}" draggable="true" data-id="${v.id}">
+    <div class="vendas-card ${statusClass(v.status)} ${v.arquivada ? "venda-card-arquivada" : ""}" draggable="true" data-id="${v.id}">
       <div class="vendas-card-top">
         <div class="vendas-card-avatar">${iniciais(v.empresaNome)}</div>
         <div class="vendas-card-heading">
-          <div class="vendas-card-empresa">${v.empresaNome || "(sem nome)"}</div>
+          <div class="vendas-card-empresa">${v.empresaNome || "(sem nome)"}${v.arquivada ? ' <span class="arquivada-badge">Arquivada</span>' : ""}</div>
           <div class="vendas-card-contato">${v.contato || "—"}</div>
         </div>
       </div>
@@ -557,6 +578,7 @@ function vendaCardHtml(v) {
         <button type="button" class="btn-secondary venda-followup" data-id="${v.id}" title="Enviar 2ª chamada por WhatsApp">📲</button>
         <button type="button" class="btn-secondary venda-reuniao" data-id="${v.id}" title="Marcar reunião no Google Calendar">📅</button>
         <button type="button" class="btn-secondary venda-edit" data-id="${v.id}">✎</button>
+        <button type="button" class="btn-secondary venda-arquivar" data-id="${v.id}" title="${v.arquivada ? "Desarquivar" : "Arquivar"}">${v.arquivada ? "📤" : "📦"}</button>
         <button type="button" class="btn-danger venda-delete" data-id="${v.id}">✕</button>
       </div>
     </div>
@@ -595,6 +617,9 @@ function renderVendasBoard() {
   });
   wrap.querySelectorAll(".venda-delete").forEach((btn) => {
     btn.addEventListener("click", () => removeVenda(btn.dataset.id));
+  });
+  wrap.querySelectorAll(".venda-arquivar").forEach((btn) => {
+    btn.addEventListener("click", () => toggleArquivarVenda(btn.dataset.id));
   });
   wrap.querySelectorAll(".venda-followup").forEach((btn) => {
     btn.addEventListener("click", () => enviarSegundaChamada(btn.dataset.id));
@@ -652,7 +677,7 @@ function setupVendasViewToggle() {
 }
 
 function atualizarViewsVendas() {
-  renderVendasStats(getVendasNoEscopoMes());
+  renderVendasStats(getVendasNoEscopoMes().filter((v) => !v.arquivada));
   atualizarPeriodoNota();
   renderVendasTable();
   if (!document.getElementById("vendas-board-wrap").classList.contains("hidden")) {
@@ -1485,6 +1510,7 @@ function setupVendaActions() {
   };
   document.getElementById("vendas-search").addEventListener("input", rerenderVisiveis);
   document.getElementById("vendas-filtro-status").addEventListener("change", rerenderVisiveis);
+  document.getElementById("vendas-mostrar-arquivadas").addEventListener("change", rerenderVisiveis);
   document.getElementById("vendas-filtro-mes").addEventListener("change", atualizarViewsVendas);
 
   document.getElementById("v_status").addEventListener("change", atualizarVisibilidadeHandoff);
