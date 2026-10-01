@@ -318,6 +318,11 @@ button {
   gap: 8px;
 }
 
+.orc-grupo-servicos {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
 .alteracao-remove {
   align-self: flex-end;
   background: none;

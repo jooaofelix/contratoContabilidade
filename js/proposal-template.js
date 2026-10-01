@@ -183,11 +183,17 @@ function valorOuInclusoP(valor) {
 
 // --- "ESCOPO E INVESTIMENTO" (página de abertura, resumo) -----------------
 
-function renderEscopoItemLinha(item) {
+// `empresa` só é passado quando o item pertence a uma empresa ADICIONAL do
+// Grupo Econômico (não a contratante principal) — é o que diferencia, por
+// exemplo, um item avulso da contratante ("Abertura de Empresa") de um
+// marcado no checklist próprio de uma empresa do grupo ("Plano Digital —
+// VAROGLASS"), que precisa deixar claro a quem se refere.
+function renderEscopoItemLinha(item, empresa) {
+  const titulo = empresa ? `${item.titulo || "Item"} — ${empresa}` : (item.titulo || "Item");
   return `
     <div class="proposal-escopo-item">
       <div class="proposal-escopo-item-texto">
-        <div class="proposal-escopo-item-titulo">${escapeHtmlP(item.titulo || "Item")}</div>
+        <div class="proposal-escopo-item-titulo">${escapeHtmlP(titulo)}</div>
         ${item.descricao ? `<div class="proposal-escopo-item-desc">${escapeHtmlP(item.descricao)}</div>` : ""}
       </div>
       <div class="proposal-escopo-item-valor">${valorOuInclusoP(item.valor)}</div>
@@ -322,25 +328,28 @@ function renderTabelaGrupoHtml(grupo) {
     </table>`;
 }
 
-function renderDetalhamentoSoltoLinha(item) {
+function renderDetalhamentoSoltoLinha(item, empresa) {
+  const titulo = empresa ? `${item.titulo || ""} — ${empresa}` : (item.titulo || "");
   return `
     <div class="proposal-detalhamento-solto">
-      <span>${escapeHtmlP((item.titulo || "").toUpperCase())}</span>
+      <span>${escapeHtmlP(titulo.toUpperCase())}</span>
       <span>${valorOuInclusoP(item.valor)}</span>
     </div>`;
 }
 
-// Decompõe grupos/soltos (mesma decomposição do ESCOPO) numa lista plana de
-// itens de detalhamento: cada grupo vira uma tabela (com o subtítulo
-// "Composição de ... — empresa" junto), cada solto vira uma linha simples.
-function montarItensDetalhamento(grupos, soltos, empresa) {
+// Decompõe grupos/soltos de UMA empresa (mesma decomposição do ESCOPO) numa
+// lista plana de itens de detalhamento: cada grupo vira uma tabela (com o
+// subtítulo "Composição de ... — empresa" junto), cada solto vira uma linha
+// simples. Usado por empresa — a lista final (todas as empresas da
+// proposta) é montada em montarBlocosProposta.
+function montarItensDetalhamentoDaEmpresa(grupos, soltos, empresa, sufixoSoltos) {
   const itens = [];
   grupos.forEach((g) => {
     const subTxt = `Composição do ${g.titulo} — ${empresa || ""}`;
     itens.push({ sub: `<p class="proposal-sub">${escapeHtmlP(subTxt)}</p>`, html: renderTabelaGrupoHtml(Object.assign({ empresa }, g)) });
   });
   soltos.forEach((s) => {
-    itens.push({ sub: "", html: renderDetalhamentoSoltoLinha(s) });
+    itens.push({ sub: "", html: renderDetalhamentoSoltoLinha(s, sufixoSoltos) });
   });
   return itens;
 }
@@ -383,9 +392,19 @@ function renderValorTotalMensalBloco(investimento, total, subtitulo) {
 // de quantos itens "normalmente" cabem por página).
 function montarBlocosProposta(data) {
   const grupoEmpresas = data.grupo || [];
-  const itens = data.investimento.itens || [];
-  const temItensMultiplos = itens.length > 0;
   const blocos = [];
+
+  // Cada empresa da proposta (a contratante + as adicionais do Grupo
+  // Econômico) pode ter seu próprio plano/serviços incluídos — os itens da
+  // contratante vêm do checklist principal + itens de investimento manuais
+  // (sempre atribuídos a ela); os da empresa adicional vêm do checklist
+  // próprio dela (ver addGrupoRowOrc/collectGrupoOrc em app-orcamento.js).
+  const empresasComServicos = [
+    { nome: data.cliente.empresa, itens: data.investimento.itens || [], planosSelecionados: data.planosSelecionados || [] },
+    ...grupoEmpresas.map((e) => ({ nome: e.nome, itens: e.itens || [], planosSelecionados: e.planosSelecionados || [] })),
+  ];
+  const todosItens = empresasComServicos.reduce((acc, e) => acc.concat(e.itens), []);
+  const temItensMultiplos = todosItens.length > 0;
 
   blocos.push({ html: renderHeroBloco(data.cliente) });
   blocos.push({ html: renderDadosClienteBloco(data.cliente, data.diagnostico) });
@@ -394,26 +413,37 @@ function montarBlocosProposta(data) {
   });
 
   if (temItensMultiplos) {
-    const { grupos, soltos } = agruparItensInvestimento(itens, data.planosSelecionados);
-    const linhasEscopo = [
-      ...grupos.map((g) => ({ tipo: "grupo", dado: g })),
-      ...soltos.map((s) => ({ tipo: "solto", dado: s })),
-    ];
+    const linhasEscopo = [];
+    const itensDetalhamento = [];
+    empresasComServicos.forEach((empresa, idx) => {
+      if (empresa.itens.length === 0) return;
+      // Um grupo (plano + Escritório) sempre mostra a empresa no título,
+      // mesmo o da contratante ("PLANO COMPLETO — VG2") — já um item avulso
+      // só mostra quando é de uma empresa ADICIONAL do grupo econômico
+      // (idx > 0): um item avulso da própria contratante não precisa repetir
+      // o nome dela.
+      const sufixoSoltos = idx === 0 ? null : empresa.nome;
+      const { grupos, soltos } = agruparItensInvestimento(empresa.itens, empresa.planosSelecionados);
+      grupos.forEach((g) => linhasEscopo.push({ tipo: "grupo", dado: g, empresa: empresa.nome }));
+      soltos.forEach((s) => linhasEscopo.push({ tipo: "solto", dado: s, empresa: sufixoSoltos }));
+      itensDetalhamento.push(...montarItensDetalhamentoDaEmpresa(grupos, soltos, empresa.nome, sufixoSoltos));
+    });
+
     linhasEscopo.forEach((linha, i) => {
       const html = linha.tipo === "grupo"
-        ? renderEscopoGrupoLinha(linha.dado, data.cliente.empresa)
-        : renderEscopoItemLinha(linha.dado);
+        ? renderEscopoGrupoLinha(linha.dado, linha.empresa)
+        : renderEscopoItemLinha(linha.dado, linha.empresa);
       blocos.push({ html: i === 0 ? renderEscopoIntroBloco(html) : renderEscopoLinhaBlocoAvulso(html) });
     });
-    blocos.push({ html: renderEscopoFechamentoBloco(data.planosSelecionados, somaItensP(itens)) });
+    const todosPlanosSelecionados = empresasComServicos.reduce((acc, e) => acc.concat(e.planosSelecionados), []);
+    blocos.push({ html: renderEscopoFechamentoBloco(todosPlanosSelecionados, somaItensP(todosItens)) });
 
-    const itensDetalhamento = montarItensDetalhamento(grupos, soltos, data.cliente.empresa);
     itensDetalhamento.forEach((item, i) => {
       blocos.push({ html: i === 0 ? renderDetalhamentoHeaderBloco(item) : renderDetalhamentoItemBlocoAvulso(item) });
     });
 
-    const nomesEmpresas = [data.cliente.empresa, ...grupoEmpresas.map((e) => e.nome)].filter(Boolean).join(" + ");
-    blocos.push({ html: renderValorTotalMensalBloco(data.investimento, somaItensP(itens), nomesEmpresas) });
+    const nomesEmpresas = empresasComServicos.map((e) => e.nome).filter(Boolean).join(" + ");
+    blocos.push({ html: renderValorTotalMensalBloco(data.investimento, somaItensP(todosItens), nomesEmpresas) });
   } else {
     blocos.push({ html: renderEscopoSemItensBloco(data.investimento, data.planosSelecionados) });
   }

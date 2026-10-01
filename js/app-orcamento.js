@@ -21,21 +21,14 @@ const CATEGORIAS_SERVICOS_ORC = [
   { categoria: "Adicional", titulo: "➕ Serviços adicionais" },
 ];
 
-function populateServicosChecklistOrc() {
-  const wrap = document.getElementById("orc-servicos-checklist");
-  const checkedNomes = new Set(
-    Array.from(wrap.querySelectorAll(".orc-servico-check:checked")).map((c) => c.value)
-  );
-  const valoresAntigos = {};
-  Array.from(wrap.querySelectorAll(".orc-servico-linha")).forEach((linha) => {
-    const nome = linha.querySelector(".orc-servico-check").value;
-    const valor = linha.querySelector(".orc-servico-valor").value;
-    if (valor) valoresAntigos[nome] = valor;
-  });
-
+// Monta o HTML do checklist de serviços (marca + valor, agrupado por
+// categoria) — reutilizado tanto pro checklist principal (empresa
+// contratante) quanto pro checklist de cada empresa adicional do Grupo
+// Econômico (ver addGrupoRowOrc), já que cada uma pode ter seu próprio
+// plano/serviços incluídos.
+function montarServicosChecklistHtml(checkedNomes, valoresAntigos) {
   if (produtosCacheOrc.length === 0) {
-    wrap.innerHTML = `<p class="fixed-note">Nenhum serviço cadastrado ainda (cadastre em Vendas → Início de Proposta).</p>`;
-    return;
+    return `<p class="fixed-note">Nenhum serviço cadastrado ainda (cadastre em Vendas → Início de Proposta).</p>`;
   }
 
   const porCategoria = {};
@@ -45,7 +38,7 @@ function populateServicosChecklistOrc() {
     porCategoria[cat].push(p);
   });
 
-  wrap.innerHTML = CATEGORIAS_SERVICOS_ORC
+  return CATEGORIAS_SERVICOS_ORC
     .filter((c) => porCategoria[c.categoria] && porCategoria[c.categoria].length > 0)
     .map((c) => `
       <div class="orc-servicos-grupo">
@@ -59,11 +52,14 @@ function populateServicosChecklistOrc() {
         `).join("")}
       </div>
     `).join("");
+}
 
+// Liga os eventos de um checklist de serviços já no DOM (marcar/digitar
+// valor atualiza a pré-visualização; dentro de Honorário só um plano marcado
+// por vez). Reutilizado pelo checklist principal e pelos do Grupo Econômico.
+function wireServicosChecklistOrc(wrap) {
   wrap.querySelectorAll(".orc-servico-check").forEach((c) => {
     c.addEventListener("change", () => {
-      // Dentro de Honorário só faz sentido um plano marcado por vez —
-      // desmarca os outros da mesma categoria ao marcar um novo.
       if (c.checked && c.dataset.categoria === "Honorário") {
         wrap.querySelectorAll('.orc-servico-check[data-categoria="Honorário"]').forEach((outro) => {
           if (outro !== c) outro.checked = false;
@@ -77,16 +73,34 @@ function populateServicosChecklistOrc() {
   });
 }
 
+function populateServicosChecklistOrc() {
+  const wrap = document.getElementById("orc-servicos-checklist");
+  const checkedNomes = new Set(
+    Array.from(wrap.querySelectorAll(".orc-servico-check:checked")).map((c) => c.value)
+  );
+  const valoresAntigos = {};
+  Array.from(wrap.querySelectorAll(".orc-servico-linha")).forEach((linha) => {
+    const nome = linha.querySelector(".orc-servico-check").value;
+    const valor = linha.querySelector(".orc-servico-valor").value;
+    if (valor) valoresAntigos[nome] = valor;
+  });
+
+  wrap.innerHTML = montarServicosChecklistHtml(checkedNomes, valoresAntigos);
+  wireServicosChecklistOrc(wrap);
+}
+
 function collectServicosSelecionadosOrc() {
   return Array.from(document.querySelectorAll("#orc-servicos-checklist .orc-servico-check:checked")).map((c) => c.value);
 }
 
-// Todo serviço marcado no checklist vira um card no "Serviços incluídos
-// nesta proposta" do PDF — com valor (se foi preenchido o campo "R$" ao
-// lado) ou sem valor (card só com título/descrição, pra serviços incluídos
-// sem cobrança destacada). É essa lista que entra na soma do Valor Total.
-function collectValoresServicosOrc() {
-  return Array.from(document.querySelectorAll("#orc-servicos-checklist .orc-servico-linha"))
+// Todo serviço marcado num checklist (principal ou de uma empresa do Grupo
+// Econômico) vira uma linha em "Escopo e Investimento" no PDF — com valor
+// (se foi preenchido o campo "R$" ao lado) ou sem valor ("Incluso", pra
+// serviços incluídos sem cobrança destacada). É essa lista que entra na
+// soma do Valor Total.
+function collectValoresServicosDoWrapOrc(wrap) {
+  if (!wrap) return [];
+  return Array.from(wrap.querySelectorAll(".orc-servico-linha"))
     .map((linha) => {
       const check = linha.querySelector(".orc-servico-check");
       if (!check.checked) return null;
@@ -103,14 +117,23 @@ function collectValoresServicosOrc() {
     .filter(Boolean);
 }
 
-// Plano(s) de honorário marcado(s) no checklist — usado pra trocar a lista
+function collectValoresServicosOrc() {
+  return collectValoresServicosDoWrapOrc(document.getElementById("orc-servicos-checklist"));
+}
+
+// Plano(s) de honorário marcado(s) num checklist — usado pra trocar a lista
 // genérica de etapas (01 a 05) pelo "o que está incluso" do plano escolhido.
-function collectPlanosSelecionadosOrc() {
-  const nomesMarcados = Array.from(document.querySelectorAll('#orc-servicos-checklist .orc-servico-check[data-categoria="Honorário"]:checked')).map((c) => c.value);
+function collectPlanosSelecionadosDoWrapOrc(wrap) {
+  if (!wrap) return [];
+  const nomesMarcados = Array.from(wrap.querySelectorAll('.orc-servico-check[data-categoria="Honorário"]:checked')).map((c) => c.value);
   return nomesMarcados
     .map((nome) => produtosCacheOrc.find((p) => p.nome === nome))
     .filter(Boolean)
     .map((p) => ({ nome: p.nome, detalhes: detalhesDoProduto(p), descricao: descricaoDoProduto(p) }));
+}
+
+function collectPlanosSelecionadosOrc() {
+  return collectPlanosSelecionadosDoWrapOrc(document.getElementById("orc-servicos-checklist"));
 }
 
 // --- Grupo Econômico (mais de uma empresa na mesma proposta) -------------
@@ -142,6 +165,8 @@ function addGrupoRowOrc(empresa) {
         <input type="text" class="orc-grupo-email">
       </label>
     </div>
+    <p class="fixed-note">Serviços incluídos para esta empresa</p>
+    <div class="orc-grupo-servicos"></div>
   `;
   document.getElementById("orc-grupo-list").appendChild(wrap);
   wrap.querySelector(".orc-grupo-nome").value = empresa.nome || "";
@@ -150,7 +175,13 @@ function addGrupoRowOrc(empresa) {
   wrap.querySelector(".orc-grupo-telefone").value = empresa.telefone || "";
   wrap.querySelector(".orc-grupo-email").value = empresa.email || "";
 
-  wrap.querySelectorAll("input").forEach((el) => el.addEventListener("input", updateProposalPreview));
+  const servicosWrap = wrap.querySelector(".orc-grupo-servicos");
+  servicosWrap.innerHTML = montarServicosChecklistHtml(new Set(), {});
+  wireServicosChecklistOrc(servicosWrap);
+
+  wrap.querySelectorAll(".orc-grupo-nome, .orc-grupo-cnpj, .orc-grupo-responsavel, .orc-grupo-telefone, .orc-grupo-email").forEach((el) => {
+    el.addEventListener("input", updateProposalPreview);
+  });
   wrap.querySelector("[data-remove-grupo-orc]").addEventListener("click", () => {
     wrap.remove();
     updateProposalPreview();
@@ -159,13 +190,18 @@ function addGrupoRowOrc(empresa) {
 
 function collectGrupoOrc() {
   return Array.from(document.querySelectorAll("#orc-grupo-list .alteracao-row"))
-    .map((row) => ({
-      nome: row.querySelector(".orc-grupo-nome").value,
-      cnpj: row.querySelector(".orc-grupo-cnpj").value,
-      responsavel: row.querySelector(".orc-grupo-responsavel").value,
-      telefone: row.querySelector(".orc-grupo-telefone").value,
-      email: row.querySelector(".orc-grupo-email").value,
-    }))
+    .map((row) => {
+      const servicosWrap = row.querySelector(".orc-grupo-servicos");
+      return {
+        nome: row.querySelector(".orc-grupo-nome").value,
+        cnpj: row.querySelector(".orc-grupo-cnpj").value,
+        responsavel: row.querySelector(".orc-grupo-responsavel").value,
+        telefone: row.querySelector(".orc-grupo-telefone").value,
+        email: row.querySelector(".orc-grupo-email").value,
+        itens: collectValoresServicosDoWrapOrc(servicosWrap),
+        planosSelecionados: collectPlanosSelecionadosDoWrapOrc(servicosWrap),
+      };
+    })
     .filter((g) => g.nome || g.cnpj);
 }
 
