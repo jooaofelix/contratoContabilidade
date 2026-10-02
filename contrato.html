@@ -92,6 +92,15 @@
     </section>
 
     <section class="panel">
+      <h2 class="panel-toggle" data-target="panel-contratantes-adicionais">🏭 Empresas Adicionais (mesmo contrato) ▾</h2>
+      <div id="panel-contratantes-adicionais" class="panel-body collapsed">
+        <p class="fixed-note">Se este contrato cobrir mais de uma empresa do mesmo grupo econômico (mesmos honorários, mesmo contrato), adicione as demais aqui — cada uma ganha seu próprio quadro de identificação no documento, como CONTRATANTE adicional. Deixe vazio se for só uma empresa.</p>
+        <div id="contratantes-adicionais-list"></div>
+        <button type="button" id="add-contratante-adicional" class="btn-secondary">+ Adicionar empresa</button>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2>🏢 Contratada (fixa)</h2>
       <div class="panel-body">
         <div class="fixed-info">
@@ -139,21 +148,33 @@
     <section class="panel">
       <h2 class="panel-toggle" data-target="panel-honorarios">💰 Honorários ▾</h2>
       <div id="panel-honorarios" class="panel-body">
-        <label>Valor cheio mensal (R$)
-          <input type="text" id="h_valorCheio" placeholder="ex: 3.621,00">
-        </label>
-        <label class="checkbox"><input type="checkbox" id="h_temDesconto"> Aplicar desconto temporário</label>
-        <div id="h_descontoWrap" class="hidden">
-          <label>Valor com desconto (R$)
-            <input type="text" id="h_valorDesconto" placeholder="ex: 2.621,00">
+        <label class="checkbox"><input type="checkbox" id="h_temValorProvisorio"> ⏳ Valor provisório (ainda sem reunião pra definir o valor final)</label>
+        <div id="h_provisorioWrap" class="hidden">
+          <p class="fixed-note">O contrato sai com um valor provisório válido até a data abaixo — depois disso, as partes se reúnem pra definir o valor definitivo.</p>
+          <label>Valor provisório mensal (R$)
+            <input type="text" id="h_valorProvisorio" placeholder="ex: 2.000,00">
           </label>
-          <div class="row">
-            <label>Desconto de (mês/ano)
-              <input type="month" id="h_descontoInicio">
+          <label>Válido até (data da próxima reunião)
+            <input type="date" id="h_provisorioValidoAte">
+          </label>
+        </div>
+        <div id="h_valorCheioWrap">
+          <label>Valor cheio mensal (R$)
+            <input type="text" id="h_valorCheio" placeholder="ex: 3.621,00">
+          </label>
+          <label class="checkbox"><input type="checkbox" id="h_temDesconto"> Aplicar desconto temporário</label>
+          <div id="h_descontoWrap" class="hidden">
+            <label>Valor com desconto (R$)
+              <input type="text" id="h_valorDesconto" placeholder="ex: 2.621,00">
             </label>
-            <label>até (mês/ano)
-              <input type="month" id="h_descontoFim">
-            </label>
+            <div class="row">
+              <label>Desconto de (mês/ano)
+                <input type="month" id="h_descontoInicio">
+              </label>
+              <label>até (mês/ano)
+                <input type="month" id="h_descontoFim">
+              </label>
+            </div>
           </div>
         </div>
         <div class="row">

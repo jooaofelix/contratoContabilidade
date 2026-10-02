@@ -130,6 +130,9 @@ function paragraph(html) {
 }
 
 function buildHonorariosSummary(h) {
+  if (h.temValorProvisorio) {
+    return `HONORÁRIOS: R$ ${escapeHtml(h.valorProvisorio || "—")}/MÊS (PROVISÓRIO ATÉ ${h.provisorioValidoAte ? formatDate(h.provisorioValidoAte).toUpperCase() : "—"})`;
+  }
   if (h.temDesconto && h.valorDesconto && h.descontoFim) {
     return `HONORÁRIOS: R$ ${escapeHtml(h.valorDesconto)}/MÊS ATÉ ${monthYearExtenso(h.descontoFim).toUpperCase()} | R$ ${escapeHtml(h.valorCheio || "—")}/MÊS A PARTIR DE ${nextMonthYearExtenso(h.descontoFim).toUpperCase()}`;
   }
@@ -137,6 +140,13 @@ function buildHonorariosSummary(h) {
 }
 
 function buildValorContratadoParagraph(h) {
+  if (h.temValorProvisorio) {
+    return paragraph(`
+      Valor PROVISÓRIO de R$ ${ph(h.valorProvisorio, "[valor provisório]")} mensais, válido até
+      ${ph(formatDateExtenso(h.provisorioValidoAte), "[data]")}, quando as partes se reunirão para definição do valor
+      definitivo.
+    `);
+  }
   if (h.temDesconto && h.valorDesconto) {
     return paragraph(`
       Valor cheio: R$ ${ph(h.valorCheio, "[valor cheio]")} mensais. Desconto temporário de
@@ -151,6 +161,33 @@ function buildValorContratadoParagraph(h) {
 }
 
 function buildHonorariosClauseBody(h) {
+  if (h.temValorProvisorio) {
+    return `
+      ${paragraph(`
+        Pelos serviços contratados, a CONTRATANTE pagará à CONTRATADA honorários mensais, a título PROVISÓRIO, no
+        valor de R$ ${ph(h.valorProvisorio, "[valor provisório]")}, referentes ao escopo descrito no Anexo 1 deste
+        contrato.
+      `)}
+      ${paragraph(`
+        O valor provisório acima é válido até ${ph(formatDateExtenso(h.provisorioValidoAte), "[data]")}, data em que
+        as partes se reunirão para definição do valor definitivo dos honorários mensais, a ser formalizado mediante
+        aditivo a este contrato. Caso a reunião não ocorra ou o aditivo não seja firmado até lá, o valor provisório
+        permanece vigente até que as partes o substituam por comum acordo.
+      `)}
+      ${paragraph(`
+        O vencimento dos honorários será todo dia ${ph(h.vencimentoDia, "[dia]")} de cada mês.
+      `)}
+      ${h.sistemasTerceiros
+        ? paragraph(`Os sistemas ${escapeHtml(h.sistemasTerceiros)} serão contratados e pagos diretamente pela CONTRATANTE às respectivas operadoras, não compondo o valor mensal pago à CONTRATADA.`)
+        : ""}
+      ${paragraph(`
+        Eventuais taxas, emolumentos, autenticações, despesas de cartório, custos de certificado digital, regularizações,
+        parcelamentos, alterações societárias, baixas, abertura de filiais, processos administrativos e serviços
+        extraordinários não estão incluídos nos honorários mensais e serão cobrados à parte quando solicitados ou necessários.
+      `)}
+    `;
+  }
+
   const descontoParagraph = h.temDesconto
     ? paragraph(`
         Por liberalidade comercial, a CONTRATADA concederá desconto temporário, aplicável às competências de
@@ -207,12 +244,47 @@ function buildFidelidadeClause(v) {
   `);
 }
 
+// Quadro de identificação de UM contratante (o principal ou um adicional) —
+// mesmo formato pros dois, só muda o rótulo da seção.
+function contratanteIdentificacaoHtml(titulo, c) {
+  return `
+    ${sectionBar(titulo)}
+    <div class="doc-table">
+      ${tableHeaderRow()}
+      ${row("Contratante", c.razaoSocial, "[Razão Social]")}
+      ${row("CNPJ", c.cnpj, "[CNPJ]")}
+      ${row("Endereço", c.endereco, "[Endereço completo]")}
+      ${row("Representante Legal", c.repNome, "[Nome]")}
+      ${row("CPF", c.repCpf, "[CPF]")}
+    </div>`;
+}
+
 function renderContract(data) {
   const { contratante, contratada, objeto, honorarios: h, vigencia: v, foro } = data;
+  const contratantesAdicionais = data.contratantesAdicionais || [];
+  const temMultiplasEmpresas = contratantesAdicionais.length > 0;
 
   const meses = diffMonths(v.inicio, v.fim);
   const numeroClausulaExtraordinarios = v.temFidelidade ? "7" : "6";
   const numeroClausulaForo = v.temFidelidade ? "8" : "7";
+
+  // Com mais de uma empresa, o preâmbulo passa a tratar CONTRATANTE como
+  // termo coletivo (todas as empresas listadas nos quadros acima, em
+  // conjunto) — assim o resto do contrato não precisa repetir "CONTRATANTE"
+  // no plural em cada cláusula; o termo já definido aqui cobre todas.
+  const preambuloHtml = temMultiplasEmpresas
+    ? paragraph(`
+        Pelo presente instrumento particular, a CONTRATADA e as empresas qualificadas nos Quadros de Identificação
+        acima — ${ph(contratante.razaoSocial, "[Razão Social]")}${contratantesAdicionais.map((c) => `, ${ph(c.razaoSocial, "[Razão Social]")}`).join("")} —
+        ajustam e contratam a prestação de serviços profissionais de contabilidade, segundo as cláusulas e condições
+        adiante listadas. Sempre que este instrumento se referir à CONTRATANTE, o termo abrange, em conjunto, todas
+        as empresas acima qualificadas, cada uma respondendo por suas próprias obrigações perante a CONTRATADA.
+      `)
+    : paragraph(`
+        Pelo presente instrumento particular, as partes acima devidamente qualificadas, doravante denominadas
+        simplesmente CONTRATADA e CONTRATANTE, na melhor forma de direito, ajustam e contratam a prestação de
+        serviços profissionais de contabilidade, segundo as cláusulas e condições adiante listadas.
+      `);
 
   return `
     <div class="doc-topline">${ph(contratada.razaoSocial, "CONTRATADA")} | CONTRATO DE PRESTAÇÃO DE SERVIÇOS CONTÁBEIS</div>
@@ -220,19 +292,12 @@ function renderContract(data) {
     <div class="doc-banner">
       <div class="doc-banner-name">${ph(contratada.razaoSocial, "[Razão Social da Contratada]")}</div>
       <div class="doc-banner-title">CONTRATO DE PRESTAÇÃO DE SERVIÇOS CONTÁBEIS</div>
-      <div class="doc-banner-subtitle">Documento formal - empresa única</div>
+      <div class="doc-banner-subtitle">${temMultiplasEmpresas ? `Documento formal - ${contratantesAdicionais.length + 1} empresas` : "Documento formal - empresa única"}</div>
       <div class="doc-banner-honorarios">${buildHonorariosSummary(h)}</div>
     </div>
 
-    ${sectionBar("QUADRO DE IDENTIFICAÇÃO - CONTRATANTE")}
-    <div class="doc-table">
-      ${tableHeaderRow()}
-      ${row("Contratante", contratante.razaoSocial, "[Razão Social]")}
-      ${row("CNPJ", contratante.cnpj, "[CNPJ]")}
-      ${row("Endereço", contratante.endereco, "[Endereço completo]")}
-      ${row("Representante Legal", contratante.repNome, "[Nome]")}
-      ${row("CPF", contratante.repCpf, "[CPF]")}
-    </div>
+    ${contratanteIdentificacaoHtml("QUADRO DE IDENTIFICAÇÃO - CONTRATANTE", contratante)}
+    ${contratantesAdicionais.map((c, i) => contratanteIdentificacaoHtml(`QUADRO DE IDENTIFICAÇÃO - CONTRATANTE ADICIONAL ${i + 2}`, c)).join("")}
 
     ${sectionBar("QUADRO DE IDENTIFICAÇÃO - CONTRATADA")}
     <div class="doc-table">
@@ -251,11 +316,7 @@ function renderContract(data) {
     <h3 class="doc-h3">INSTRUMENTO CONTRATUAL</h3>
 
     <h4 class="clause-title">PREÂMBULO</h4>
-    ${paragraph(`
-      Pelo presente instrumento particular, as partes acima devidamente qualificadas, doravante denominadas
-      simplesmente CONTRATADA e CONTRATANTE, na melhor forma de direito, ajustam e contratam a prestação de
-      serviços profissionais de contabilidade, segundo as cláusulas e condições adiante listadas.
-    `)}
+    ${preambuloHtml}
 
     ${clause("1", "DO OBJETO", `
       ${paragraph(`
@@ -358,8 +419,13 @@ function renderContract(data) {
       </div>
       <div class="sig-line">
         <div class="line"></div>
-        ${ph(contratante.repNome, "[Representante]")}<br>Representante legal da CONTRATANTE
+        ${ph(contratante.repNome, "[Representante]")}<br>Representante legal da CONTRATANTE${temMultiplasEmpresas ? ` (${ph(contratante.razaoSocial, "[Razão Social]")})` : ""}
       </div>
+      ${contratantesAdicionais.map((c) => `
+      <div class="sig-line">
+        <div class="line"></div>
+        ${ph(c.repNome, "[Representante]")}<br>Representante legal da CONTRATANTE (${ph(c.razaoSocial, "[Razão Social]")})
+      </div>`).join("")}
     </div>
 
     <div class="witnesses">

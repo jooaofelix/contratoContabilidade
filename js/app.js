@@ -1,6 +1,7 @@
 const FIELD_IDS = [
   "c_razaoSocial", "c_cnpj", "c_endereco", "c_repNome", "c_repCpf",
   "o_objeto", "o_fiscal", "o_contabil", "o_rh", "o_consultiva", "o_obrigacoes", "o_atendimento", "o_naoIncluidos",
+  "h_temValorProvisorio", "h_valorProvisorio", "h_provisorioValidoAte",
   "h_valorCheio", "h_temDesconto", "h_valorDesconto", "h_descontoInicio", "h_descontoFim", "h_vencimentoDia", "h_sistemasTerceiros",
   "v_inicio", "v_fim", "v_avisoPrevio", "f_temFidelidade", "f_multaPercent",
   "foro_cidade", "a_local", "a_data", "a_test1Nome", "a_test1Cpf", "a_test2Nome", "a_test2Cpf",
@@ -52,6 +53,9 @@ function collectFormData() {
       naoIncluidos: get("o_naoIncluidos"),
     },
     honorarios: {
+      temValorProvisorio: checked("h_temValorProvisorio"),
+      valorProvisorio: get("h_valorProvisorio"),
+      provisorioValidoAte: get("h_provisorioValidoAte"),
       valorCheio: get("h_valorCheio"),
       temDesconto: checked("h_temDesconto"),
       valorDesconto: get("h_valorDesconto"),
@@ -60,6 +64,7 @@ function collectFormData() {
       vencimentoDia: get("h_vencimentoDia"),
       sistemasTerceiros: get("h_sistemasTerceiros"),
     },
+    contratantesAdicionais: collectContratantesAdicionais(),
     vigencia: {
       inicio: get("v_inicio"),
       fim: get("v_fim"),
@@ -77,6 +82,72 @@ function collectFormData() {
       test2Cpf: get("a_test2Cpf"),
     },
   };
+}
+
+// --- Empresas adicionais (grupo econômico no mesmo contrato) -------------
+// Mesmo instrumento, mesmas cláusulas e mesmos honorários — cada empresa
+// adicional só ganha seu próprio quadro de identificação (CNPJ, endereço,
+// representante) no documento, como CONTRATANTE adicional.
+
+let contratanteAdicionalCountOrc = 0;
+
+function addContratanteAdicionalRow(empresa) {
+  empresa = empresa || {};
+  const id = contratanteAdicionalCountOrc++;
+  const wrap = document.createElement("div");
+  wrap.className = "alteracao-row";
+  wrap.dataset.contratanteRow = id;
+  wrap.innerHTML = `
+    <button type="button" class="alteracao-remove" data-remove-contratante="${id}">Remover ✕</button>
+    <label>Razão Social
+      <input type="text" class="ca-razaoSocial" placeholder="Nome da empresa">
+    </label>
+    <label>CNPJ
+      <input type="text" class="ca-cnpj" placeholder="00.000.000/0000-00">
+    </label>
+    <label>Endereço completo
+      <input type="text" class="ca-endereco" placeholder="Rua, número, bairro, cidade/UF, CEP">
+    </label>
+    <div class="row">
+      <label>Nome do representante
+        <input type="text" class="ca-repNome" placeholder="Nome do sócio/representante">
+      </label>
+      <label class="small">CPF
+        <input type="text" class="ca-repCpf" placeholder="000.000.000-00">
+      </label>
+    </div>
+  `;
+  document.getElementById("contratantes-adicionais-list").appendChild(wrap);
+  wrap.querySelector(".ca-razaoSocial").value = empresa.razaoSocial || "";
+  wrap.querySelector(".ca-cnpj").value = empresa.cnpj || "";
+  wrap.querySelector(".ca-endereco").value = empresa.endereco || "";
+  wrap.querySelector(".ca-repNome").value = empresa.repNome || "";
+  wrap.querySelector(".ca-repCpf").value = empresa.repCpf || "";
+
+  wrap.querySelectorAll("input").forEach((el) => el.addEventListener("input", updatePreview));
+  wrap.querySelector("[data-remove-contratante]").addEventListener("click", () => {
+    wrap.remove();
+    updatePreview();
+  });
+}
+
+function collectContratantesAdicionais() {
+  return Array.from(document.querySelectorAll("#contratantes-adicionais-list .alteracao-row"))
+    .map((row) => ({
+      razaoSocial: row.querySelector(".ca-razaoSocial").value,
+      cnpj: row.querySelector(".ca-cnpj").value,
+      endereco: row.querySelector(".ca-endereco").value,
+      repNome: row.querySelector(".ca-repNome").value,
+      repCpf: row.querySelector(".ca-repCpf").value,
+    }))
+    .filter((e) => e.razaoSocial || e.cnpj);
+}
+
+function setupContratantesAdicionais() {
+  document.getElementById("add-contratante-adicional").addEventListener("click", () => {
+    addContratanteAdicionalRow();
+    updatePreview();
+  });
 }
 
 function updatePreview() {
@@ -107,6 +178,19 @@ function setupConditionalFields() {
   const syncDesconto = () => descontoWrap.classList.toggle("hidden", !descontoCheckbox.checked);
   descontoCheckbox.addEventListener("change", () => { syncDesconto(); updatePreview(); });
   syncDesconto();
+
+  // Valor provisório substitui o fluxo normal de valor cheio/desconto
+  // enquanto não houver reunião pra definir o valor definitivo — os dois
+  // modos são mutuamente exclusivos na tela (o contrato só usa um ou outro).
+  const provisorioCheckbox = document.getElementById("h_temValorProvisorio");
+  const provisorioWrap = document.getElementById("h_provisorioWrap");
+  const valorCheioWrap = document.getElementById("h_valorCheioWrap");
+  const syncProvisorio = () => {
+    provisorioWrap.classList.toggle("hidden", !provisorioCheckbox.checked);
+    valorCheioWrap.classList.toggle("hidden", provisorioCheckbox.checked);
+  };
+  provisorioCheckbox.addEventListener("change", () => { syncProvisorio(); updatePreview(); });
+  syncProvisorio();
 
   const fidelidadeCheckbox = document.getElementById("f_temFidelidade");
   const multaWrap = document.getElementById("f_multaWrap");
@@ -352,6 +436,7 @@ function setupActions() {
       el.value = "";
     });
     document.getElementById("h_temDesconto").checked = false;
+    document.getElementById("h_temValorProvisorio").checked = false;
     document.getElementById("f_temFidelidade").checked = true;
     document.getElementById("f_multaPercent").value = "30";
     document.getElementById("v_avisoPrevio").value = "30";
@@ -359,6 +444,7 @@ function setupActions() {
     document.getElementById("pdf-status").textContent = "";
     document.getElementById("docx-input").value = "";
     document.getElementById("docx-status").textContent = "";
+    document.getElementById("contratantes-adicionais-list").innerHTML = "";
     setupEscopoDefaults();
     setupConditionalFields();
     updatePreview();
@@ -375,6 +461,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupPdfImport();
   setupDocxImport();
   setupEmpresasContrato();
+  setupContratantesAdicionais();
   setupActions();
   updatePreview();
 });
