@@ -534,6 +534,36 @@ button {
 
 .witnesses .sig-line .line { width: 260px; }
 
+/* 718px ≈ 190mm (largura útil de uma folha A4 com 10mm de margem de cada
+   lado) — a pré-visualização na tela usa a mesma largura da folha
+   impressa/exportada, pra não ter quebra de linha diferente entre as
+   duas. Só o Contrato de Prestação de Serviços usa essa paginação própria
+   por enquanto (Parceria e Honorários continuam em .contract-doc, com
+   impressão nativa). */
+.contract-pages-wrap {
+  max-width: 718px;
+  margin: 0 auto;
+}
+
+.contract-page {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px 32px;
+  margin-bottom: 14px;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: #1f2937;
+}
+
+.contract-page > * + * {
+  margin-top: 12px;
+}
+
+.contract-page:last-child {
+  margin-bottom: 0;
+}
+
 @media print {
   /* Sem isso, o cinza de fundo da tela (usado atrás dos "cartões" brancos
      de cada página) aparece por baixo do conteúdo impresso sempre que uma
@@ -544,6 +574,15 @@ button {
   .app-layout { padding: 0; }
   .preview-wrap { width: 100%; }
   .contract-doc { border: none; box-shadow: none; max-width: 100%; padding: 0 24px; }
+  .contract-page { border: none; box-shadow: none; margin-bottom: 0; }
+  /* Rede de segurança pro Ctrl+P nativo (o botão Imprimir/Exportar PDF do
+     Contrato já não depende mais disso — ver montarPdfOrc/montarPdfPorPaginas
+     — mas isso evita que um bloco quebre no meio se alguém usar o atalho
+     do navegador mesmo assim). */
+  .contract-bloco {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
 }
 
 @media (max-width: 900px) {

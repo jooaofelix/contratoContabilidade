@@ -150,9 +150,104 @@ function setupContratantesAdicionais() {
   });
 }
 
+// --- Paginação por medição real no navegador -----------------------------
+//
+// Antes disso, quem decidia onde cada cláusula/quadro do contrato terminava
+// era o próprio motor de impressão do navegador (CSS/fluxo natural) — só
+// que ele não tem como saber, sem renderizar de verdade, quanto cabe numa
+// folha A4, e às vezes corta uma tabela ou um parágrafo bem no meio (bug
+// observado e reproduzido, documentado em app-orcamento.js). Aqui cada
+// bloco do contrato (ver montarBlocosContrato em contract-template.js) é
+// renderizado escondido, medido de verdade (getBoundingClientRect) e só
+// depois agrupado em folhas — o resultado é pré-paginado: cada
+// .contract-page final já sabe que cabe inteira numa folha A4, então vira
+// sua própria página impressa sem depender de heurística nenhuma do
+// navegador. A mesma função gera tanto a pré-visualização na tela quanto o
+// que sai no Imprimir/Exportar PDF — os dois são sempre idênticos.
+
+// 277mm (folha A4 menos os 10mm de margem de cada lado do @page) a 96dpi.
+const CONTRATO_PAGINA_ALTURA_UTIL_PX = 1047;
+// Padding vertical de .contract-page (24px em cima + 24px embaixo).
+const CONTRATO_PADDING_VERTICAL_PX = 48;
+// Precisa bater com o gap: 12px da regra .contract-page > * + * no CSS.
+const CONTRATO_BLOCO_GAP_PX = 12;
+
+function medirBlocosContrato(blocosHtml, contratada) {
+  const medidorWrap = document.createElement("div");
+  medidorWrap.className = "contract-pages-wrap";
+  medidorWrap.style.cssText = "position:absolute; visibility:hidden; left:-9999px; top:0; width:718px;";
+
+  const medidorPagina = document.createElement("div");
+  medidorPagina.className = "contract-page";
+  medidorWrap.appendChild(medidorPagina);
+
+  const wrappers = blocosHtml.map((html) => {
+    const w = document.createElement("div");
+    w.innerHTML = html;
+    medidorPagina.appendChild(w);
+    return w;
+  });
+  const brandWrapper = document.createElement("div");
+  brandWrapper.innerHTML = brandBarContrato(contratada);
+  medidorPagina.appendChild(brandWrapper);
+  const footerWrapper = document.createElement("div");
+  footerWrapper.innerHTML = pageFooterContrato(contratada);
+  medidorPagina.appendChild(footerWrapper);
+
+  document.body.appendChild(medidorWrap);
+  const alturas = wrappers.map((w) => w.getBoundingClientRect().height);
+  const alturaBrand = brandWrapper.getBoundingClientRect().height;
+  const alturaFooter = footerWrapper.getBoundingClientRect().height;
+  document.body.removeChild(medidorWrap);
+
+  return { alturas, alturaBrand, alturaFooter };
+}
+
+// Empacota os blocos em folhas por altura real: acumula um bloco por vez
+// na folha atual enquanto couber no orçamento de altura útil; quando o
+// próximo bloco não cabe mais, fecha a folha e começa uma nova. Cada bloco
+// (cláusula inteira, quadro de identificação, etc.) é indivisível — nunca é
+// cortado ao meio entre duas folhas.
+function paginarBlocosContrato(blocos, contratada) {
+  if (blocos.length === 0) return [];
+  const { alturas, alturaBrand, alturaFooter } = medirBlocosContrato(blocos.map((b) => b.html), contratada);
+  const orcamentoUtil = CONTRATO_PAGINA_ALTURA_UTIL_PX - CONTRATO_PADDING_VERTICAL_PX - alturaBrand - alturaFooter - CONTRATO_BLOCO_GAP_PX * 2;
+
+  const paginas = [];
+  let paginaAtual = [];
+  let alturaAtual = 0;
+
+  blocos.forEach((bloco, i) => {
+    const alturaBloco = alturas[i];
+    const gap = paginaAtual.length > 0 ? CONTRATO_BLOCO_GAP_PX : 0;
+    if (paginaAtual.length > 0 && alturaAtual + gap + alturaBloco > orcamentoUtil) {
+      paginas.push(paginaAtual);
+      paginaAtual = [];
+      alturaAtual = 0;
+    }
+    paginaAtual.push(bloco);
+    alturaAtual += (paginaAtual.length > 1 ? CONTRATO_BLOCO_GAP_PX : 0) + alturaBloco;
+  });
+  if (paginaAtual.length > 0) paginas.push(paginaAtual);
+  return paginas;
+}
+
+function montarPreviewPaginadoContrato(data) {
+  const blocos = montarBlocosContrato(data);
+  const paginas = paginarBlocosContrato(blocos, data.contratada);
+  return paginas
+    .map((paginaBlocos) => `
+      <section class="contract-page" data-pdf-page>
+        ${brandBarContrato(data.contratada)}
+        ${paginaBlocos.map((b) => `<div class="contract-bloco">${b.html}</div>`).join("")}
+        ${pageFooterContrato(data.contratada)}
+      </section>`)
+    .join("");
+}
+
 function updatePreview() {
   const data = collectFormData();
-  document.getElementById("contract-preview").innerHTML = renderContract(data);
+  document.getElementById("contract-preview").innerHTML = montarPreviewPaginadoContrato(data);
 }
 
 function setupLiveUpdate() {
@@ -419,8 +514,23 @@ async function setupEmpresasContrato() {
 }
 
 function setupActions() {
-  document.getElementById("btn-print").addEventListener("click", () => {
-    window.print();
+  document.getElementById("btn-print").addEventListener("click", async () => {
+    const btn = document.getElementById("btn-print");
+    const nome = get("c_razaoSocial") || "Contrato";
+    const textoOriginal = btn.textContent;
+    btn.textContent = "Gerando PDF...";
+    btn.disabled = true;
+    try {
+      const pageEls = Array.from(document.querySelectorAll("#contract-preview .contract-page"));
+      const pdf = await montarPdfPorPaginas(pageEls);
+      pdf.save(`Contrato - ${nome}.pdf`);
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível gerar o PDF: " + (err && err.message ? err.message : "erro desconhecido."));
+    } finally {
+      btn.textContent = textoOriginal;
+      btn.disabled = false;
+    }
   });
 
   document.getElementById("btn-word").addEventListener("click", () => {

@@ -259,7 +259,27 @@ function contratanteIdentificacaoHtml(titulo, c) {
     </div>`;
 }
 
-function renderContract(data) {
+// Cabeçalho e rodapé curtos, repetidos em CADA folha física (não mais uma
+// vez só no topo/fim do documento inteiro) — quem decide quantos/quais
+// blocos cabem em cada folha é o empacotador em app.js, depois de medir a
+// altura real de cada um no navegador. Ver montarBlocosContrato().
+function brandBarContrato(contratada) {
+  return `<div class="doc-topline">${ph(contratada.razaoSocial, "CONTRATADA")} | CONTRATO DE PRESTAÇÃO DE SERVIÇOS CONTÁBEIS</div>`;
+}
+
+function pageFooterContrato(contratada) {
+  return `<div class="doc-footline">${ph(contratada.endereco, "")}${contratada.contato ? " | " + escapeHtml(contratada.contato) : ""}</div>`;
+}
+
+// Decompõe o contrato inteiro numa lista plana de blocos (cada um uma
+// unidade indivisível de paginação) — quem decide quais blocos caem em
+// qual folha física é montarPreviewPaginadoContrato(), em app.js, depois de
+// medir a altura real de cada um no navegador. Cada cláusula (título +
+// todos os parágrafos dela) é UM bloco só — é o jeito normal de um
+// contrato impresso de verdade quebrar página: nunca no meio de uma
+// cláusula ou tabela, podendo sim ter alguma folha com um pouco de sobra
+// quando a próxima cláusula inteira não cabe no resto dela.
+function montarBlocosContrato(data) {
   const { contratante, contratada, objeto, honorarios: h, vigencia: v, foro } = data;
   const contratantesAdicionais = data.contratantesAdicionais || [];
   const temMultiplasEmpresas = contratantesAdicionais.length > 0;
@@ -286,19 +306,22 @@ function renderContract(data) {
         serviços profissionais de contabilidade, segundo as cláusulas e condições adiante listadas.
       `);
 
-  return `
-    <div class="doc-topline">${ph(contratada.razaoSocial, "CONTRATADA")} | CONTRATO DE PRESTAÇÃO DE SERVIÇOS CONTÁBEIS</div>
+  const blocos = [];
 
+  blocos.push({ html: `
     <div class="doc-banner">
       <div class="doc-banner-name">${ph(contratada.razaoSocial, "[Razão Social da Contratada]")}</div>
       <div class="doc-banner-title">CONTRATO DE PRESTAÇÃO DE SERVIÇOS CONTÁBEIS</div>
       <div class="doc-banner-subtitle">${temMultiplasEmpresas ? `Documento formal - ${contratantesAdicionais.length + 1} empresas` : "Documento formal - empresa única"}</div>
       <div class="doc-banner-honorarios">${buildHonorariosSummary(h)}</div>
-    </div>
+    </div>` });
 
-    ${contratanteIdentificacaoHtml("QUADRO DE IDENTIFICAÇÃO - CONTRATANTE", contratante)}
-    ${contratantesAdicionais.map((c, i) => contratanteIdentificacaoHtml(`QUADRO DE IDENTIFICAÇÃO - CONTRATANTE ADICIONAL ${i + 2}`, c)).join("")}
+  blocos.push({ html: contratanteIdentificacaoHtml("QUADRO DE IDENTIFICAÇÃO - CONTRATANTE", contratante) });
+  contratantesAdicionais.forEach((c, i) => {
+    blocos.push({ html: contratanteIdentificacaoHtml(`QUADRO DE IDENTIFICAÇÃO - CONTRATANTE ADICIONAL ${i + 2}`, c) });
+  });
 
+  blocos.push({ html: `
     ${sectionBar("QUADRO DE IDENTIFICAÇÃO - CONTRATADA")}
     <div class="doc-table">
       ${tableHeaderRow()}
@@ -311,107 +334,109 @@ function renderContract(data) {
       ${rowHtml("Objeto", ph(objeto.objeto, "[resumo do objeto]"))}
       ${rowHtml("Valor contratado", buildValorContratadoParagraph(h).replace(/^<p class="doc-p">|<\/p>$/g, ""))}
       ${row("Vigência", v.inicio && v.fim ? `De ${formatDateExtenso(v.inicio)} a ${formatDateExtenso(v.fim)}` : "", "[data início] a [data término]")}
-    </div>
+    </div>` });
 
+  blocos.push({ html: `
     <h3 class="doc-h3">INSTRUMENTO CONTRATUAL</h3>
-
     <h4 class="clause-title">PREÂMBULO</h4>
-    ${preambuloHtml}
+    ${preambuloHtml}` });
 
-    ${clause("1", "DO OBJETO", `
-      ${paragraph(`
-        O objeto do presente contrato consiste na prestação, pela CONTRATADA à CONTRATANTE, de
-        ${ph(objeto.objeto, "[descrição dos serviços]")}, conforme o escopo contratado, o regime tributário
-        aplicável e os documentos fornecidos pela CONTRATANTE, nos termos do Anexo 1 deste instrumento.
-      `)}
+  blocos.push({ html: clause("1", "DO OBJETO", `
+    ${paragraph(`
+      O objeto do presente contrato consiste na prestação, pela CONTRATADA à CONTRATANTE, de
+      ${ph(objeto.objeto, "[descrição dos serviços]")}, conforme o escopo contratado, o regime tributário
+      aplicável e os documentos fornecidos pela CONTRATANTE, nos termos do Anexo 1 deste instrumento.
     `)}
+  `) });
 
-    ${clause("2", "DAS OBRIGAÇÕES DA CONTRATANTE", `
-      ${paragraph(`
-        A CONTRATANTE obriga-se a remeter à CONTRATADA toda a documentação necessária para a escrituração,
-        apuração, elaboração de declarações e cumprimento das obrigações acessórias, por meio físico ou digital,
-        dentro dos prazos solicitados.
-      `)}
-      ${paragraph(`
-        Os serviços limitam-se aos documentos, informações e declarações idôneos, em bom estado de conservação,
-        sem rasuras, preenchidos corretamente e apresentados em tempo hábil.
-      `)}
-      ${paragraph(`
-        A falta, atraso, inconsistência ou omissão de documentos e informações poderá impactar o cumprimento de
-        obrigações legais, ficando a CONTRATADA isenta de responsabilidade por multas, penalidades, notificações ou
-        prejuízos decorrentes de tais ocorrências.
-      `)}
-      ${paragraph(`
-        O recolhimento de impostos, taxas, contribuições, encargos e demais valores devidos pela CONTRATANTE é de
-        responsabilidade exclusiva da CONTRATANTE, ainda que as guias sejam emitidas ou encaminhadas pela CONTRATADA.
-      `)}
+  blocos.push({ html: clause("2", "DAS OBRIGAÇÕES DA CONTRATANTE", `
+    ${paragraph(`
+      A CONTRATANTE obriga-se a remeter à CONTRATADA toda a documentação necessária para a escrituração,
+      apuração, elaboração de declarações e cumprimento das obrigações acessórias, por meio físico ou digital,
+      dentro dos prazos solicitados.
     `)}
-
-    ${clause("3", "DAS OBRIGAÇÕES DA CONTRATADA", `
-      ${paragraph(`
-        A CONTRATADA compromete-se a executar os serviços contábeis contratados com zelo técnico, observando as
-        normas profissionais aplicáveis, a legislação vigente e os prazos possíveis conforme o recebimento tempestivo
-        das informações.
-      `)}
-      ${paragraph(`
-        A CONTRATADA compromete-se a manter sigilo sobre informações, documentos, dados financeiros, fiscais e
-        empresariais da CONTRATANTE, utilizando-os apenas para execução dos serviços contratados, em conformidade
-        com a Lei Geral de Proteção de Dados - LGPD.
-      `)}
-      ${paragraph(`
-        A CONTRATADA não se responsabiliza por obrigações vencidas, pendências anteriores ao início dos serviços ou
-        inconsistências provenientes de períodos sob responsabilidade de terceiros ou de contabilidade anterior.
-      `)}
+    ${paragraph(`
+      Os serviços limitam-se aos documentos, informações e declarações idôneos, em bom estado de conservação,
+      sem rasuras, preenchidos corretamente e apresentados em tempo hábil.
     `)}
-
-    ${clause("4", "DOS HONORÁRIOS PROFISSIONAIS", buildHonorariosClauseBody(h))}
-
-    ${clause("5", "DA VIGÊNCIA E RESCISÃO", `
-      ${paragraph(`
-        O presente contrato terá vigência ${meses ? `determinada de ${numComExtenso(meses, "meses")}` : "determinada"},
-        iniciando-se em ${ph(formatDate(v.inicio), "[data]")} e encerrando-se em ${ph(formatDate(v.fim), "[data]")}.
-      `)}
-      ${paragraph(`
-        A parte que desejar rescindir o contrato deverá comunicar a outra, por escrito, com antecedência mínima de
-        ${v.avisoPrevio ? numComExtenso(v.avisoPrevio, "dias") : '<span class="placeholder">[dias]</span>'}, período no
-        qual todas as cláusulas permanecerão em vigor, inclusive quanto ao pagamento dos honorários proporcionais e
-        eventuais valores pendentes.
-      `)}
-      ${paragraph(`
-        Em caso de rescisão, a CONTRATANTE deverá retirar seus documentos e providenciar a transferência de
-        responsabilidade técnica, quando aplicável, dentro do prazo de ${ph(v.avisoPrevio, "[dias]")} dias.
-      `)}
+    ${paragraph(`
+      A falta, atraso, inconsistência ou omissão de documentos e informações poderá impactar o cumprimento de
+      obrigações legais, ficando a CONTRATADA isenta de responsabilidade por multas, penalidades, notificações ou
+      prejuízos decorrentes de tais ocorrências.
     `)}
-
-    ${buildFidelidadeClause(v)}
-
-    ${clause(numeroClausulaExtraordinarios, "DOS SERVIÇOS EXTRAORDINÁRIOS", `
-      ${paragraph(`
-        Serão considerados serviços extraordinários todos aqueles não compreendidos nas rotinas ordinárias de
-        contabilidade mensal, tais como alteração contratual, baixa ou abertura de empresa, certidões, parcelamentos,
-        regularizações, retificações, processos administrativos, elaboração de contratos, cadastros especiais,
-        certificado digital, consultorias específicas e demais serviços não previstos expressamente neste contrato.
-      `)}
-      ${paragraph(`
-        Os serviços extraordinários serão previamente informados e cobrados separadamente, mediante orçamento ou
-        tabela vigente da CONTRATADA.
-      `)}
+    ${paragraph(`
+      O recolhimento de impostos, taxas, contribuições, encargos e demais valores devidos pela CONTRATANTE é de
+      responsabilidade exclusiva da CONTRATANTE, ainda que as guias sejam emitidas ou encaminhadas pela CONTRATADA.
     `)}
+  `) });
 
-    ${clause(numeroClausulaForo, "DO FORO", `
-      ${paragraph(`
-        Fica eleito o foro da comarca de ${ph(foro.foro, "[cidade/comarca]")} para dirimir as questões oriundas do
-        presente instrumento, renunciando as partes a qualquer outro, por mais privilegiado que seja.
-      `)}
-      ${paragraph(`
-        Assim, por estarem justas e contratadas, assinam as partes o presente instrumento em 2 (duas) vias de igual
-        teor e forma, juntamente com as testemunhas abaixo.
-      `)}
+  blocos.push({ html: clause("3", "DAS OBRIGAÇÕES DA CONTRATADA", `
+    ${paragraph(`
+      A CONTRATADA compromete-se a executar os serviços contábeis contratados com zelo técnico, observando as
+      normas profissionais aplicáveis, a legislação vigente e os prazos possíveis conforme o recebimento tempestivo
+      das informações.
     `)}
+    ${paragraph(`
+      A CONTRATADA compromete-se a manter sigilo sobre informações, documentos, dados financeiros, fiscais e
+      empresariais da CONTRATANTE, utilizando-os apenas para execução dos serviços contratados, em conformidade
+      com a Lei Geral de Proteção de Dados - LGPD.
+    `)}
+    ${paragraph(`
+      A CONTRATADA não se responsabiliza por obrigações vencidas, pendências anteriores ao início dos serviços ou
+      inconsistências provenientes de períodos sob responsabilidade de terceiros ou de contabilidade anterior.
+    `)}
+  `) });
 
+  blocos.push({ html: clause("4", "DOS HONORÁRIOS PROFISSIONAIS", buildHonorariosClauseBody(h)) });
+
+  blocos.push({ html: clause("5", "DA VIGÊNCIA E RESCISÃO", `
+    ${paragraph(`
+      O presente contrato terá vigência ${meses ? `determinada de ${numComExtenso(meses, "meses")}` : "determinada"},
+      iniciando-se em ${ph(formatDate(v.inicio), "[data]")} e encerrando-se em ${ph(formatDate(v.fim), "[data]")}.
+    `)}
+    ${paragraph(`
+      A parte que desejar rescindir o contrato deverá comunicar a outra, por escrito, com antecedência mínima de
+      ${v.avisoPrevio ? numComExtenso(v.avisoPrevio, "dias") : '<span class="placeholder">[dias]</span>'}, período no
+      qual todas as cláusulas permanecerão em vigor, inclusive quanto ao pagamento dos honorários proporcionais e
+      eventuais valores pendentes.
+    `)}
+    ${paragraph(`
+      Em caso de rescisão, a CONTRATANTE deverá retirar seus documentos e providenciar a transferência de
+      responsabilidade técnica, quando aplicável, dentro do prazo de ${ph(v.avisoPrevio, "[dias]")} dias.
+    `)}
+  `) });
+
+  if (v.temFidelidade) {
+    blocos.push({ html: buildFidelidadeClause(v) });
+  }
+
+  blocos.push({ html: clause(numeroClausulaExtraordinarios, "DOS SERVIÇOS EXTRAORDINÁRIOS", `
+    ${paragraph(`
+      Serão considerados serviços extraordinários todos aqueles não compreendidos nas rotinas ordinárias de
+      contabilidade mensal, tais como alteração contratual, baixa ou abertura de empresa, certidões, parcelamentos,
+      regularizações, retificações, processos administrativos, elaboração de contratos, cadastros especiais,
+      certificado digital, consultorias específicas e demais serviços não previstos expressamente neste contrato.
+    `)}
+    ${paragraph(`
+      Os serviços extraordinários serão previamente informados e cobrados separadamente, mediante orçamento ou
+      tabela vigente da CONTRATADA.
+    `)}
+  `) });
+
+  blocos.push({ html: clause(numeroClausulaForo, "DO FORO", `
+    ${paragraph(`
+      Fica eleito o foro da comarca de ${ph(foro.foro, "[cidade/comarca]")} para dirimir as questões oriundas do
+      presente instrumento, renunciando as partes a qualquer outro, por mais privilegiado que seja.
+    `)}
+    ${paragraph(`
+      Assim, por estarem justas e contratadas, assinam as partes o presente instrumento em 2 (duas) vias de igual
+      teor e forma, juntamente com as testemunhas abaixo.
+    `)}
+  `) });
+
+  blocos.push({ html: `
     <h4 class="clause-title">ASSINATURAS</h4>
     <p class="doc-p">${ph(foro.local, "[Cidade/UF]")}, ${foro.data ? formatDateExtenso(foro.data) : '<span class="placeholder">[data]</span>'}.</p>
-
     <div class="signatures">
       <div class="sig-line">
         <div class="line"></div>
@@ -427,7 +452,6 @@ function renderContract(data) {
         ${ph(c.repNome, "[Representante]")}<br>Representante legal da CONTRATANTE (${ph(c.razaoSocial, "[Razão Social]")})
       </div>`).join("")}
     </div>
-
     <div class="witnesses">
       <div class="sig-line">
         <div class="line"></div>
@@ -437,8 +461,9 @@ function renderContract(data) {
         <div class="line"></div>
         Testemunha 2<br>Nome: ${ph(foro.test2Nome, "________")} &nbsp; CPF: ${ph(foro.test2Cpf, "________")}
       </div>
-    </div>
+    </div>` });
 
+  blocos.push({ html: `
     <h3 class="doc-h3 doc-h3-anexo">ANEXO 1 - SERVIÇOS PROFISSIONAIS DE CONTABILIDADE</h3>
     <div class="doc-h4-sub">RESUMO DO ESCOPO</div>
     <div class="doc-table">
@@ -450,8 +475,7 @@ function renderContract(data) {
       ${rowHtml("Obrigações acessórias", nl2br(objeto.obrigacoes) || '<span class="placeholder">—</span>')}
       ${rowHtml("Atendimento", nl2br(objeto.atendimento) || '<span class="placeholder">—</span>')}
       ${rowHtml("Não incluídos", nl2br(objeto.naoIncluidos) || '<span class="placeholder">—</span>')}
-    </div>
+    </div>` });
 
-    <div class="doc-footline">${ph(contratada.endereco, "")} ${contratada.contato ? " | " + escapeHtml(contratada.contato) : ""}</div>
-  `;
+  return blocos;
 }

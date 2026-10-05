@@ -149,8 +149,61 @@ async function getOrCreateEmpresaFolder(empresaId, empresaNome, tipoKey) {
   return folderId;
 }
 
+// Cada página pré-paginada (ver montarPreviewPaginadoOrc em
+// app-orcamento.js e montarPreviewPaginadoContrato em app.js — qualquer
+// elemento marcado com [data-pdf-page]) é capturada em canvas
+// SEPARADAMENTE e colada como página inteira num PDF montado manualmente,
+// em vez de pedir pro html2pdf capturar o documento inteiro de uma vez e
+// cortar em páginas sozinho. A fragmentação automática (tanto a impressão
+// nativa do navegador quanto o modo pagebreak do html2pdf) tem bugs
+// reproduzidos nesse projeto: insere quebra de página espúria ou embaralha
+// a ordem das páginas mesmo quando cada página mede menos que a folha
+// inteira. Capturando cada uma isoladamente como sua própria imagem
+// elimina esse problema por completo — é o mesmo mecanismo usado pelos
+// botões Imprimir/Baixar PDF do Orçamento, só que compartilhado aqui pra
+// também valer pro "Salvar no Drive" de qualquer documento paginado assim.
+async function paginaParaCanvasPdf(pageEl) {
+  // Precisa estar com y>=0 na viewport antes de capturar: testado e
+  // reproduzido — o html2canvas usado pelo html2pdf sai em branco (mede o
+  // tamanho certo mas não desenha nada) quando o elemento alvo está
+  // rolado PARA CIMA do topo da viewport (y negativo).
+  window.scrollTo(0, 0);
+  pageEl.scrollIntoView();
+  window.scrollTo(0, 0);
+  return html2pdf().set({ html2canvas: { scale: 2 } }).from(pageEl).toCanvas().get("canvas");
+}
+
+async function montarPdfPorPaginas(pageEls) {
+  // Só usado pra conseguir uma instância jsPDF já pronta (o jsPDF interno
+  // do html2pdf não é exposto como global) — a página 1 dela é descartada
+  // e recriada manualmente pra cada página real logo abaixo.
+  const dummy = document.createElement("div");
+  dummy.textContent = "x";
+  document.body.appendChild(dummy);
+  const pdf = await html2pdf().set({ jsPDF: { unit: "mm", format: "a4", orientation: "portrait" } }).from(dummy).toPdf().get("pdf");
+  document.body.removeChild(dummy);
+  pdf.deletePage(1);
+
+  for (const pageEl of pageEls) {
+    const canvas = await paginaParaCanvasPdf(pageEl);
+    const imgData = canvas.toDataURL("image/jpeg", 0.98);
+    const imgWmm = 190; // largura útil da folha A4 (210mm - 10mm de margem de cada lado)
+    const imgHmm = (canvas.height / canvas.width) * imgWmm;
+    pdf.addPage();
+    pdf.addImage(imgData, "JPEG", 10, 10, imgWmm, imgHmm);
+  }
+  return pdf;
+}
+
 async function generatePdfBlob(elementId) {
   const el = document.getElementById(elementId);
+  const pageEls = Array.from(el.querySelectorAll("[data-pdf-page]"));
+  if (pageEls.length > 0) {
+    const pdf = await montarPdfPorPaginas(pageEls);
+    return pdf.output("blob");
+  }
+  // Documento sem paginação própria (ex: Ficha Cadastral/Processo) — cai
+  // no caminho antigo, html2pdf capturando o elemento inteiro de uma vez.
   return html2pdf().from(el).set({
     margin: 0,
     image: { type: "jpeg", quality: 0.98 },

@@ -388,7 +388,7 @@ function montarPreviewPaginadoOrc(data) {
   const paginas = paginarBlocosOrc(blocos);
   return paginas
     .map((paginaBlocos) => `
-      <section class="proposal-page">
+      <section class="proposal-page" data-pdf-page>
         ${brandBar()}
         ${paginaBlocos.map((b) => `<div class="proposal-bloco">${b.html}</div>`).join("")}
         ${pageFooter()}
@@ -499,48 +499,14 @@ async function setupEmpresasOrcamento() {
   });
 }
 
-// Cada .proposal-page é capturada em canvas SEPARADAMENTE (uma de cada vez)
-// e colada como página inteira num PDF montado manualmente — em vez de
-// pedir pro html2pdf capturar o documento inteiro de uma vez e cortar em
-// páginas sozinho (pagebreak.mode:['css']). As duas abordagens de
-// fragmentação automática (a impressão nativa do Chrome via window.print(),
-// e o modo pagebreak do html2pdf) têm bugs reproduzidos nesse projeto:
-// inserem quebra de página espúria ou embaralham a ordem das páginas mesmo
-// quando cada .proposal-page mede menos que a folha inteira. Capturando
-// cada uma isoladamente como sua própria imagem elimina esse problema por
-// completo — não tem fragmentação nenhuma pra dar errado.
-async function paginaParaCanvasOrc(pageEl) {
-  // Precisa estar com y>=0 na viewport antes de capturar: testado e
-  // reproduzido — o html2canvas usado pelo html2pdf sai em branco (mede o
-  // tamanho certo mas não desenha nada) quando o elemento alvo está
-  // rolado PARA CIMA do topo da viewport (y negativo).
-  window.scrollTo(0, 0);
-  pageEl.scrollIntoView();
-  window.scrollTo(0, 0);
-  return html2pdf().set({ html2canvas: { scale: 2 } }).from(pageEl).toCanvas().get("canvas");
-}
-
+// A geração de PDF em si (captura cada .proposal-page separadamente em
+// canvas e monta o PDF manualmente, página por página) é compartilhada —
+// ver montarPdfPorPaginas em drive-upload.js — porque o mesmo mecanismo
+// agora também serve pro Contrato (ver app.js) e pro "Salvar no Drive" de
+// qualquer documento paginado assim.
 async function montarPdfOrc() {
-  // Só usado pra conseguir uma instância jsPDF já pronta (o jsPDF interno
-  // do html2pdf não é exposto como global) — a página 1 dela é descartada
-  // e recriada manualmente pra cada .proposal-page real logo abaixo.
-  const dummy = document.createElement("div");
-  dummy.textContent = "x";
-  document.body.appendChild(dummy);
-  const pdf = await html2pdf().set({ jsPDF: { unit: "mm", format: "a4", orientation: "portrait" } }).from(dummy).toPdf().get("pdf");
-  document.body.removeChild(dummy);
-  pdf.deletePage(1);
-
   const pageEls = Array.from(document.querySelectorAll("#proposal-preview .proposal-page"));
-  for (const pageEl of pageEls) {
-    const canvas = await paginaParaCanvasOrc(pageEl);
-    const imgData = canvas.toDataURL("image/jpeg", 0.98);
-    const imgWmm = 190; // largura útil da folha A4 (210mm - 10mm de margem de cada lado)
-    const imgHmm = (canvas.height / canvas.width) * imgWmm;
-    pdf.addPage();
-    pdf.addImage(imgData, "JPEG", 10, 10, imgWmm, imgHmm);
-  }
-  return pdf;
+  return montarPdfPorPaginas(pageEls);
 }
 
 async function gerarPdfOrc(empresa) {
@@ -550,10 +516,9 @@ async function gerarPdfOrc(empresa) {
 
 // Abre o PDF (já paginado igual à pré-visualização, sem corte) numa aba nova
 // e aciona o diálogo de impressão do navegador ali — em vez de reativar o
-// window.print() na tela ao vivo, que tem o bug de quebra espúria que o
-// restante deste arquivo evita (ver paginaParaCanvasOrc/montarPdfOrc acima).
-// Assim dá pra mandar direto pra impressora sem precisar baixar o arquivo
-// e abrir de novo manualmente.
+// window.print() na tela ao vivo, que tem o bug de quebra espúria que
+// montarPdfOrc/montarPdfPorPaginas evitam. Assim dá pra mandar direto pra
+// impressora sem precisar baixar o arquivo e abrir de novo manualmente.
 async function imprimirDiretoOrc() {
   const pdf = await montarPdfOrc();
   const url = pdf.output("bloburl");
