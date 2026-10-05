@@ -1,6 +1,6 @@
 const FIELD_IDS = [
   "c_razaoSocial", "c_cnpj", "c_endereco", "c_repNome", "c_repCpf",
-  "o_objeto", "o_fiscal", "o_contabil", "o_rh", "o_consultiva", "o_obrigacoes", "o_atendimento", "o_naoIncluidos",
+  "o_objeto",
   "h_temValorProvisorio", "h_valorProvisorio", "h_provisorioValidoAte",
   "h_valorCheio", "h_temDesconto", "h_valorDesconto", "h_descontoInicio", "h_descontoFim", "h_vencimentoDia", "h_sistemasTerceiros",
   "v_inicio", "v_fim", "v_avisoPrevio", "f_temFidelidade", "f_multaPercent",
@@ -19,15 +19,20 @@ const CONTRATADA_FIXA = {
 
 const ESCOPO_STORAGE_KEY = "contratoContabilidade.escopoPadrao";
 
-const ESCOPO_DEFAULTS = {
-  o_fiscal: "Apuração ordinária de tributos do Simples Nacional, emissão e controle de guias e envio de obrigações acessórias fiscais aplicáveis.",
-  o_contabil: "Classificação e escrituração contábil, conciliações, balancetes e demonstrações contábeis quando aplicáveis, conforme documentos recebidos.",
-  o_rh: "Gestão de rotinas de RH conforme documentos e informações recebidos em tempo hábil.",
-  o_consultiva: "Acompanhamento estratégico e personalizado com o contador responsável, voltado a orientações ordinárias de gestão, dentro do escopo contratado.",
-  o_obrigacoes: "Entrega das declarações e obrigações acessórias mensais e anuais inerentes ao escopo contábil contratado, conforme legislação vigente.",
-  o_atendimento: "Orientações ordinárias sobre rotinas contábeis, fiscais, trabalhistas e envio de documentos dentro do escopo contratado.",
-  o_naoIncluidos: "Serviços societários, alterações contratuais, abertura ou encerramento de empresas, regularizações, parcelamentos, certidões, certificado digital, consultorias específicas e demais serviços extraordinários.",
-};
+// Lista (não mais objeto fixo por id) — cada campo do Resumo do Escopo
+// agora é uma linha livre (nome + texto), adicionável/removível na tela
+// (ver addEscopoCampoRow). Esses continuam sendo os campos padrão na
+// primeira vez que a tela abre (ou depois de limpar o formulário), até o
+// usuário salvar outro conjunto como padrão.
+const ESCOPO_DEFAULTS = [
+  { label: "Parte fiscal", texto: "Apuração ordinária de tributos do Simples Nacional, emissão e controle de guias e envio de obrigações acessórias fiscais aplicáveis." },
+  { label: "Parte contábil", texto: "Classificação e escrituração contábil, conciliações, balancetes e demonstrações contábeis quando aplicáveis, conforme documentos recebidos." },
+  { label: "Gestão de RH", texto: "Gestão de rotinas de RH conforme documentos e informações recebidos em tempo hábil." },
+  { label: "Consultiva", texto: "Acompanhamento estratégico e personalizado com o contador responsável, voltado a orientações ordinárias de gestão, dentro do escopo contratado." },
+  { label: "Obrigações acessórias", texto: "Entrega das declarações e obrigações acessórias mensais e anuais inerentes ao escopo contábil contratado, conforme legislação vigente." },
+  { label: "Atendimento", texto: "Orientações ordinárias sobre rotinas contábeis, fiscais, trabalhistas e envio de documentos dentro do escopo contratado." },
+  { label: "Não incluídos", texto: "Serviços societários, alterações contratuais, abertura ou encerramento de empresas, regularizações, parcelamentos, certidões, certificado digital, consultorias específicas e demais serviços extraordinários." },
+];
 
 function get(id) { return document.getElementById(id).value; }
 function checked(id) { return document.getElementById(id).checked; }
@@ -44,13 +49,7 @@ function collectFormData() {
     contratada: CONTRATADA_FIXA,
     objeto: {
       objeto: get("o_objeto"),
-      fiscal: get("o_fiscal"),
-      contabil: get("o_contabil"),
-      rh: get("o_rh"),
-      consultiva: get("o_consultiva"),
-      obrigacoes: get("o_obrigacoes"),
-      atendimento: get("o_atendimento"),
-      naoIncluidos: get("o_naoIncluidos"),
+      campos: collectEscopoCampos(),
     },
     honorarios: {
       temValorProvisorio: checked("h_temValorProvisorio"),
@@ -294,16 +293,72 @@ function setupConditionalFields() {
   syncFidelidade();
 }
 
+// --- Campos do Resumo do Escopo (Anexo 1) — lista livre, não mais fixa ---
+// Cada linha (nome do campo + texto) vira uma linha da tabela "Resumo do
+// Escopo" no contrato, na mesma ordem em que aparece aqui — adicionável e
+// removível na tela, em vez dos 7 campos fixos de antes.
+
+let escopoCampoCount = 0;
+
+function addEscopoCampoRow(campo) {
+  campo = campo || {};
+  const id = escopoCampoCount++;
+  const wrap = document.createElement("div");
+  wrap.className = "alteracao-row";
+  wrap.dataset.escopoRow = id;
+  wrap.innerHTML = `
+    <button type="button" class="alteracao-remove" data-remove-escopo-campo="${id}">Remover ✕</button>
+    <label>Nome do campo
+      <input type="text" class="ec-label" placeholder="ex: Parte fiscal">
+    </label>
+    <label>Texto
+      <textarea class="ec-texto" rows="2" placeholder="Descrição desse campo do escopo"></textarea>
+    </label>
+  `;
+  document.getElementById("escopo-campos-list").appendChild(wrap);
+  wrap.querySelector(".ec-label").value = campo.label || "";
+  wrap.querySelector(".ec-texto").value = campo.texto || "";
+
+  wrap.querySelectorAll(".ec-label, .ec-texto").forEach((el) => {
+    el.addEventListener("input", updatePreview);
+  });
+  wrap.querySelector("[data-remove-escopo-campo]").addEventListener("click", () => {
+    wrap.remove();
+    updatePreview();
+  });
+}
+
+function collectEscopoCampos() {
+  return Array.from(document.querySelectorAll("#escopo-campos-list .alteracao-row"))
+    .map((row) => ({
+      label: row.querySelector(".ec-label").value,
+      texto: row.querySelector(".ec-texto").value,
+    }))
+    .filter((c) => c.label || c.texto);
+}
+
+function setupEscopoCampos() {
+  document.getElementById("add-escopo-campo").addEventListener("click", () => {
+    addEscopoCampoRow();
+    updatePreview();
+  });
+}
+
+// Só popula na primeira vez (lista ainda vazia) — depois disso quem decide
+// o que tem na lista é o usuário (adicionar/editar/remover na tela).
 function setupEscopoDefaults() {
+  const lista = document.getElementById("escopo-campos-list");
+  if (lista.children.length > 0) return;
+
   const saved = localStorage.getItem(ESCOPO_STORAGE_KEY);
   let defaults = ESCOPO_DEFAULTS;
   if (saved) {
-    try { defaults = JSON.parse(saved); } catch (e) { /* ignora dados corrompidos */ }
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) defaults = parsed;
+    } catch (e) { /* ignora dados corrompidos */ }
   }
-  Object.keys(defaults).forEach((id) => {
-    const el = document.getElementById(id);
-    if (el && !el.value) el.value = defaults[id];
-  });
+  defaults.forEach((campo) => addEscopoCampoRow(campo));
 }
 
 function renderContratadaFixa() {
@@ -316,8 +371,7 @@ function renderContratadaFixa() {
 
 function setupEscopoPersistence() {
   document.getElementById("save-escopo").addEventListener("click", () => {
-    const escopo = {};
-    Object.keys(ESCOPO_DEFAULTS).forEach((id) => { escopo[id] = document.getElementById(id).value; });
+    const escopo = collectEscopoCampos();
     localStorage.setItem(ESCOPO_STORAGE_KEY, JSON.stringify(escopo));
 
     const status = document.getElementById("pdf-status");
@@ -465,13 +519,16 @@ function setupContratoPdfImport() {
       setIfFound("c_repCpf", parsed.c_repCpf);
 
       setIfFound("o_objeto", parsed.o_objeto);
-      setIfFound("o_fiscal", parsed.o_fiscal);
-      setIfFound("o_contabil", parsed.o_contabil);
-      setIfFound("o_rh", parsed.o_rh);
-      setIfFound("o_consultiva", parsed.o_consultiva);
-      setIfFound("o_obrigacoes", parsed.o_obrigacoes);
-      setIfFound("o_atendimento", parsed.o_atendimento);
-      setIfFound("o_naoIncluidos", parsed.o_naoIncluidos);
+
+      // Campos do Resumo do Escopo do PDF substituem os que já estivessem
+      // na tela (mesmo critério das empresas adicionais).
+      if (parsed.escopoCampos && parsed.escopoCampos.length > 0) {
+        document.getElementById("escopo-campos-list").innerHTML = "";
+        parsed.escopoCampos.forEach((campo) => {
+          addEscopoCampoRow(campo);
+          foundCount++;
+        });
+      }
 
       // Valor provisório e desconto são mutuamente exclusivos no formulário
       // (ver setupConditionalFields) — marca só o que foi encontrado no PDF.
@@ -664,6 +721,7 @@ function setupActions() {
     document.getElementById("docx-input").value = "";
     document.getElementById("docx-status").textContent = "";
     document.getElementById("contratantes-adicionais-list").innerHTML = "";
+    document.getElementById("escopo-campos-list").innerHTML = "";
     setupEscopoDefaults();
     setupConditionalFields();
     updatePreview();
@@ -674,6 +732,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderContratadaFixa();
   setupPanelToggles();
   setupConditionalFields();
+  setupEscopoCampos();
   setupEscopoPersistence();
   setupEscopoDefaults();
   setupLiveUpdate();

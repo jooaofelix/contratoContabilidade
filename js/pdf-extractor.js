@@ -279,15 +279,22 @@ function parseContratoServicosPdfText(text) {
     result.a_test2Cpf = limparValorImport(m[4]);
   }
 
+  // Só reconhece o Resumo do Escopo se os rótulos ainda forem os padrão
+  // (nome + texto em sequência, sem delimitador no PDF, não dá pra
+  // reconhecer rótulos livres/customizados de forma confiável) — campos
+  // renomeados ou reordenados pelo usuário não voltam sozinhos; ele edita
+  // a lista na tela depois de importar.
   m = clean.match(/RESUMO DO ESCOPO\s+Campo\s+Informação\s+Parte fiscal\s+([\s\S]*?)\s+Parte contábil\s+([\s\S]*?)\s+Gestão de RH\s+([\s\S]*?)\s+Consultiva\s+([\s\S]*?)\s+Obrigações acessórias\s+([\s\S]*?)\s+Atendimento\s+([\s\S]*?)\s+Não incluídos\s+([\s\S]*?)\s+Rua\s/);
   if (m) {
-    result.o_fiscal = limparValorImport(m[1]);
-    result.o_contabil = limparValorImport(m[2]);
-    result.o_rh = limparValorImport(m[3]);
-    result.o_consultiva = limparValorImport(m[4]);
-    result.o_obrigacoes = limparValorImport(m[5]);
-    result.o_atendimento = limparValorImport(m[6]);
-    result.o_naoIncluidos = limparValorImport(m[7]);
+    result.escopoCampos = [
+      { label: "Parte fiscal", texto: limparValorImport(m[1]) },
+      { label: "Parte contábil", texto: limparValorImport(m[2]) },
+      { label: "Gestão de RH", texto: limparValorImport(m[3]) },
+      { label: "Consultiva", texto: limparValorImport(m[4]) },
+      { label: "Obrigações acessórias", texto: limparValorImport(m[5]) },
+      { label: "Atendimento", texto: limparValorImport(m[6]) },
+      { label: "Não incluídos", texto: limparValorImport(m[7]) },
+    ].filter((c) => c.texto);
   }
 
   return result;

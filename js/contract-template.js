@@ -463,18 +463,13 @@ function montarBlocosContrato(data) {
       </div>
     </div>` });
 
+  const camposEscopo = objeto.campos || [];
   blocos.push({ html: `
     <h3 class="doc-h3 doc-h3-anexo">ANEXO 1 - SERVIÇOS PROFISSIONAIS DE CONTABILIDADE</h3>
     <div class="doc-h4-sub">RESUMO DO ESCOPO</div>
     <div class="doc-table">
       ${tableHeaderRow()}
-      ${rowHtml("Parte fiscal", nl2br(objeto.fiscal) || '<span class="placeholder">—</span>')}
-      ${rowHtml("Parte contábil", nl2br(objeto.contabil) || '<span class="placeholder">—</span>')}
-      ${rowHtml("Gestão de RH", nl2br(objeto.rh) || '<span class="placeholder">—</span>')}
-      ${rowHtml("Consultiva", nl2br(objeto.consultiva) || '<span class="placeholder">—</span>')}
-      ${rowHtml("Obrigações acessórias", nl2br(objeto.obrigacoes) || '<span class="placeholder">—</span>')}
-      ${rowHtml("Atendimento", nl2br(objeto.atendimento) || '<span class="placeholder">—</span>')}
-      ${rowHtml("Não incluídos", nl2br(objeto.naoIncluidos) || '<span class="placeholder">—</span>')}
+      ${camposEscopo.map((c) => rowHtml(c.label || "—", nl2br(c.texto) || '<span class="placeholder">—</span>')).join("")}
     </div>` });
 
   return blocos;
