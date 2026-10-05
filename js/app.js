@@ -423,6 +423,115 @@ function setupDocxImport() {
   });
 }
 
+// Importa um contrato de Prestação de Serviços já emitido por este sistema
+// (PDF com texto selecionável) de volta pro formulário — ver
+// parseContratoServicosPdfText em pdf-extractor.js pros detalhes de onde
+// cada campo vem e a limitação com PDF gerado como imagem (pós-correção do
+// bug de corte de página).
+function setupContratoPdfImport() {
+  const input = document.getElementById("contrato-pdf-input");
+  const status = document.getElementById("contrato-pdf-status");
+
+  input.addEventListener("change", async () => {
+    const file = input.files[0];
+    if (!file) return;
+
+    status.textContent = "Lendo PDF...";
+    status.className = "pdf-status";
+
+    try {
+      const text = await extractTextFromPdf(file);
+      const parsed = parseContratoServicosPdfText(text);
+
+      let foundCount = 0;
+      const setIfFound = (id, value) => {
+        if (value) {
+          document.getElementById(id).value = value;
+          foundCount++;
+        }
+      };
+      const setCheckboxIfFound = (id, value) => {
+        if (value === undefined) return;
+        const el = document.getElementById(id);
+        el.checked = value;
+        el.dispatchEvent(new Event("change"));
+        foundCount++;
+      };
+
+      setIfFound("c_razaoSocial", parsed.c_razaoSocial);
+      setIfFound("c_cnpj", parsed.c_cnpj);
+      setIfFound("c_endereco", parsed.c_endereco);
+      setIfFound("c_repNome", parsed.c_repNome);
+      setIfFound("c_repCpf", parsed.c_repCpf);
+
+      setIfFound("o_objeto", parsed.o_objeto);
+      setIfFound("o_fiscal", parsed.o_fiscal);
+      setIfFound("o_contabil", parsed.o_contabil);
+      setIfFound("o_rh", parsed.o_rh);
+      setIfFound("o_consultiva", parsed.o_consultiva);
+      setIfFound("o_obrigacoes", parsed.o_obrigacoes);
+      setIfFound("o_atendimento", parsed.o_atendimento);
+      setIfFound("o_naoIncluidos", parsed.o_naoIncluidos);
+
+      // Valor provisório e desconto são mutuamente exclusivos no formulário
+      // (ver setupConditionalFields) — marca só o que foi encontrado no PDF.
+      if (parsed.h_temValorProvisorio) {
+        setCheckboxIfFound("h_temValorProvisorio", true);
+        setIfFound("h_valorProvisorio", parsed.h_valorProvisorio);
+        setIfFound("h_provisorioValidoAte", parsed.h_provisorioValidoAte);
+      } else {
+        setIfFound("h_valorCheio", parsed.h_valorCheio);
+        if (parsed.h_temDesconto) {
+          setCheckboxIfFound("h_temDesconto", true);
+          setIfFound("h_valorDesconto", parsed.h_valorDesconto);
+          setIfFound("h_descontoInicio", parsed.h_descontoInicio);
+          setIfFound("h_descontoFim", parsed.h_descontoFim);
+        }
+      }
+      setIfFound("h_vencimentoDia", parsed.h_vencimentoDia);
+      setIfFound("h_sistemasTerceiros", parsed.h_sistemasTerceiros);
+
+      setIfFound("v_inicio", parsed.v_inicio);
+      setIfFound("v_fim", parsed.v_fim);
+      setIfFound("v_avisoPrevio", parsed.v_avisoPrevio);
+      setCheckboxIfFound("f_temFidelidade", parsed.f_temFidelidade);
+      setIfFound("f_multaPercent", parsed.f_multaPercent);
+
+      setIfFound("foro_cidade", parsed.foro_cidade);
+      setIfFound("a_local", parsed.a_local);
+      setIfFound("a_data", parsed.a_data);
+      setIfFound("a_test1Nome", parsed.a_test1Nome);
+      setIfFound("a_test1Cpf", parsed.a_test1Cpf);
+      setIfFound("a_test2Nome", parsed.a_test2Nome);
+      setIfFound("a_test2Cpf", parsed.a_test2Cpf);
+
+      // Empresas adicionais do PDF substituem as que já estivessem na tela
+      // (reimportar um contrato é um recomeço, não uma mescla).
+      if (parsed.contratantesAdicionais && parsed.contratantesAdicionais.length > 0) {
+        document.getElementById("contratantes-adicionais-list").innerHTML = "";
+        parsed.contratantesAdicionais.forEach((empresa) => {
+          addContratanteAdicionalRow(empresa);
+          foundCount++;
+        });
+      }
+
+      if (foundCount > 0) {
+        status.textContent = `${foundCount} campo(s) preenchido(s) automaticamente a partir do PDF. Confira os dados.`;
+        status.className = "pdf-status ok";
+      } else {
+        status.textContent = "Não consegui reconhecer os dados neste PDF — provavelmente é um PDF sem texto selecionável (gerado como imagem, ou escaneado). Preencha manualmente.";
+        status.className = "pdf-status error";
+      }
+
+      updatePreview();
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao ler o PDF. Confira se o arquivo não está corrompido.";
+      status.className = "pdf-status error";
+    }
+  });
+}
+
 function empresaToContratante(empresa) {
   const enderecoPartes = [
     empresa.endereco,
@@ -570,6 +679,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupLiveUpdate();
   setupPdfImport();
   setupDocxImport();
+  setupContratoPdfImport();
   setupEmpresasContrato();
   setupContratantesAdicionais();
   setupActions();

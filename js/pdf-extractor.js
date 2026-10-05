@@ -134,3 +134,161 @@ function parseCnpjCardText(text) {
     telefone,
   };
 }
+
+// --- Importar um contrato já emitido (PDF deste próprio sistema) ---------
+//
+// Lê de volta um contrato de Prestação de Serviços gerado por este sistema
+// (ver contract-template.js) — reconhece os rótulos dos quadros de
+// identificação e das cláusulas pra pré-preencher o formulário inteiro, em
+// vez de digitar tudo de novo pra reemitir/editar um contrato já feito.
+//
+// Só funciona com PDF de TEXTO selecionável. O botão "Imprimir/Exportar
+// PDF" deste sistema gera cada página como IMAGEM (ver montarPdfPorPaginas
+// em drive-upload.js — foi a correção pro bug de corte de página do
+// Chrome), então um PDF baixado por ele mesmo DEPOIS dessa mudança não tem
+// texto pra extrair; um PDF mais antigo (de antes dessa correção) ou um
+// gerado por "Imprimir" do navegador continua funcionando normalmente.
+
+// Usa o mesmo array MESES de contract-template.js (carregado antes desta
+// função ser efetivamente chamada, mesmo que este arquivo seja lido pelo
+// navegador antes — const no escopo global já existe no momento do clique).
+function mesExtensoParaNumero(nome) {
+  const idx = (typeof MESES !== "undefined" ? MESES : []).findIndex((m) => m.toLowerCase() === (nome || "").trim().toLowerCase());
+  return idx === -1 ? null : idx + 1;
+}
+
+function parseDataExtensoImport(str) {
+  const m = (str || "").match(/(\d{1,2})\s+de\s+([a-zà-úç]+)\s+de\s+(\d{4})/i);
+  if (!m) return "";
+  const mes = mesExtensoParaNumero(m[2]);
+  if (!mes) return "";
+  return `${m[3]}-${String(mes).padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+}
+
+function parseMesAnoExtensoImport(str) {
+  const m = (str || "").match(/([a-zà-úç]+)\s+de\s+(\d{4})/i);
+  if (!m) return "";
+  const mes = mesExtensoParaNumero(m[1]);
+  if (!mes) return "";
+  return `${m[2]}-${String(mes).padStart(2, "0")}`;
+}
+
+function parseDataBrImport(str) {
+  const m = (str || "").match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
+}
+
+// Campo vazio no contrato original vira texto de placeholder no PDF (ex:
+// "[CNPJ]", "________") em vez de realmente vazio — trata como não
+// encontrado, pra não reimportar lixo visual como se fosse dado real.
+function limparValorImport(v) {
+  v = (v || "").trim().replace(/\s{2,}/g, " ");
+  if (!v || /^\[.*\]$/.test(v) || /^_+$/.test(v)) return "";
+  return v;
+}
+
+function parseContratoServicosPdfText(text) {
+  const clean = text.replace(/\s+/g, " ").trim();
+  const result = {};
+
+  // Sinal mais confiável de que isso É um contrato deste sistema (texto de
+  // verdade, não PDF-imagem sem camada de texto) — sem isso, nem tenta o
+  // resto, pra não "encontrar" falso positivo tipo marcar DA FIDELIDADE
+  // CONTRATUAL como ausente só porque o texto inteiro está vazio.
+  if (!/QUADRO DE IDENTIFICAÇÃO - CONTRATANTE/.test(clean)) {
+    return result;
+  }
+
+  let m = clean.match(/QUADRO DE IDENTIFICAÇÃO - CONTRATANTE\s+Campo\s+Informação\s+Contratante\s+([\s\S]*?)\s+CNPJ\s+([\s\S]*?)\s+Endereço\s+([\s\S]*?)\s+Representante Legal\s+([\s\S]*?)\s+CPF\s+(\S+)/);
+  if (m) {
+    result.c_razaoSocial = limparValorImport(m[1]);
+    result.c_cnpj = limparValorImport(m[2]);
+    result.c_endereco = limparValorImport(m[3]);
+    result.c_repNome = limparValorImport(m[4]);
+    result.c_repCpf = limparValorImport(m[5]);
+  }
+
+  const adicionaisRe = /QUADRO DE IDENTIFICAÇÃO - CONTRATANTE ADICIONAL \d+\s+Campo\s+Informação\s+Contratante\s+([\s\S]*?)\s+CNPJ\s+([\s\S]*?)\s+Endereço\s+([\s\S]*?)\s+Representante Legal\s+([\s\S]*?)\s+CPF\s+(\S+)/g;
+  result.contratantesAdicionais = [];
+  let am;
+  while ((am = adicionaisRe.exec(clean))) {
+    result.contratantesAdicionais.push({
+      razaoSocial: limparValorImport(am[1]),
+      cnpj: limparValorImport(am[2]),
+      endereco: limparValorImport(am[3]),
+      repNome: limparValorImport(am[4]),
+      repCpf: limparValorImport(am[5]),
+    });
+  }
+
+  m = clean.match(/\bObjeto\s+([\s\S]*?)\s+Valor contratado\b/);
+  if (m) result.o_objeto = limparValorImport(m[1]);
+
+  m = clean.match(/Valor PROVISÓRIO de R\$\s*([\d.,]+)\s*mensais,\s*válido até\s*([\s\S]*?)(?:,\s*quando|\.)/);
+  if (m) {
+    result.h_temValorProvisorio = true;
+    result.h_valorProvisorio = m[1];
+    result.h_provisorioValidoAte = parseDataExtensoImport(m[2]);
+  } else {
+    m = clean.match(/Valor cheio:\s*R\$\s*([\d.,]+)\s*mensais\.\s*Desconto temporário de\s*R\$\s*([\d.,]+)\s*mensais,\s*aplicável às competências de\s*([\s\S]*?)\s*a\s*([\s\S]*?),/);
+    if (m) {
+      result.h_valorCheio = m[1];
+      result.h_temDesconto = true;
+      result.h_valorDesconto = m[2];
+      result.h_descontoInicio = parseMesAnoExtensoImport(m[3]);
+      result.h_descontoFim = parseMesAnoExtensoImport(m[4]);
+    } else {
+      m = clean.match(/honorários mensais no valor de\s*R\$\s*([\d.,]+),\s*referentes/);
+      if (m) result.h_valorCheio = m[1];
+    }
+  }
+
+  m = clean.match(/vencimento dos honorários será todo dia\s*(\d+)\s*de cada mês/i);
+  if (m) result.h_vencimentoDia = m[1];
+
+  m = clean.match(/Os sistemas\s+([\s\S]*?)\s+serão contratados e pagos diretamente/);
+  if (m) result.h_sistemasTerceiros = limparValorImport(m[1]);
+
+  m = clean.match(/iniciando-se em\s*(\d{2}\/\d{2}\/\d{4})\s*e encerrando-se em\s*(\d{2}\/\d{2}\/\d{4})/);
+  if (m) {
+    result.v_inicio = parseDataBrImport(m[1]);
+    result.v_fim = parseDataBrImport(m[2]);
+  }
+
+  m = clean.match(/antecedência mínima de\s*(\d+)\s*\(/);
+  if (m) result.v_avisoPrevio = m[1];
+
+  result.f_temFidelidade = /DA FIDELIDADE CONTRATUAL/.test(clean);
+  m = clean.match(/equivalente a\s*(\d+)%/);
+  if (m) result.f_multaPercent = m[1];
+
+  m = clean.match(/Fica eleito o foro da comarca de\s*([\s\S]*?)\s*para dirimir/);
+  if (m) result.foro_cidade = limparValorImport(m[1]);
+
+  m = clean.match(/ASSINATURAS\s+([\s\S]*?),\s*(\d{1,2}\s+de\s+[a-zà-úç]+\s+de\s+\d{4})\./i);
+  if (m) {
+    result.a_local = limparValorImport(m[1]);
+    result.a_data = parseDataExtensoImport(m[2]);
+  }
+
+  m = clean.match(/Testemunha 1\s+Nome:\s*([\s\S]*?)\s+CPF:\s*([\s\S]*?)\s+Testemunha 2\s+Nome:\s*([\s\S]*?)\s+CPF:\s*([\s\S]*?)(?:\s+Rua|$)/);
+  if (m) {
+    result.a_test1Nome = limparValorImport(m[1]);
+    result.a_test1Cpf = limparValorImport(m[2]);
+    result.a_test2Nome = limparValorImport(m[3]);
+    result.a_test2Cpf = limparValorImport(m[4]);
+  }
+
+  m = clean.match(/RESUMO DO ESCOPO\s+Campo\s+Informação\s+Parte fiscal\s+([\s\S]*?)\s+Parte contábil\s+([\s\S]*?)\s+Gestão de RH\s+([\s\S]*?)\s+Consultiva\s+([\s\S]*?)\s+Obrigações acessórias\s+([\s\S]*?)\s+Atendimento\s+([\s\S]*?)\s+Não incluídos\s+([\s\S]*?)\s+Rua\s/);
+  if (m) {
+    result.o_fiscal = limparValorImport(m[1]);
+    result.o_contabil = limparValorImport(m[2]);
+    result.o_rh = limparValorImport(m[3]);
+    result.o_consultiva = limparValorImport(m[4]);
+    result.o_obrigacoes = limparValorImport(m[5]);
+    result.o_atendimento = limparValorImport(m[6]);
+    result.o_naoIncluidos = limparValorImport(m[7]);
+  }
+
+  return result;
+}

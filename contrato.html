@@ -68,6 +68,13 @@
     </section>
 
     <section class="panel">
+      <h2>Importar contrato já emitido (PDF)</h2>
+      <p class="fixed-note">Envie um PDF de um contrato de Prestação de Serviços já gerado por este sistema — tenta preencher o formulário inteiro de volta (contratante, empresas adicionais, honorários, vigência, foro, assinaturas). Só funciona com PDF de texto selecionável (um PDF puramente de imagem, como um scaneado, não tem como ser lido assim).</p>
+      <input type="file" id="contrato-pdf-input" accept="application/pdf">
+      <div id="contrato-pdf-status" class="pdf-status"></div>
+    </section>
+
+    <section class="panel">
       <h2 class="panel-toggle" data-target="panel-contratante">📋 Contratante (Cliente) ▾</h2>
       <div id="panel-contratante" class="panel-body">
         <label>Razão Social
