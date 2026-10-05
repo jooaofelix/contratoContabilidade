@@ -589,6 +589,126 @@ function setupContratoPdfImport() {
   });
 }
 
+// --- Gerar contrato a partir de um Orçamento salvo -----------------------
+// Reaproveita o registro salvo pela tela de Orçamento (ver orcamento-store.js
+// e o botão "💾 Salvar orçamento" em orcamento.html) pra pré-preencher o
+// contratante, as empresas do grupo e os honorários mensais — evita digitar
+// tudo de novo quando o contrato é a continuação natural de um orçamento já
+// aprovado. É só um ponto de partida: nada aqui é travado, o usuário confere
+// e ajusta qualquer campo antes de gerar o PDF.
+
+function parseValorContrato(str) {
+  if (!str) return 0;
+  const cleaned = String(str).replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".");
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
+}
+
+function formatarValorContrato(n) {
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function applyOrcamentoAoContrato(data) {
+  let foundCount = 0;
+  const cliente = data.cliente || {};
+  if (cliente.empresa) { document.getElementById("c_razaoSocial").value = cliente.empresa; foundCount++; }
+  if (cliente.cnpj) { document.getElementById("c_cnpj").value = cliente.cnpj; foundCount++; }
+  if (cliente.responsavel) { document.getElementById("c_repNome").value = cliente.responsavel; foundCount++; }
+
+  document.getElementById("contratantes-adicionais-list").innerHTML = "";
+  (data.grupo || []).forEach((empresa) => {
+    addContratanteAdicionalRow({
+      razaoSocial: empresa.nome,
+      cnpj: empresa.cnpj,
+      repNome: empresa.responsavel,
+    });
+    foundCount++;
+  });
+
+  // Soma só os itens mensais (recorrencia "Mensal") pro honorário do
+  // contrato — itens avulsos do orçamento (ex: taxa única de abertura) não
+  // entram no valor mensal recorrente.
+  const investimento = data.investimento || {};
+  const itensMensais = (investimento.itens || []).filter((i) => i.recorrencia === "Mensal");
+  const totalMensal = itensMensais.reduce((soma, i) => soma + parseValorContrato(i.valor), 0);
+
+  document.getElementById("h_temValorProvisorio").checked = false;
+  document.getElementById("h_provisorioWrap").classList.add("hidden");
+  document.getElementById("h_valorCheioWrap").classList.remove("hidden");
+
+  if (totalMensal > 0) {
+    document.getElementById("h_valorCheio").value = formatarValorContrato(totalMensal);
+    foundCount++;
+  } else if (investimento.valorCheio) {
+    document.getElementById("h_valorCheio").value = investimento.valorCheio;
+    foundCount++;
+  }
+
+  // Desconto só é reaproveitado quando o orçamento usava o bloco de valor
+  // único com desconto (sem itens mensais detalhados) — com itens, cada um
+  // já carrega seu próprio valor final.
+  const temDescontoOrc = investimento.temDesconto && investimento.valorFinal && itensMensais.length === 0;
+  document.getElementById("h_temDesconto").checked = temDescontoOrc;
+  document.getElementById("h_descontoWrap").classList.toggle("hidden", !temDescontoOrc);
+  if (temDescontoOrc) {
+    document.getElementById("h_valorDesconto").value = investimento.valorFinal;
+    foundCount++;
+  }
+
+  const nomesServicos = (data.servicos || []).join(", ");
+  if (nomesServicos) {
+    const dataFmt = cliente.dataProposta ? cliente.dataProposta.split("-").reverse().join("/") : "";
+    document.getElementById("o_objeto").value = `Prestação de serviços contábeis conforme orçamento aprovado${dataFmt ? " em " + dataFmt : ""}: ${nomesServicos}.`;
+    foundCount++;
+  }
+
+  updatePreview();
+  return foundCount;
+}
+
+async function setupOrcamentoPickerContrato() {
+  const select = document.getElementById("orcamento-select");
+  const search = document.getElementById("orcamento-search");
+  const status = document.getElementById("orcamento-picker-status");
+
+  status.textContent = "Carregando orçamentos salvos...";
+  status.className = "pdf-status";
+  try {
+    await initOrcamentoPicker(search, select, "— Selecione um orçamento —");
+    status.textContent = "";
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Não foi possível conectar ao banco de orçamentos.";
+    status.className = "pdf-status error";
+  }
+
+  document.getElementById("usar-orcamento").addEventListener("click", async () => {
+    if (!select.value) {
+      status.textContent = "Selecione um orçamento salvo primeiro.";
+      status.className = "pdf-status error";
+      return;
+    }
+    status.textContent = "Carregando orçamento...";
+    status.className = "pdf-status";
+    try {
+      const data = await getOrcamentoById(select.value);
+      if (!data) {
+        status.textContent = "Não foi possível encontrar esse orçamento.";
+        status.className = "pdf-status error";
+        return;
+      }
+      const foundCount = applyOrcamentoAoContrato(data);
+      status.textContent = `${foundCount} campo(s) preenchido(s) a partir do orçamento. Confira especialmente os honorários antes de gerar o contrato.`;
+      status.className = "pdf-status ok";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao carregar o orçamento.";
+      status.className = "pdf-status error";
+    }
+  });
+}
+
 function empresaToContratante(empresa) {
   const enderecoPartes = [
     empresa.endereco,
@@ -740,6 +860,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupDocxImport();
   setupContratoPdfImport();
   setupEmpresasContrato();
+  setupOrcamentoPickerContrato();
   setupContratantesAdicionais();
   setupActions();
   updatePreview();

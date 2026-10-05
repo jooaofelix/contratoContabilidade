@@ -55,6 +55,21 @@
     </section>
 
     <section class="panel">
+      <h2>🧾 Gerar a partir de um Orçamento salvo</h2>
+      <div class="panel-body">
+        <p class="fixed-note">Selecione um orçamento já salvo na tela de Orçamento pra preencher automaticamente o contratante, as empresas do grupo e os honorários mensais. Confira e ajuste qualquer campo depois.</p>
+        <label>Buscar orçamento salvo
+          <input type="text" id="orcamento-search" placeholder="Digite o nome ou CNPJ...">
+        </label>
+        <label>Orçamento
+          <select id="orcamento-select"></select>
+        </label>
+        <button type="button" id="usar-orcamento" class="btn-secondary">📥 Usar este orçamento</button>
+        <div id="orcamento-picker-status" class="pdf-status"></div>
+      </div>
+    </section>
+
+    <section class="panel">
       <h2>Importar cartão CNPJ (PDF)</h2>
       <input type="file" id="pdf-input" accept="application/pdf">
       <div id="pdf-status" class="pdf-status"></div>
@@ -556,6 +571,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script src="js/firebase-config.js"></script>
 <script src="js/empresas-store.js"></script>
+<script src="js/orcamento-store.js"></script>
 <script src="js/contatos-store.js"></script>
 <script src="js/contract-template.js"></script>
 <script src="js/parceria-contract-template.js"></script>

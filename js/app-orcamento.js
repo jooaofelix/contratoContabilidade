@@ -6,6 +6,8 @@ const FIELD_IDS_ORC = [
 
 function getOrc(id) { return document.getElementById(id).value; }
 function checkedOrc(id) { return document.getElementById(id).checked; }
+function setOrc(id, value) { document.getElementById(id).value = value || ""; }
+function setCheckedOrc(id, value) { document.getElementById(id).checked = !!value; }
 
 // --- Serviços incluídos (mesmo catálogo usado em Vendas) -----------------
 
@@ -499,6 +501,137 @@ async function setupEmpresasOrcamento() {
   });
 }
 
+// --- Orçamentos Salvos (reabrir um orçamento já feito) -------------------
+
+let orcamentoEditId = null;
+
+// Marca no checklist de serviços (principal ou de uma empresa do Grupo
+// Econômico — mesmo wrap que populateServicosChecklistOrc/addGrupoRowOrc
+// usam) os itens salvos que vieram do checklist (têm categoria) — os itens
+// manuais (sem categoria) não são daqui, são de
+// collectItensInvestimentoOrc/addItemInvestimentoRowOrc.
+function aplicarItensAoChecklistOrc(wrap, itens) {
+  if (!wrap) return;
+  const porTitulo = {};
+  (itens || []).forEach((i) => { if (i.categoria) porTitulo[i.titulo] = i.valor; });
+  wrap.querySelectorAll(".orc-servico-check").forEach((check) => {
+    if (!Object.prototype.hasOwnProperty.call(porTitulo, check.value)) return;
+    check.checked = true;
+    const linha = check.closest(".orc-servico-linha");
+    const valorInput = linha && linha.querySelector(".orc-servico-valor");
+    if (valorInput) valorInput.value = porTitulo[check.value] || "";
+  });
+}
+
+// Preenche o formulário inteiro de volta a partir de um orçamento salvo
+// (ver collectProposalData, que é o espelho exato disso) — checklist
+// principal, grupo econômico (cada um com seu próprio checklist) e itens
+// de investimento manuais inclusos.
+function applyOrcamentoToForm(data) {
+  const cliente = data.cliente || {};
+  setOrc("q_nomeResponsavel", cliente.nomeResponsavel);
+  setOrc("q_empresa", cliente.empresa);
+  setOrc("q_cnpj", cliente.cnpj);
+  setOrc("q_responsavel", cliente.responsavel);
+  setOrc("q_telefone", cliente.telefone);
+  setOrc("q_email", cliente.email);
+  setOrc("q_dataProposta", cliente.dataProposta);
+  setOrc("q_validade", cliente.validade);
+
+  const diagnostico = data.diagnostico || {};
+  setOrc("d_notasMes", diagnostico.notasMes);
+  setOrc("d_funcionarios", diagnostico.funcionarios);
+  setOrc("d_faturamento", diagnostico.faturamento);
+  setOrc("d_regime", diagnostico.regime);
+  setOrc("d_segmento", diagnostico.segmento);
+  setOrc("d_observacoes", diagnostico.observacoes);
+
+  const investimento = data.investimento || {};
+  setOrc("i_valorCheio", investimento.valorCheio);
+  setCheckedOrc("i_temDesconto", investimento.temDesconto);
+  setOrc("i_valorFinal", investimento.valorFinal);
+  setOrc("i_formaPagamento", investimento.formaPagamento || "A combinar");
+  setOrc("i_prazoInicio", investimento.prazoInicio || "Após aceite");
+
+  document.querySelectorAll("#orc-servicos-checklist .orc-servico-check").forEach((c) => { c.checked = false; });
+  document.querySelectorAll("#orc-servicos-checklist .orc-servico-valor").forEach((v) => { v.value = ""; });
+  aplicarItensAoChecklistOrc(document.getElementById("orc-servicos-checklist"), investimento.itens);
+
+  document.getElementById("orc-grupo-list").innerHTML = "";
+  (data.grupo || []).forEach((empresa) => {
+    addGrupoRowOrc(empresa);
+    const row = document.getElementById("orc-grupo-list").lastElementChild;
+    aplicarItensAoChecklistOrc(row.querySelector(".orc-grupo-servicos"), empresa.itens);
+  });
+
+  document.getElementById("orc-itens-investimento-list").innerHTML = "";
+  (investimento.itens || []).filter((i) => !i.categoria).forEach((item) => addItemInvestimentoRowOrc(item));
+
+  setupDescontoToggle();
+  updateProposalPreview();
+}
+
+async function setupOrcamentoPicker() {
+  const select = document.getElementById("orcamento-select");
+  const search = document.getElementById("orcamento-search");
+  const status = document.getElementById("orcamento-picker-status");
+
+  let picker = { refresh: async () => {} };
+  status.textContent = "Carregando orçamentos salvos...";
+  status.className = "pdf-status";
+  try {
+    picker = await initOrcamentoPicker(search, select, "— Selecione um orçamento —");
+    status.textContent = "";
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Não foi possível conectar ao banco de orçamentos.";
+    status.className = "pdf-status error";
+  }
+
+  select.addEventListener("change", async () => {
+    if (!select.value) return;
+    status.textContent = "Carregando orçamento...";
+    status.className = "pdf-status";
+    try {
+      const data = await getOrcamentoById(select.value);
+      if (!data) return;
+      orcamentoEditId = select.value;
+      applyOrcamentoToForm(data);
+      status.textContent = "Orçamento carregado. Alterações agora salvam por cima deste registro.";
+      status.className = "pdf-status ok";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao carregar o orçamento.";
+      status.className = "pdf-status error";
+    }
+  });
+
+  document.getElementById("btn-salvar-orcamento").addEventListener("click", async () => {
+    const nome = getOrc("q_empresa").trim();
+    if (!nome) {
+      status.textContent = "Preencha ao menos o nome da Empresa/Cliente antes de salvar o orçamento.";
+      status.className = "pdf-status error";
+      return;
+    }
+    status.textContent = "Salvando orçamento...";
+    status.className = "pdf-status";
+    try {
+      const data = collectProposalData();
+      const record = await upsertOrcamentoRegistro(data, orcamentoEditId);
+      orcamentoEditId = record.id;
+      await picker.refresh();
+      select.value = record.id;
+      status.textContent = "Orçamento salvo. Já dá pra gerar um Contrato a partir dele na tela de Contrato.";
+      status.className = "pdf-status ok";
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Erro ao salvar o orçamento: " + (err && err.message ? err.message : "erro desconhecido.");
+      status.className = "pdf-status error";
+    }
+  });
+}
+
 // A geração de PDF em si (captura cada .proposal-page separadamente em
 // canvas e monta o PDF manualmente, página por página) é compartilhada —
 // ver montarPdfPorPaginas em drive-upload.js — porque o mesmo mecanismo
@@ -583,6 +716,9 @@ function setupActionsOrc() {
     document.getElementById("orc-grupo-list").innerHTML = "";
     document.getElementById("orc-itens-investimento-list").innerHTML = "";
     document.querySelectorAll(".orc-servico-check").forEach((c) => { c.checked = false; });
+    document.querySelectorAll(".orc-servico-valor").forEach((v) => { v.value = ""; });
+    orcamentoEditId = null;
+    document.getElementById("orcamento-select").value = "";
     setupDescontoToggle();
     updateProposalPreview();
   });
@@ -617,6 +753,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupDescontoToggle();
   setupLiveUpdateOrc();
   setupEmpresasOrcamento();
+  setupOrcamentoPicker();
   setupServicosOrc();
   setupGrupoEconomicoOrc();
   setupItensInvestimentoOrc();
