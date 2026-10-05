@@ -271,7 +271,12 @@ function parseContratoServicosPdfText(text) {
     result.a_data = parseDataExtensoImport(m[2]);
   }
 
-  m = clean.match(/Testemunha 1\s+Nome:\s*([\s\S]*?)\s+CPF:\s*([\s\S]*?)\s+Testemunha 2\s+Nome:\s*([\s\S]*?)\s+CPF:\s*([\s\S]*?)(?:\s+Rua|$)/);
+  // O CPF (ou o placeholder "________" quando vazio) é sempre um único
+  // token sem espaço — usar \S+ em vez de [\s\S]*? evita que a captura
+  // "vaze" e engula tudo até a próxima ocorrência de "Rua" no texto (que
+  // pode estar bem mais longe, depois do Anexo 1 inteiro, quando esse bloco
+  // cai na mesma página das Assinaturas).
+  m = clean.match(/Testemunha 1\s+Nome:\s*([\s\S]*?)\s+CPF:\s*(\S+)\s+Testemunha 2\s+Nome:\s*([\s\S]*?)\s+CPF:\s*(\S+)/);
   if (m) {
     result.a_test1Nome = limparValorImport(m[1]);
     result.a_test1Cpf = limparValorImport(m[2]);
