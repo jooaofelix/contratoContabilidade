@@ -1,8 +1,8 @@
 // Relatório/filtro de todas as empresas cadastradas (Ficha Cadastral) por
 // informações do cartão CNPJ — endereço, bairro, cidade, UF, tributação,
-// CNAE e situação. Carrega tudo uma vez do Firestore e filtra em memória
-// a cada tecla (dataset pequeno o bastante pra não precisar de nova
-// consulta por filtro).
+// CNAE e situação — e pelo responsável (sócio administrador). Carrega tudo
+// uma vez do Firestore e filtra em memória a cada tecla (dataset pequeno o
+// bastante pra não precisar de nova consulta por filtro).
 
 let empresasCacheLista = [];
 
@@ -20,9 +20,28 @@ function enderecoCompletoEmpresa(e) {
     .join(", ");
 }
 
+// Sócio administrador (ou 1º sócio) — mesmo critério usado em
+// empresaToContratante (app.js) pra preencher o representante legal.
+function responsavelEmpresa(e) {
+  return (e.socio1 || e.administracao || "").trim();
+}
+
+const FILTRO_EMPRESAS_IDS = [
+  "empresas-search",
+  "empresas-filtro-responsavel",
+  "empresas-filtro-endereco",
+  "empresas-filtro-bairro",
+  "empresas-filtro-cidade",
+  "empresas-filtro-estado",
+  "empresas-filtro-tributacao",
+  "empresas-filtro-cnae",
+  "empresas-filtro-situacao",
+];
+
 function getFiltrosEmpresas() {
   return {
     busca: document.getElementById("empresas-search").value.trim().toLowerCase(),
+    responsavel: document.getElementById("empresas-filtro-responsavel").value.trim().toLowerCase(),
     endereco: document.getElementById("empresas-filtro-endereco").value.trim().toLowerCase(),
     bairro: document.getElementById("empresas-filtro-bairro").value.trim().toLowerCase(),
     cidade: document.getElementById("empresas-filtro-cidade").value.trim().toLowerCase(),
@@ -40,6 +59,7 @@ function empresaPassaNosFiltros(e, f) {
     const alvo = `${e.contratante || ""} ${e.cnpj || ""}`.toLowerCase();
     if (!alvo.includes(f.busca)) return false;
   }
+  if (!contem(`${responsavelEmpresa(e)} ${e.socio2 || ""}`, f.responsavel)) return false;
   if (!contem(e.endereco, f.endereco)) return false;
   if (!contem(e.bairro, f.bairro)) return false;
   if (!contem(e.cidade, f.cidade)) return false;
@@ -68,6 +88,7 @@ function renderEmpresasTable(lista) {
         <thead>
           <tr>
             <th>Empresa</th>
+            <th>Responsável</th>
             <th>Endereço</th>
             <th>Cidade/UF</th>
             <th>Tributação</th>
@@ -83,6 +104,10 @@ function renderEmpresasTable(lista) {
               <td>
                 ${escapeHtmlEmpresas(e.contratante || "(sem nome)")}
                 <div class="empresas-cnpj">${escapeHtmlEmpresas(e.cnpj || "—")}</div>
+              </td>
+              <td>
+                ${escapeHtmlEmpresas(responsavelEmpresa(e)) || "—"}
+                ${e.socio2 ? `<div class="empresas-cnpj">e ${escapeHtmlEmpresas(e.socio2)}</div>` : ""}
               </td>
               <td>${escapeHtmlEmpresas(enderecoCompletoEmpresa(e)) || "—"}</td>
               <td>${escapeHtmlEmpresas([e.cidade, e.estado].filter(Boolean).join("/")) || "—"}</td>
@@ -104,30 +129,12 @@ function aplicarFiltrosEmpresas() {
 }
 
 function setupFiltrosEmpresas() {
-  [
-    "empresas-search",
-    "empresas-filtro-endereco",
-    "empresas-filtro-bairro",
-    "empresas-filtro-cidade",
-    "empresas-filtro-estado",
-    "empresas-filtro-tributacao",
-    "empresas-filtro-cnae",
-    "empresas-filtro-situacao",
-  ].forEach((id) => {
+  FILTRO_EMPRESAS_IDS.forEach((id) => {
     document.getElementById(id).addEventListener("input", aplicarFiltrosEmpresas);
   });
 
   document.getElementById("empresas-limpar-filtros").addEventListener("click", () => {
-    [
-      "empresas-search",
-      "empresas-filtro-endereco",
-      "empresas-filtro-bairro",
-      "empresas-filtro-cidade",
-      "empresas-filtro-estado",
-      "empresas-filtro-tributacao",
-      "empresas-filtro-cnae",
-      "empresas-filtro-situacao",
-    ].forEach((id) => { document.getElementById(id).value = ""; });
+    FILTRO_EMPRESAS_IDS.forEach((id) => { document.getElementById(id).value = ""; });
     aplicarFiltrosEmpresas();
   });
 }
