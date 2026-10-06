@@ -96,3 +96,50 @@
 @media (max-width: 900px) {
   .empresas-table-container { overflow-x: auto; }
 }
+
+.empresas-print-header {
+  display: none;
+}
+
+.empresas-print-header h2 {
+  font-size: 1.1rem;
+  color: var(--darker);
+  margin: 0 0 4px;
+}
+
+.empresas-print-header p {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin: 0 0 14px;
+}
+
+@media print {
+  .empresas-toolbar,
+  .empresas-resultado-nota {
+    display: none;
+  }
+
+  .empresas-print-header {
+    display: block;
+  }
+
+  .empresas-table-container {
+    border: none;
+    overflow: visible;
+  }
+
+  .empresas-table th,
+  .empresas-table tr:nth-child(even) td {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .empresas-table tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .empresas-table thead {
+    display: table-header-group;
+  }
+}

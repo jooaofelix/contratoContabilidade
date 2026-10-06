@@ -26,17 +26,18 @@ function responsavelEmpresa(e) {
   return (e.socio1 || e.administracao || "").trim();
 }
 
-const FILTRO_EMPRESAS_IDS = [
-  "empresas-search",
-  "empresas-filtro-responsavel",
-  "empresas-filtro-endereco",
-  "empresas-filtro-bairro",
-  "empresas-filtro-cidade",
-  "empresas-filtro-estado",
-  "empresas-filtro-tributacao",
-  "empresas-filtro-cnae",
-  "empresas-filtro-situacao",
+const FILTRO_EMPRESAS_CAMPOS = [
+  { id: "empresas-search", label: "Busca" },
+  { id: "empresas-filtro-responsavel", label: "Responsável" },
+  { id: "empresas-filtro-endereco", label: "Endereço" },
+  { id: "empresas-filtro-bairro", label: "Bairro" },
+  { id: "empresas-filtro-cidade", label: "Cidade" },
+  { id: "empresas-filtro-estado", label: "UF" },
+  { id: "empresas-filtro-tributacao", label: "Tributação" },
+  { id: "empresas-filtro-cnae", label: "CNAE" },
+  { id: "empresas-filtro-situacao", label: "Situação" },
 ];
+const FILTRO_EMPRESAS_IDS = FILTRO_EMPRESAS_CAMPOS.map((c) => c.id);
 
 function getFiltrosEmpresas() {
   return {
@@ -70,7 +71,10 @@ function empresaPassaNosFiltros(e, f) {
   return true;
 }
 
+let ultimaContagemFiltrada = 0;
+
 function renderEmpresasTable(lista) {
+  ultimaContagemFiltrada = lista.length;
   const wrap = document.getElementById("empresas-table-wrap");
   const nota = document.getElementById("empresas-resultado-nota");
   nota.textContent = `${lista.length} empresa(s) encontrada(s) de ${empresasCacheLista.length} cadastrada(s).`;
@@ -137,6 +141,31 @@ function setupFiltrosEmpresas() {
     FILTRO_EMPRESAS_IDS.forEach((id) => { document.getElementById(id).value = ""; });
     aplicarFiltrosEmpresas();
   });
+
+  document.getElementById("empresas-imprimir").addEventListener("click", () => {
+    montarCabecalhoImpressaoEmpresas();
+    window.print();
+  });
+}
+
+// Só aparece na folha impressa (ver @media print em empresas.css) — mostra
+// quais filtros estavam aplicados na hora da impressão, já que o toolbar em
+// si fica escondido no papel.
+function montarCabecalhoImpressaoEmpresas() {
+  const filtrosAtivos = FILTRO_EMPRESAS_CAMPOS
+    .map((c) => ({ label: c.label, valor: document.getElementById(c.id).value.trim() }))
+    .filter((c) => c.valor);
+
+  const resumoFiltros = filtrosAtivos.length
+    ? filtrosAtivos.map((c) => `${c.label}: ${escapeHtmlEmpresas(c.valor)}`).join(" &nbsp;•&nbsp; ")
+    : "Nenhum filtro aplicado (lista completa)";
+
+  const hoje = new Date().toLocaleDateString("pt-BR");
+
+  document.getElementById("empresas-print-header").innerHTML = `
+    <h2>AEA Contabilidade Consultiva — Relatório de Empresas Cadastradas</h2>
+    <p>${ultimaContagemFiltrada} empresa(s) encontrada(s) de ${empresasCacheLista.length} cadastrada(s). Gerado em ${hoje}.<br>${resumoFiltros}</p>
+  `;
 }
 
 async function carregarEmpresasLista() {
