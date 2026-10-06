@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Empresas Cadastradas - AEA Contabilidade</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/empresas.css">
+</head>
+<body>
+<header class="app-header">
+  <div class="app-brand">
+    <img src="assets/aea-logo.svg" alt="AEA Contabilidade Consultiva" class="app-logo">
+    <h1>Empresas Cadastradas</h1>
+  </div>
+  <nav class="app-nav">
+    <a href="index.html">Início</a>
+    <a href="contrato.html">Contrato</a>
+    <a href="orcamento.html">Orçamento</a>
+    <a href="ficha.html">Ficha Cadastral</a>
+    <a href="processo.html">Ficha de Processo</a>
+    <a href="vendas.html">Vendas</a>
+    <a href="empresas.html" class="active">Empresas</a>
+    <a href="historico.html">Histórico</a>
+    <a href="demandas.html">Demandas</a>
+    <a href="instagram.html">Instagram</a>
+  </nav>
+</header>
+
+<div class="app-layout">
+
+  <main class="preview-wrap">
+
+    <div class="empresas-toolbar">
+      <label class="empresas-search-label">Buscar por nome ou CNPJ
+        <input type="text" id="empresas-search" placeholder="ex: Construtora, ou 12.345.678/0001-90">
+      </label>
+      <label class="empresas-filtro-label">Endereço contém
+        <input type="text" id="empresas-filtro-endereco" placeholder="ex: Jurema Vieira Medrado">
+      </label>
+      <label class="empresas-filtro-label">Bairro contém
+        <input type="text" id="empresas-filtro-bairro" placeholder="ex: Aquarius">
+      </label>
+      <label class="empresas-filtro-label">Cidade contém
+        <input type="text" id="empresas-filtro-cidade" placeholder="ex: São José dos Campos">
+      </label>
+      <label class="empresas-filtro-label empresas-filtro-uf">UF
+        <input type="text" id="empresas-filtro-estado" maxlength="2" placeholder="SP">
+      </label>
+      <label class="empresas-filtro-label">Tributação contém
+        <input type="text" id="empresas-filtro-tributacao" placeholder="ex: Simples Nacional">
+      </label>
+      <label class="empresas-filtro-label">CNAE contém
+        <input type="text" id="empresas-filtro-cnae" placeholder="ex: 6920-6">
+      </label>
+      <label class="empresas-filtro-label">Situação contém
+        <input type="text" id="empresas-filtro-situacao" placeholder="ex: Ativa">
+      </label>
+      <div class="empresas-atalhos">
+        <button type="button" id="empresas-limpar-filtros" class="btn-secondary">Limpar filtros</button>
+      </div>
+    </div>
+
+    <p class="empresas-resultado-nota" id="empresas-resultado-nota"></p>
+
+    <div id="empresas-table-wrap"></div>
+
+  </main>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/empresas-store.js"></script>
+<script src="js/app-empresas.js"></script>
+<script src="js/vendas-store.js"></script>
+<script src="js/notas-store.js"></script>
+<script src="js/demandas-widget.js"></script>
+</body>
+</html>
