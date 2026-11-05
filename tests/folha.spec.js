@@ -172,8 +172,52 @@ async function testeRolloverNaoRepeteVariaveis(browser) {
   await page.close();
 }
 
+// --- Teste 4: Extrato Mensal (Domínio) — regressão de bug real -------------
+//
+// Achado ao validar com folhas reais: o fim do valor de "Salário:" (ex: a
+// dezena de "2.735,20") podia virar um falso "código de rubrica" por
+// coincidência de dígitos, e o código verdadeiro (ex: "8781") virava parte
+// da descrição. Dados abaixo são fictícios, no mesmo formato real.
+async function testeExtratoMensalDominio(browser) {
+  const { page, erros } = await abrirFolha(browser, { empresas: {} });
+
+  const textoFicticio = [
+    "Empresa: 999 - EMPRESA FICTICIA TESTE LTDA Página: 1/1",
+    "CNPJ: 11.222.333/0001-44 Emissão: 01/01/2026",
+    "Cálculo: Folha Mensal Horas: 10:00:00",
+    "Competência: 09/2026",
+    "Departamentos: 1",
+    "EXTRATO MENSAL",
+    "Empr.: 1 FULANO DE TAL SILVA Situação: Trabalhando CPF: 111.444.777-35 Adm: 01/01/2024",
+    "Vínculo: Celetista CC: 1 Depto: 1 Horas Mês: 220,00",
+    "Cargo: 10 ANALISTA DE TESTES C.B.O: 123456 Filial: 1 Salário: 2.735,20",
+    "8781 DIAS NORMAIS 30,00 2.735,20 P 998 I.N.S.S. 9,00 246,17 D",
+    "ND: 0 Proventos: 2.735,20 Descontos: 246,17 Informativa: 218,82 Informativa Dedutora: 0 Líquido: 2.489,03",
+    "NF: 0 Base INSS: 2.735,20 Excedente INSS: 0,00 Base FGTS: 2.735,20 Valor FGTS: 218,82 Base IRRF: 2.489,03",
+  ].join("\n");
+
+  const resultado = await page.evaluate((texto) => parseExtratoMensalDominio(texto), textoFicticio);
+
+  assert.strictEqual(resultado.empresaDetectada.nome, "EMPRESA FICTICIA TESTE LTDA");
+  assert.strictEqual(resultado.empresaDetectada.cnpj, "11.222.333/0001-44");
+  assert.strictEqual(resultado.competenciaDetectada, "2026-09");
+  assert.strictEqual(resultado.funcionarios.length, 1);
+  assert.strictEqual(resultado.funcionarios[0].salario, 2735.2);
+  assert.strictEqual(resultado.funcionarios[0].cargo, "ANALISTA DE TESTES");
+
+  assert.strictEqual(resultado.apontamentos.length, 2, "deveria achar os 2 lançamentos (provento + desconto), nem mais nem menos");
+  const codigos = resultado.apontamentos.map((a) => a.rubricaCodigo).sort();
+  assert.deepStrictEqual(codigos, ["8781", "998"], "o código real da rubrica não pode vir da cauda do valor do salário: " + JSON.stringify(codigos));
+  const dias = resultado.apontamentos.find((a) => a.rubricaCodigo === "8781");
+  assert.strictEqual(dias.rubricaDescricao, "DIAS NORMAIS", "a descrição não pode vir misturada com o código");
+
+  assert.strictEqual(erros.length, 0, "não deveria haver erros de JS: " + erros.join(" | "));
+  await page.close();
+}
+
 module.exports = [
   { nome: "validarCpf rejeita sequências repetidas e aceita CPF real", fn: testeValidarCpf },
   { nome: "importação cria NOVO, não sobrescreve DIVERGÊNCIA em lote, e é idempotente", fn: testeImportarEDivergencia },
   { nome: "rollover copia só rubricas fixas/recorrentes, nunca variáveis", fn: testeRolloverNaoRepeteVariaveis },
+  { nome: "Extrato Mensal (Domínio): código de rubrica não vaza do valor do salário", fn: testeExtratoMensalDominio },
 ];

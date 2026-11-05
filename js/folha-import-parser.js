@@ -213,13 +213,20 @@ const SINONIMOS_COLUNA_RUBRICA = {
   valor: ["valor"],
 };
 
+// Tira acento pra comparar — cabeçalhos reais variam entre "Descrição" e
+// "Descricao" sem padrão, então os sinônimos abaixo não precisam listar as
+// duas formas de cada palavra.
+function semAcento(str) {
+  return String(str || "").normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
 function mapearColunas(headerRow, sinonimos) {
   const mapa = {};
   headerRow.forEach((titulo, idx) => {
-    const normalizado = String(titulo || "").trim().toLowerCase();
+    const normalizado = semAcento(String(titulo || "").trim().toLowerCase());
     Object.keys(sinonimos).forEach((campo) => {
       if (mapa[campo] !== undefined) return;
-      if (sinonimos[campo].some((s) => normalizado === s || normalizado.includes(s))) mapa[campo] = idx;
+      if (sinonimos[campo].some((s) => { const sNorm = semAcento(s); return normalizado === sNorm || normalizado.includes(sNorm); })) mapa[campo] = idx;
     });
   });
   return mapa;
@@ -230,7 +237,7 @@ function linhasParaFuncionarios(linhas) {
   const mapa = mapearColunas(linhas[0], SINONIMOS_COLUNA_FUNCIONARIO);
   if (mapa.cpf === undefined && mapa.nome === undefined) return [];
 
-  return linhas.slice(1)
+  const funcionarios = linhas.slice(1)
     .filter((l) => l.some((c) => String(c).trim() !== ""))
     .map((l) => ({
       nome: mapa.nome !== undefined ? String(l[mapa.nome] || "").trim() : "",
@@ -241,6 +248,17 @@ function linhasParaFuncionarios(linhas) {
       admissao: mapa.admissao !== undefined ? formatarDataPlanilha(l[mapa.admissao]) : null,
     }))
     .filter((f) => f.nome || f.cpf);
+
+  // Uma planilha com só uma coluna de nome batendo por coincidência (ex: um
+  // relatório de horas extras com "Colaborador") e mais NADA reconhecível
+  // (sem CPF, cargo, salário, admissão ou matrícula em nenhuma linha) não é
+  // evidência suficiente de que isso é uma lista de funcionários — melhor não
+  // sugerir "novo funcionário" nenhum do que sugerir cadastros levianamente a
+  // partir de um nome mencionado num relatório de outra natureza.
+  const temAlgumSinalAlemDoNome = funcionarios.some((f) => f.cpf || f.matricula || f.cargo || f.salario !== null || f.admissao);
+  if (!temAlgumSinalAlemDoNome) return [];
+
+  return funcionarios;
 }
 
 function linhasParaApontamentos(linhas) {
@@ -314,6 +332,129 @@ function xmlParaObjetos(doc) {
   });
 }
 
+// --- 6. PDF por posição + formato "Extrato Mensal" (folha analítica real) ---
+//
+// Descoberta ao testar com folhas reais: o pdf.js (extractTextFromPdf, em
+// pdf-extractor.js) devolve os fragmentos de texto na ordem em que aparecem
+// no stream do PDF, que para esse tipo de relatório NÃO é a ordem de leitura
+// visual (rótulo e valor saem longe um do outro). Por isso o Folha usa sua
+// própria extração, reagrupando os fragmentos por posição (Y vira a linha, X
+// ordena dentro da linha) — o mesmo princípio de um "pdftotext -layout". Isso
+// fica só aqui (não mexe em extractTextFromPdf, usada por outros importadores
+// do sistema que já dependem do comportamento atual).
+async function extractTextoPdfPorPosicao(file) {
+  const buffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  let textoFinal = "";
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const pagina = await pdf.getPage(i);
+    const content = await pagina.getTextContent();
+    const porY = {};
+    content.items.forEach((item) => {
+      if (!item.str || !item.str.trim()) return;
+      const y = Math.round(item.transform[5]);
+      const x = item.transform[4];
+      if (!porY[y]) porY[y] = [];
+      porY[y].push({ x, str: item.str });
+    });
+    // Linhas com Y a até 2px de distância são a mesma linha visual (pequenas
+    // variações de baseline entre fontes/tamanhos na mesma linha).
+    const ys = Object.keys(porY).map(Number).sort((a, b) => b - a);
+    const grupos = [];
+    let atual = null;
+    ys.forEach((y) => {
+      if (atual && Math.abs(atual.y - y) <= 2) atual.itens.push(...porY[y]);
+      else { atual = { y, itens: [...porY[y]] }; grupos.push(atual); }
+    });
+    grupos.forEach((g) => {
+      g.itens.sort((a, b) => a.x - b.x);
+      textoFinal += g.itens.map((it) => it.str).join(" ").replace(/\s+/g, " ").trim() + "\n";
+    });
+  }
+  return textoFinal;
+}
+
+// "Extrato Mensal" é o nome do relatório usado por sistemas de folha bem
+// difundidos (ex: Domínio) — um bloco por funcionário, com rótulos fixos
+// (Empr./Situação/CPF/Adm/Cargo/C.B.O/Salário) e as rubricas do mês em duas
+// colunas (proventos à esquerda, descontos à direita).
+function pareceExtratoMensalDominio(texto) {
+  return /EXTRATO MENSAL/.test(texto) && /Empr\.\s*:/.test(texto);
+}
+
+function parseExtratoMensalDominio(texto) {
+  const avisos = [];
+
+  const mEmpresa = texto.match(/Empresa:\s*(?:\d+\s*-\s*)?([^\n]+?)\s+Página/);
+  const mCnpj = texto.match(/CNPJ:\s*(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2})/);
+  const empresaDetectada = mCnpj ? { nome: mEmpresa ? mEmpresa[1].trim() : "", cnpj: mCnpj[1] } : null;
+
+  const mCompetencia = texto.match(/Competência:\s*(\d{1,2})\s*\/\s*(\d{4})/);
+  const competenciaDetectada = mCompetencia ? `${mCompetencia[2]}-${mCompetencia[1].padStart(2, "0")}` : null;
+
+  // Tira o resumo agregado ("Resumo por Rubrica" + totais de INSS/FGTS/IRRF
+  // que vêm na sequência) — não pertence a nenhum funcionário específico e
+  // atrapalharia a extração por bloco.
+  const semResumo = texto.replace(/Resumo por Rubrica[\s\S]*?(?=Empr\.\s*:|$)/g, "");
+
+  const regexEmpregado = /Empr\.\s*:\s*(\d+)\s+([A-ZÀ-Ú][A-ZÀ-Úa-zà-ú'`\s]+?)\s+Situação\s*:\s*(\S+)\s+CPF\s*:\s*(\d{3}\.?\d{3}\.?\d{3}-?\d{2})\s+Adm\s*:\s*(\d{2}\/\d{2}\/\d{4})/g;
+  const posicoes = [];
+  let m;
+  while ((m = regexEmpregado.exec(semResumo))) {
+    posicoes.push({
+      index: m.index,
+      matricula: m[1],
+      nome: m[2].trim(),
+      cpf: normalizarCpf(m[4]),
+      admissao: parseDataBrImport(m[5]),
+    });
+  }
+
+  const funcionarios = [];
+  const apontamentos = [];
+
+  posicoes.forEach((pos, i) => {
+    const fim = i + 1 < posicoes.length ? posicoes[i + 1].index : semResumo.length;
+    const bloco = semResumo.slice(pos.index, fim);
+
+    const mCargo = bloco.match(/Cargo\s*:\s*\d*\s*([A-ZÀ-Úa-zà-ú0-9\/\s-]+?)\s+C\.B\.O/);
+    const mSalario = bloco.match(/Salário\s*:\s*([\d.,]+)/);
+
+    funcionarios.push({
+      nome: pos.nome,
+      cpf: pos.cpf,
+      matricula: pos.matricula,
+      cargo: mCargo ? mCargo[1].trim() : "",
+      salario: mSalario ? parseValorFolha(mSalario[1]) : null,
+      admissao: pos.admissao || null,
+    });
+
+    // Só os lançamentos de verdade: começa DEPOIS do valor de "Salário:" (senão
+    // o final desse valor, ex: a dezena de "2.735,20", pode virar um falso
+    // "código de rubrica" por coincidência de dígitos) e termina em "ND: <n>",
+    // onde começa o resumo de totais daquele funcionário.
+    const inicioRubricas = mSalario ? mSalario.index + mSalario[0].length : 0;
+    const blocoRubricas = bloco.slice(inicioRubricas).split(/\bND\s*:\s*\d/)[0];
+    const regexRubrica = /(\d{2,6})\s+([A-Za-zÀ-ÿ0-9ºª%\/.()'-]+(?:\s+[A-Za-zÀ-ÿ0-9ºª%\/.()'-]+)*?)\s+([\d.,]+)\s+([\d.,]+)\s+([PD])\b/g;
+    let r;
+    while ((r = regexRubrica.exec(blocoRubricas))) {
+      apontamentos.push({
+        funcionarioNome: pos.nome,
+        funcionarioCpf: pos.cpf,
+        rubricaCodigo: r[1],
+        rubricaDescricao: r[2].trim(),
+        referencia: parseValorFolha(r[3]),
+        valor: parseValorFolha(r[4]),
+        tipoEventoSugerido: sugerirTipoEvento(r[2]),
+      });
+    }
+  });
+
+  if (posicoes.length === 0) avisos.push("O documento parece ser um Extrato Mensal, mas não foi possível reconhecer nenhum bloco de funcionário dentro dele — confira o layout manualmente.");
+
+  return { empresaDetectada, competenciaDetectada, funcionarios, apontamentos, avisos };
+}
+
 // --- Orquestrador -------------------------------------------------------------
 
 async function parseDocumentoFolha(file) {
@@ -329,9 +470,11 @@ async function parseDocumentoFolha(file) {
     return { arquivoNome: file.name, tipoDetectado, empresaDetectada: null, competenciaDetectada: null, funcionarios: [], apontamentos: [], avisos };
   }
 
+  let resultadoExtratoMensal = null;
   if (tipoDetectado === "pdf") {
-    texto = await extractTextFromPdf(file);
+    texto = await extractTextoPdfPorPosicao(file);
     if (!texto.trim()) avisos.push("O PDF não tem texto selecionável (provavelmente é uma imagem/scan) — não foi possível ler o conteúdo.");
+    else if (pareceExtratoMensalDominio(texto)) resultadoExtratoMensal = parseExtratoMensalDominio(texto);
   } else if (tipoDetectado === "docx") {
     texto = await extractTextFromDocx(file);
   } else if (tipoDetectado === "txt") {
@@ -357,11 +500,21 @@ async function parseDocumentoFolha(file) {
     texto = doc.documentElement ? doc.documentElement.textContent : "";
   }
 
-  if (texto && funcionarios.length === 0) funcionarios = extrairFuncionariosDeTexto(texto);
-  if (texto && apontamentos.length === 0) apontamentos = extrairApontamentosDeTexto(texto);
+  let empresaDetectada;
+  let competenciaDetectada;
 
-  const empresaDetectada = texto ? detectarEmpresaEmTexto(texto) : null;
-  const competenciaDetectada = texto ? detectarCompetenciaEmTexto(texto) : null;
+  if (resultadoExtratoMensal) {
+    funcionarios = resultadoExtratoMensal.funcionarios;
+    apontamentos = resultadoExtratoMensal.apontamentos;
+    empresaDetectada = resultadoExtratoMensal.empresaDetectada;
+    competenciaDetectada = resultadoExtratoMensal.competenciaDetectada;
+    avisos.push(...resultadoExtratoMensal.avisos);
+  } else {
+    if (texto && funcionarios.length === 0) funcionarios = extrairFuncionariosDeTexto(texto);
+    if (texto && apontamentos.length === 0) apontamentos = extrairApontamentosDeTexto(texto);
+    empresaDetectada = texto ? detectarEmpresaEmTexto(texto) : null;
+    competenciaDetectada = texto ? detectarCompetenciaEmTexto(texto) : null;
+  }
 
   if (!empresaDetectada) avisos.push("Não foi possível identificar a empresa com segurança neste documento — confirme manualmente antes de prosseguir.");
   if (!competenciaDetectada) avisos.push("Não foi possível identificar a competência (mês/ano) deste documento — confirme manualmente antes de prosseguir.");
