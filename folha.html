@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AEA Folha - AEA Contabilidade</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/folha.css">
+</head>
+<body>
+<header class="app-header">
+  <div class="app-brand">
+    <img src="assets/aea-logo.svg" alt="AEA Contabilidade Consultiva" class="app-logo">
+    <h1>AEA Folha</h1>
+  </div>
+  <nav class="app-nav">
+    <a href="index.html">Início</a>
+    <a href="contrato.html">Contrato</a>
+    <a href="orcamento.html">Orçamento</a>
+    <a href="ficha.html">Ficha Cadastral</a>
+    <a href="processo.html">Ficha de Processo</a>
+    <a href="vendas.html">Vendas</a>
+    <a href="empresas.html">Empresas</a>
+    <a href="folha.html" class="active">Folha</a>
+    <a href="historico.html">Histórico</a>
+    <a href="demandas.html">Demandas</a>
+    <a href="instagram.html">Instagram</a>
+  </nav>
+</header>
+
+<div class="warning-banner">
+  ⚠ Central de Importação Inteligente: lê documentos por reconhecimento de padrões de texto/tabela (não é um leitor universal "de IA") — confira sempre os dados antes de aprovar. Nenhuma alteração de cadastro ou de folha é aplicada sem conferência.
+</div>
+
+<div class="mode-tabs">
+  <button type="button" class="mode-tab active" data-mode-tab="importar">📥 Importar Novos Funcionários</button>
+  <button type="button" class="mode-tab" data-mode-tab="atualizar">🔄 Atualizar Cadastros com Arquivos</button>
+  <button type="button" class="mode-tab" data-mode-tab="rollover">📑 Criar Folha a partir de Documento Anterior</button>
+  <button type="button" class="mode-tab" data-mode-tab="historico">🕘 Histórico e Pendências</button>
+</div>
+
+<div class="app-layout">
+
+  <aside class="sidebar" data-mode="importar">
+    <section class="panel">
+      <h2>🏢 Empresa</h2>
+      <div class="panel-body">
+        <label>Buscar empresa
+          <input type="text" id="folha-empresa-search-importar" placeholder="Digite o nome ou CNPJ...">
+        </label>
+        <label>Empresa
+          <select id="folha-empresa-select-importar"></select>
+        </label>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>📥 Documento(s) de origem</h2>
+      <div class="panel-body">
+        <p class="fixed-note">Envie qualquer documento de Departamento Pessoal (folha analítica, relação de empregados, planilha de salários...). Pode selecionar vários arquivos de uma vez.</p>
+        <input type="file" id="folha-import-input" multiple accept=".pdf,.xlsx,.xls,.csv,.docx,.txt,.json,.xml,image/*">
+        <button type="button" id="folha-import-processar" class="btn-primary">Processar documento(s)</button>
+        <div id="folha-import-status" class="pdf-status"></div>
+      </div>
+    </section>
+  </aside>
+
+  <main class="preview-wrap" data-mode="importar">
+    <div id="folha-import-resultado"></div>
+  </main>
+
+  <aside class="sidebar hidden" data-mode="atualizar">
+    <section class="panel">
+      <h2>🏢 Empresa</h2>
+      <div class="panel-body">
+        <label>Buscar empresa
+          <input type="text" id="folha-empresa-search-atualizar" placeholder="Digite o nome ou CNPJ...">
+        </label>
+        <label>Empresa
+          <select id="folha-empresa-select-atualizar"></select>
+        </label>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>🔄 Documento(s) para atualizar cadastros</h2>
+      <div class="panel-body">
+        <p class="fixed-note">Use holerites, relatórios de apontamentos ou qualquer documento com dados de funcionários já cadastrados — o sistema complementa o que estiver faltando e sinaliza divergências, sem sobrescrever nada sozinho.</p>
+        <input type="file" id="folha-atualizar-input" multiple accept=".pdf,.xlsx,.xls,.csv,.docx,.txt,.json,.xml,image/*">
+        <button type="button" id="folha-atualizar-processar" class="btn-primary">Processar documento(s)</button>
+        <div id="folha-atualizar-status" class="pdf-status"></div>
+      </div>
+    </section>
+  </aside>
+
+  <main class="preview-wrap hidden" data-mode="atualizar">
+    <div id="folha-atualizar-resultado"></div>
+  </main>
+
+  <aside class="sidebar hidden" data-mode="rollover">
+    <section class="panel">
+      <h2>🏢 Empresa</h2>
+      <div class="panel-body">
+        <label>Buscar empresa
+          <input type="text" id="folha-empresa-search-rollover" placeholder="Digite o nome ou CNPJ...">
+        </label>
+        <label>Empresa
+          <select id="folha-empresa-select-rollover"></select>
+        </label>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>📑 Gerar nova competência</h2>
+      <div class="panel-body">
+        <p class="fixed-note">Funcionários ativos, salários vigentes e rubricas fixas/recorrentes são aproveitados. Horas extras, faltas, comissões e outras variáveis NÃO são repetidas — ficam só como referência histórica.</p>
+        <label>Competência de origem
+          <select id="folha-rollover-origem"></select>
+        </label>
+        <label>Nova competência (AAAA-MM)
+          <input type="month" id="folha-rollover-destino">
+        </label>
+        <button type="button" id="folha-rollover-preparar" class="btn-primary">Gerar prévia</button>
+        <div id="folha-rollover-status" class="pdf-status"></div>
+      </div>
+    </section>
+  </aside>
+
+  <main class="preview-wrap hidden" data-mode="rollover">
+    <div id="folha-rollover-resultado"></div>
+  </main>
+
+  <aside class="sidebar hidden" data-mode="historico">
+    <section class="panel">
+      <h2>🏢 Empresa</h2>
+      <div class="panel-body">
+        <label>Buscar empresa
+          <input type="text" id="folha-empresa-search-historico" placeholder="Digite o nome ou CNPJ...">
+        </label>
+        <label>Empresa
+          <select id="folha-empresa-select-historico"></select>
+        </label>
+      </div>
+    </section>
+  </aside>
+
+  <main class="preview-wrap hidden" data-mode="historico">
+    <div id="folha-historico-resultado"></div>
+  </main>
+
+</div>
+
+<script src="js/vendor/pdf.min.js"></script>
+<script src="js/pdf-extractor.js"></script>
+<script src="js/vendor/jszip.min.js"></script>
+<script src="js/docx-extractor.js"></script>
+<script src="js/vendor/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/empresas-store.js"></script>
+<script src="js/folha-store.js"></script>
+<script src="js/folha-import-parser.js"></script>
+<script src="js/folha-reconciliation.js"></script>
+<script src="js/folha-rollover.js"></script>
+<script src="js/app-folha.js"></script>
+<script src="js/vendas-store.js"></script>
+<script src="js/notas-store.js"></script>
+<script src="js/demandas-widget.js"></script>
+</body>
+</html>

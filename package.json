@@ -1,0 +1,12 @@
+{
+  "name": "contrato-contabilidade",
+  "private": true,
+  "version": "1.0.0",
+  "description": "AEA Contabilidade Consultiva — sistema interno (site estático).",
+  "scripts": {
+    "test": "node tests/run-all.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
+}
