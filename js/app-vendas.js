@@ -719,6 +719,7 @@ function ativarModoVendas(mode) {
   document.querySelectorAll(".mode-tab").forEach((t) => t.classList.toggle("active", t === tab));
   document.querySelectorAll("[data-mode]").forEach((el) => el.classList.toggle("hidden", el.dataset.mode !== mode));
   if (mode === "carteira") refreshCarteira();
+  if (mode === "pendencias" && typeof refreshPendenciasHubstron === "function") refreshPendenciasHubstron();
 }
 
 function setupVendasModeToggle() {

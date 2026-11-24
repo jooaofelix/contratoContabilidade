@@ -34,6 +34,7 @@
   <button type="button" class="mode-tab" data-mode-tab="importar">📥 Início de Proposta</button>
   <button type="button" class="mode-tab" data-mode-tab="lote">📤 Envio em Lote</button>
   <button type="button" class="mode-tab" data-mode-tab="notas">📝 Anotações</button>
+  <button type="button" class="mode-tab" data-mode-tab="pendencias">🧾 Pendências Hubstron</button>
 </div>
 
 <div class="app-layout">
@@ -332,6 +333,109 @@
     <div id="notas-list-wrap"></div>
   </main>
 
+  <aside class="sidebar hidden" data-mode="pendencias">
+    <section class="panel">
+      <h2>📥 Planilha do Hubstron</h2>
+      <div class="panel-body">
+        <p class="fixed-note">Importe a exportação de clientes do Hubstron (.xlsx). O sistema lê a situação do <strong>certificado digital</strong> e da <strong>procuração</strong> e os contatos de cada empresa. Pode importar de novo sempre que atualizar — o status que você já marcou é mantido (só volta para "Pendente" se a situação da empresa mudou no Hubstron).</p>
+        <input type="file" id="ph-import-input" accept=".xlsx,.xls,.csv">
+        <div id="ph-import-status" class="pdf-status"></div>
+        <p id="ph-ultima-importacao" class="fixed-note"></p>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>🔎 Filtros</h2>
+      <div class="panel-body">
+        <label>Buscar empresa, CNPJ ou contato
+          <input type="text" id="ph-busca" placeholder="ex: Colorida, Filipe, 12.345.678">
+        </label>
+        <label>Prioridade
+          <select id="ph-filtro-prioridade">
+            <option value="">Todas</option>
+            <option value="1">🔴 Urgente</option>
+            <option value="2">🟡 Alta</option>
+            <option value="3">🔵 Média</option>
+            <option value="sem-contato">📵 Sem contato cadastrado</option>
+          </select>
+        </label>
+        <label>Tipo de pendência
+          <select id="ph-filtro-tipo">
+            <option value="">Todos os tipos</option>
+          </select>
+        </label>
+        <label>Status
+          <select id="ph-filtro-status">
+            <option value="">Todos os status</option>
+          </select>
+        </label>
+        <label class="checkbox"><input type="checkbox" id="ph-mostrar-resolvidas"> ✅ Mostrar resolvidas</label>
+        <p class="fixed-note"><strong>Prioridades:</strong> 🔴 certificado vencido ou vencendo em até 30 dias, procuração cancelada/expirada · 🟡 certificado não integrado, desativar 2 etapas, sem procuração · 🔵 certificado vence em 31–90 dias.</p>
+      </div>
+    </section>
+  </aside>
+
+  <main class="preview-wrap hidden" data-mode="pendencias">
+    <div id="ph-stats" class="vendas-stats"></div>
+    <div id="ph-vazio" class="ph-vazio hidden">
+      <div class="ph-vazio-icone">🧾</div>
+      <h3>Nenhuma pendência carregada ainda</h3>
+      <p>Importe a planilha de clientes exportada do Hubstron no painel ao lado para ver as pendências de certificado digital e procuração de cada empresa.</p>
+    </div>
+    <div id="ph-lista"></div>
+  </main>
+
+</div>
+
+<div id="ph-modal" class="modal-overlay hidden">
+  <div class="modal-box ph-modal-box" role="dialog" aria-modal="true" aria-labelledby="ph-det-nome">
+    <button type="button" id="ph-modal-fechar" class="ph-modal-fechar" aria-label="Fechar">✕</button>
+    <span id="ph-det-prioridade" class="ph-det-prioridade"></span>
+    <h2 id="ph-det-nome"></h2>
+    <p id="ph-det-info" class="ph-det-info"></p>
+
+    <div class="ph-det-cols">
+      <div class="ph-det-col">
+        <h3>📋 Situação no Hubstron</h3>
+        <div id="ph-det-situacao" class="ph-det-situacao"></div>
+
+        <h3>✅ Pendências <small>(marque conforme for resolvendo)</small></h3>
+        <div id="ph-det-itens"></div>
+
+        <label>Status do acompanhamento
+          <select id="ph-det-status"></select>
+        </label>
+        <p id="ph-det-historico" class="fixed-note"></p>
+
+        <label>Observações
+          <textarea id="ph-det-obs" rows="3" placeholder="ex: cliente vai mandar o certificado na segunda"></textarea>
+        </label>
+        <button type="button" id="ph-det-obs-salvar" class="btn-secondary">Salvar observação</button>
+        <div id="ph-det-salvo" class="pdf-status"></div>
+
+        <h3>👤 Contato</h3>
+        <div id="ph-det-contatos"></div>
+      </div>
+
+      <div class="ph-det-col">
+        <div id="ph-mensagem-wrap">
+          <h3>💬 Mensagem para enviar</h3>
+          <div id="ph-grupo-wrap" class="ph-grupo hidden">
+            <label class="checkbox"><input type="checkbox" id="ph-incluir-grupo" checked> Incluir na mesma mensagem as outras empresas deste contato:</label>
+            <div id="ph-grupo-lista" class="ph-grupo-lista"></div>
+          </div>
+          <textarea id="ph-mensagem" rows="14"></textarea>
+          <div class="ph-acoes">
+            <button type="button" id="ph-btn-whatsapp" class="btn-primary ph-btn-whatsapp">📲 Abrir no WhatsApp</button>
+            <button type="button" id="ph-btn-copiar" class="btn-secondary">📋 Copiar</button>
+            <button type="button" id="ph-btn-email" class="btn-secondary">✉️ E-mail</button>
+            <button type="button" id="ph-btn-regerar" class="btn-secondary" title="Desfaz as edições e monta a mensagem de novo">↺ Refazer</button>
+          </div>
+          <p class="fixed-note">Ao abrir no WhatsApp ou e-mail, as empresas incluídas na mensagem passam automaticamente para "Mensagem enviada".</p>
+          <div id="ph-msg-status" class="pdf-status"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="reuniao-modal" class="modal-overlay hidden">
@@ -374,8 +478,10 @@
 <script src="js/contatos-store.js"></script>
 <script src="js/produtos-store.js"></script>
 <script src="js/notas-store.js"></script>
+<script src="js/pendencias-hubstron-store.js"></script>
 <script src="js/vendor/xlsx.full.min.js"></script>
 <script src="js/app-vendas.js"></script>
+<script src="js/app-pendencias-hubstron.js"></script>
 <script src="js/demandas-widget.js"></script>
 </body>
 </html>

@@ -12,7 +12,7 @@ async function main() {
   const server = await startServer(ROOT_DIR, PORT);
   const browser = await chromium.launch();
 
-  const suites = [require("./folha.spec.js")];
+  const suites = [require("./folha.spec.js"), require("./pendencias-hubstron.spec.js")];
   const casos = suites.flat();
 
   let falhas = 0;
